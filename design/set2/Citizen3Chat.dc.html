@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>แจ้งเรื่อง · คุยกับผู้ช่วย AI</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F7FA}
+*{box-sizing:border-box}
+.m{font-family:'IBM Plex Sans Thai',system-ui,sans-serif;color:#0F172A;font-size:16px;line-height:1.6}
+a{color:#12355B}a:hover{color:#0B2440}
+:focus-visible{outline:2px solid #1D4ED8;outline-offset:2px}
+.muted{color:#475569}
+.seg{flex:1;height:4px;border-radius:2px;background:#CBD5E1}
+.seg.on{background:#12355B}
+.ai{align-self:flex-start;max-width:86%;background:#FFFFFF;border:1px solid #E2E8F0;border-radius:4px 14px 14px 14px;padding:10px 12px;font-size:15px;line-height:1.55}
+.me{align-self:flex-end;max-width:86%;background:#12355B;color:#FFFFFF;border-radius:14px 4px 14px 14px;padding:10px 12px;font-size:15px;line-height:1.55}
+.who{font-size:12px;font-weight:600;color:#475569;margin-bottom:2px}
+.tog{flex:1;min-height:44px;border:0;border-radius:8px;font:inherit;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#0F766E;background:#F0FDFA;border:1px solid #99F6E4;border-radius:999px;padding:0 8px}
+</style>
+</helmet>
+<div class="m" style="width: 390px; height: 844px; display: flex; flex-direction: column; background: #F5F7FA; overflow: hidden">
+  <div style="height: 22px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; background: repeating-linear-gradient(135deg, #FFFFFF 0 6px, #E5E9EF 6px 12px); border-bottom: 1px solid #CBD5E1">ข้อมูลจำลอง</div>
+  <header style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #FFFFFF; border-bottom: 1px solid #E2E8F0">
+    <a href="Citizen2Identity.dc.html" aria-label="ย้อนกลับ" style="width: 44px; height: 44px; margin-left: -10px; display: grid; place-items: center; color: #12355B"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></a>
+    <span style="line-height: 1.15"><strong style="display: block; font-size: 16px; color: #12355B">ผู้ช่วยรับแจ้ง</strong><span class="muted" style="font-size: 11px">ผู้ช่วย AI · ไม่ใช่เจ้าหน้าที่</span></span>
+    <span style="margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #12355B; background: #E8EEF5; border: 1px solid #B6C6DA; border-radius: 999px; padding: 2px 8px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>AI ประมวลผลในเครื่อง</span>
+  </header>
+  <div style="padding: 10px 16px 8px; display: flex; flex-direction: column; gap: 6px; background: #FFFFFF; border-bottom: 1px solid #E2E8F0">
+    <div style="display: flex; align-items: center; gap: 8px"><span class="muted" style="font-size: 13px">ขั้น 3 จาก 5 · เล่าเรื่อง</span><a href="Citizen4Slip.dc.html" style="margin-left: auto; font-size: 14px; font-weight: 600; min-height: 32px; display: flex; align-items: center">ไปขั้นถัดไป</a></div>
+    <div aria-hidden="true" style="display: flex; gap: 4px"><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg"></span><span class="seg"></span></div>
+    <div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center"><span class="muted" style="font-size: 12px">ได้ข้อมูลแล้ว</span><span class="chip">วันที่เกิดเหตุ</span><span class="chip">ช่องทางที่ถูกติดต่อ</span><span class="chip">ยอดเงิน</span></div>
+  </div>
+
+  <main aria-live="polite" style="flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+    <div class="ai"><div class="who">ผู้ช่วย AI</div>สวัสดีครับ คุณสมมติ เล่าให้ฟังได้เลยว่าเกิดอะไรขึ้น จะพิมพ์หรือกดพูดก็ได้ ผมจะถามเพิ่มเฉพาะที่จำเป็น</div>
+    <div class="me">มีคนชวนเข้ากลุ่มลงทุนในแอปแชต บอกว่าได้กำไรวันละ 5% ผมโอนไปหลายครั้ง พอจะถอนเงินกลับถอนไม่ได้</div>
+    <div class="ai"><div class="who">ผู้ช่วย AI</div>เข้าใจครับ ขอถามเพิ่ม: เริ่มโอนครั้งแรกประมาณวันไหน และโอนไปทั้งหมดกี่ครั้งครับ</div>
+    <div class="me">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #DCE4EE; margin-bottom: 2px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>ถอดจากเสียง 0:24</div>
+      ครั้งแรกกลางเดือนสิงหาครับ ประมาณสิบแปด โอนทั้งหมดสามครั้ง ครั้งใหญ่สุดสองแสนแปด
+      <button type="button" style="display: block; margin-top: 6px; background: transparent; border: 1px solid #94A3C8; color: #FFFFFF; border-radius: 6px; font: inherit; font-size: 13px; min-height: 32px; padding: 0 10px; cursor: pointer">แก้ข้อความ</button>
+    </div>
+    <div class="ai"><div class="who">ผู้ช่วย AI</div>ขอบคุณครับ สรุปที่เข้าใจ: เริ่มโอน 18 ส.ค. 2569 รวม 3 ครั้ง ครั้งที่มากที่สุด 288,000 บาท ถูกต้องไหมครับ<div style="display: flex; gap: 6px; margin-top: 8px"><button type="button" style="min-height: 40px; padding: 0 12px; border: 1px solid #94A3B8; border-radius: 8px; background: #FFFFFF; color: #12355B; font: inherit; font-size: 14px; font-weight: 600">ถูกต้อง</button><button type="button" style="min-height: 40px; padding: 0 12px; border: 1px solid #94A3B8; border-radius: 8px; background: #FFFFFF; color: #12355B; font: inherit; font-size: 14px; font-weight: 600">แก้ไข</button></div></div>
+    <div class="ai"><div class="who">ผู้ช่วย AI</div>ถ้ามีสลิปการโอน ขั้นถัดไปอัปโหลดได้ ระบบจะอ่านยอดและเลขบัญชีให้ท่านตรวจครับ</div>
+  </main>
+
+  <footer style="padding: 10px 16px 16px; background: #FFFFFF; border-top: 1px solid #E2E8F0; display: flex; flex-direction: column; gap: 10px">
+    <div role="group" aria-label="วิธีเล่าเรื่อง" style="display: flex; gap: 4px; padding: 4px; background: #E8EDF3; border-radius: 10px">
+      <button type="button" class="tog" style="{{typeStyle}}" aria-pressed="{{isType}}" onClick="{{toType}}">พิมพ์</button>
+      <button type="button" class="tog" style="{{talkStyle}}" aria-pressed="{{isTalk}}" onClick="{{toTalk}}">พูด</button>
+    </div>
+    <sc-if value="{{isType}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; gap: 8px; align-items: center">
+        <label style="flex: 1"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">ข้อความ</span><input placeholder="พิมพ์เล่าเรื่อง…" style="width: 100%; min-height: 48px; padding: 0 14px; border: 1px solid #94A3B8; border-radius: 24px; font: inherit; font-size: 16px; color: #0F172A"></label>
+        <button type="button" aria-label="ส่งข้อความ" style="width: 48px; height: 48px; border-radius: 999px; border: 0; background: #12355B; color: #FFFFFF; display: grid; place-items: center; cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </div>
+    </sc-if>
+    <sc-if value="{{isTalk}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 6px">
+        <button type="button" aria-label="กดค้างเพื่อพูด" style="width: 72px; height: 72px; border-radius: 999px; border: 0; background: #12355B; color: #FFFFFF; display: grid; place-items: center; box-shadow: 0 0 0 6px #D5DEEA; cursor: pointer"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg></button>
+        <span class="muted" style="font-size: 13px">กดค้างเพื่อพูด ปล่อยเพื่อส่ง · ตรวจข้อความได้ก่อนส่ง</span>
+      </div>
+    </sc-if>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { mode: 'type' }; }
+  renderVals() {
+    const t = this.state.mode === 'type';
+    const on = 'background:#FFFFFF;color:#12355B;box-shadow:0 1px 2px rgba(15,23,42,.12)';
+    const off = 'background:transparent;color:#334155';
+    return {
+      isType: t, isTalk: !t, typeStyle: t ? on : off, talkStyle: t ? off : on,
+      toType: () => this.setState({ mode: 'type' }), toTalk: () => this.setState({ mode: 'talk' })
+    };
+  }
+}
+</script>
+</body>
+</html>

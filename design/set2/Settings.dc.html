@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>CCID4 · ตั้งค่าและความปลอดภัย</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&amp;family=Sarabun:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F7FA}
+*{box-sizing:border-box}
+.ui{font-family:'IBM Plex Sans Thai',system-ui,sans-serif;color:#0F172A;font-size:15px;line-height:1.6}
+a{color:#12355B}a:hover{color:#0B2440}
+:focus-visible{outline:2px solid #1D4ED8;outline-offset:2px}
+.ic{width:20px;height:20px;flex:none}
+.nav a.item{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:8px;color:#DCE4EE;text-decoration:none;font-size:15px}
+.nav a.item:hover{background:rgba(255,255,255,.08);color:#FFFFFF}
+.nav a.on{background:rgba(255,255,255,.12);color:#FFFFFF;font-weight:600;box-shadow:inset 3px 0 0 #C99A2E}
+.grp{font-size:12px;font-weight:600;color:#9FB3CC;padding:16px 12px 4px}
+.new{margin-left:auto;background:#C99A2E;color:#0F172A;font-size:12px;font-weight:600;line-height:20px;padding:0 8px;border-radius:999px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:8px;font:inherit;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none;border:1px solid transparent;white-space:nowrap}
+.btn-p{background:#12355B;color:#FFFFFF}.btn-p:hover{background:#0B2440;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#12355B;border-color:#94A3B8}.btn-s:hover{background:#F1F5F9;color:#12355B}
+.bd{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:500;line-height:20px;border:1px solid;white-space:nowrap}
+.ok{color:#0F766E;background:#F0FDFA;border-color:#99F6E4}
+.due{color:#B45309;background:#FFFBEB;border-color:#FCD34D}
+.late{color:#B91C1C;background:#FEF2F2;border-color:#FECACA}
+.inf{color:#1D4ED8;background:#EFF6FF;border-color:#BFDBFE}
+.neu{color:#475569;background:#F1F5F9;border-color:#CBD5E1}
+.card{background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px}
+.muted{color:#475569}
+.num{font-variant-numeric:tabular-nums}
+.tab{min-height:48px;padding:0 16px;border:0;background:transparent;font:inherit;font-size:15px;font-weight:500;color:#475569;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:#475569}
+.fld input,.fld select{min-height:44px;padding:0 12px;border:1px solid #94A3B8;border-radius:8px;font:inherit;font-size:15px;font-weight:400;color:#0F172A;background:#FFFFFF}
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+table.t th{text-align:left;font-size:13px;font-weight:600;color:#475569;background:#F8FAFC;padding:10px 14px;border-bottom:1px solid #E2E8F0;white-space:nowrap}
+table.t td{padding:10px 14px;border-bottom:1px solid #E2E8F0;vertical-align:middle}
+.tag{display:inline-flex;align-items:center;min-height:32px;padding:0 10px;border-radius:6px;background:#F1F5F9;border:1px solid #CBD5E1;font-size:13px;font-family:ui-monospace,Menlo,monospace;color:#0F172A}
+.yes{color:#0F766E;font-weight:600;font-size:13px;white-space:nowrap}
+.no{color:#475569;font-size:13px;white-space:nowrap}
+</style>
+</helmet>
+<div class="ui" style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F7FA">
+
+<nav class="nav" aria-label="เมนูหลัก" style="flex: 1 1 248px; max-width: 100%; background: #12355B; color: #FFFFFF; padding: 20px 12px; display: flex; flex-direction: column; gap: 2px">
+  <a href="Main.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 4px 12px 16px; text-decoration: none; color: #FFFFFF">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 4 5.5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10v-6z"/><path d="M8.5 12h7"/></svg>
+    <span style="display: flex; flex-direction: column; line-height: 1.2"><span style="font-size: 22px; font-weight: 700; letter-spacing: 0.5px">CCID4</span><span style="font-size: 12px; color: #C7D2E0">บก.สอท.4</span></span>
+  </a>
+  <div class="grp">งานประจำวัน</div>
+  <a class="item" href="Main.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>แดชบอร์ด</a>
+  <a class="item" href="Cases.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>รายการคดี</a>
+  <a class="item" href="Intake.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>รับเรื่องจากประชาชน</a>
+  <a class="item" href="Deadlines.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>กรอบเวลา</a>
+  <div class="grp">เครื่องมือสอบสวน</div>
+  <a class="item" href="Review.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg>ห้องสอบปากคำ<span class="new">ใหม่</span></a>
+  <a class="item" href="Summons.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>หมายเรียกชุดใหญ่<span class="new">ใหม่</span></a>
+  <a class="item" href="Money.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="6" r="2.5"/><circle cx="19" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M7.5 6h9M6.3 8.2l4.4 7.6M17.7 8.2l-4.4 7.6"/></svg>เส้นทางการเงิน<span class="new">ใหม่</span></a>
+  <a class="item" href="Docs.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M16 13H8M16 17H8"/></svg>เอกสารสำนวน<span class="new">ใหม่</span></a>
+  <div class="grp">หัวหน้า</div>
+  <a class="item" href="Main.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 16v-4M12 16V8M17 16v-7"/></svg>ภาพรวมทั้งกอง<span class="new">ใหม่</span></a>
+  <div class="grp">ระบบ</div>
+  <a class="item" href="Import.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5M12 3v12"/></svg>นำเข้าข้อมูล</a>
+  <a class="item on" href="Settings.dc.html" aria-current="page"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>ตั้งค่าและความปลอดภัย</a>
+</nav>
+
+<div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-height: 64px; padding: 10px 32px; background: #FFFFFF; border-bottom: 1px solid #E2E8F0">
+    <label style="flex: 1 1 280px; max-width: 460px; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border: 1px solid #94A3B8; border-radius: 8px; color: #475569">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">ค้นหา</span>
+      <input type="search" placeholder="ค้นหาเลขคดี ชื่อบุคคล เลขบัญชี" style="flex: 1; min-width: 0; border: 0; outline: 0; font: inherit; font-size: 15px; color: #0F172A; background: transparent">
+    </label>
+    <span style="flex: 1 1 0"></span>
+    <span class="bd" style="color: #0F172A; border-color: #94A3B8; background: repeating-linear-gradient(135deg, #FFFFFF 0 6px, #EEF1F5 6px 12px)">ข้อมูลจำลอง</span>
+    <span class="bd" style="color: #12355B; background: #E8EEF5; border-color: #B6C6DA"><svg class="ic" style="width: 14px; height: 14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg>AI ประมวลผลในเครื่อง</span>
+    <span style="display: flex; align-items: center; gap: 10px; padding-left: 8px">
+      <span style="width: 36px; height: 36px; border-radius: 999px; background: #12355B; color: #FFFFFF; display: grid; place-items: center; font-size: 14px; font-weight: 600">ทน</span>
+      <span style="display: flex; flex-direction: column; line-height: 1.3"><span style="font-size: 14px; font-weight: 600">พ.ต.ท.ทดสอบ หนึ่ง</span><span class="muted" style="font-size: 12px">สารวัตร (สอบสวน) · หัวหน้างาน</span></span>
+    </span>
+  </header>
+
+  <main style="padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 16px; max-width: 1240px; width: 100%">
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px">
+      <div style="flex: 1 1 360px">
+        <h1 style="margin: 0; font-size: 28px; line-height: 1.4; font-weight: 700">ตั้งค่าและความปลอดภัย</h1>
+        <p class="muted" style="margin: 2px 0 0">ข้อมูลหน่วย แบบฟอร์มเอกสาร สิทธิ์ผู้ใช้ และประวัติการใช้งานทั้งหมดของระบบ</p>
+      </div>
+      <div class="card" style="padding: 10px 14px; display: flex; align-items: center; gap: 10px">
+        <span style="width: 10px; height: 10px; border-radius: 999px; background: #0F766E"></span>
+        <span style="line-height: 1.35"><strong style="display: block; font-size: 14px">เซิร์ฟเวอร์ AI ภายในหน่วย · ทำงานปกติ</strong><span class="muted" style="font-size: 12px">ไม่มีการเชื่อมต่อออกภายนอก · ตรวจล่าสุด 08.40 น.</span></span>
+      </div>
+    </div>
+
+    <section class="card">
+      <div role="tablist" aria-label="หมวดการตั้งค่า" style="display: flex; gap: 4px; padding: 0 12px; border-bottom: 1px solid #E2E8F0; overflow-x: auto">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+          <button type="button" role="tab" class="tab" aria-selected="{{t.on}}" style="{{t.style}}" onClick="{{t.pick}}">{{t.label}}</button>
+        </sc-for>
+      </div>
+
+      <!-- หน่วยและพนักงานสอบสวน -->
+      <sc-if value="{{isUnit}}" hint-placeholder-val="{{ false }}">
+        <div role="tabpanel" style="padding: 24px; display: flex; flex-direction: column; gap: 20px">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px">
+            <label class="fld">ชื่อหน่วย (ในเอกสาร)<input value="กองบังคับการตำรวจสืบสวนสอบสวนอาชญากรรมทางเทคโนโลยี 4 (จำลอง)"></label>
+            <label class="fld">ชื่อย่อ<input value="บก.สอท.4"></label>
+            <label class="fld">ที่อยู่หน่วย<input value="99 ถนนสมมติ ต.ตัวอย่าง อ.เมืองสมมติ จ.ทดสอบ 50000"></label>
+            <label class="fld">โทรศัพท์<input value="00 0000 0000"></label>
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px"><h2 style="margin: 0; font-size: 16px; font-weight: 600">พนักงานสอบสวน</h2><button type="button" class="btn btn-s" style="margin-left: auto">เพิ่มพนักงานสอบสวน</button></div>
+            <div style="overflow-x: auto"><table class="t" style="min-width: 720px">
+              <thead><tr><th scope="col">ยศ ชื่อ</th><th scope="col">ตำแหน่ง</th><th scope="col">กองกำกับการ</th><th scope="col">โทรศัพท์ (ในหมาย)</th><th scope="col">คดีในมือ</th></tr></thead>
+              <tbody>
+                <tr><td>พ.ต.ท.ทดสอบ หนึ่ง</td><td>สารวัตร (สอบสวน)</td><td>กก.1</td><td class="num">00 0000 0001</td><td class="num">34</td></tr>
+                <tr><td>พ.ต.ต.ทดสอบ สอง</td><td>สารวัตร (สอบสวน)</td><td>กก.1</td><td class="num">00 0000 0002</td><td class="num">41</td></tr>
+                <tr><td>ร.ต.อ.ทดสอบ สาม</td><td>รองสารวัตร (สอบสวน)</td><td>กก.2</td><td class="num">00 0000 0003</td><td class="num">46</td></tr>
+                <tr><td>ร.ต.อ.หญิงทดสอบ สี่</td><td>รองสารวัตร (สอบสวน)</td><td>กก.2</td><td class="num">00 0000 0004</td><td class="num">29</td></tr>
+              </tbody></table></div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- แบบฟอร์ม Word -->
+      <sc-if value="{{isTpl}}" hint-placeholder-val="{{ false }}">
+        <div role="tabpanel" style="padding: 24px; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+          <div style="flex: 999 1 480px; min-width: 0">
+            <div style="overflow-x: auto"><table class="t" style="min-width: 600px">
+              <thead><tr><th scope="col">แบบฟอร์ม</th><th scope="col">ฉบับ</th><th scope="col">แก้ล่าสุด</th><th scope="col">ช่องเติมข้อมูล</th><th scope="col"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">การทำงาน</span></th></tr></thead>
+              <tbody>
+                <tr><td>หมายเรียกผู้กล่าวหา/พยาน</td><td class="num">v4</td><td class="num">2 พ.ย. 2569 · ผู้ดูแลระบบ</td><td><span class="bd ok">ครบ 14 ช่อง</span></td><td><button type="button" class="btn btn-s" style="padding: 0 12px">อัปโหลดฉบับใหม่</button></td></tr>
+                <tr><td>ใบจ่าหน้าซอง DL</td><td class="num">v2</td><td class="num">2 พ.ย. 2569</td><td><span class="bd ok">ครบ 6 ช่อง</span></td><td><button type="button" class="btn btn-s" style="padding: 0 12px">อัปโหลดฉบับใหม่</button></td></tr>
+                <tr><td>บันทึกคำให้การ (ถาม-ตอบ)</td><td class="num">v3</td><td class="num">20 ต.ค. 2569</td><td><span class="bd ok">ครบ 11 ช่อง</span></td><td><button type="button" class="btn btn-s" style="padding: 0 12px">อัปโหลดฉบับใหม่</button></td></tr>
+                <tr><td>สคริปต์แจ้งสิทธิ ม.134/4</td><td class="num">v2</td><td class="num">20 ต.ค. 2569</td><td><span class="bd ok">ครบ 4 ช่อง</span></td><td><button type="button" class="btn btn-s" style="padding: 0 12px">แก้ข้อความ</button></td></tr>
+                <tr><td>คำร้องขอฝากขัง</td><td class="num">v1</td><td class="num">1 ต.ค. 2569</td><td><span class="bd due">ไม่รู้จัก 1 ช่อง</span></td><td><button type="button" class="btn btn-s" style="padding: 0 12px">แก้ช่องเติม</button></td></tr>
+                <tr><td>หนังสือขออายัดบัญชี</td><td class="num">v2</td><td class="num">15 ต.ค. 2569</td><td><span class="bd ok">ครบ 9 ช่อง</span></td><td><button type="button" class="btn btn-s" style="padding: 0 12px">อัปโหลดฉบับใหม่</button></td></tr>
+                <tr><td>หนังสือขอข้อมูล KYC</td><td class="num">v1</td><td class="num">15 ต.ค. 2569</td><td><span class="bd ok">ครบ 8 ช่อง</span></td><td><button type="button" class="btn btn-s" style="padding: 0 12px">อัปโหลดฉบับใหม่</button></td></tr>
+              </tbody></table></div>
+          </div>
+          <aside style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 10px; border: 1px dashed #94A3B8; border-radius: 10px; padding: 16px">
+            <h2 style="margin: 0; font-size: 15px; font-weight: 600">ช่องเติมข้อมูลที่ใช้ในไฟล์ .docx</h2>
+            <p class="muted" style="margin: 0; font-size: 13px">พิมพ์ชื่อช่องในแบบฟอร์ม Word ตามนี้ ระบบจะเติมค่าจากคดีให้ และแปลงตัวเลขเป็นเลขไทยในเอกสาร</p>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px">
+              <span class="tag">«ผู้กล่าวหา.ชื่อเต็ม»</span><span class="tag">«ผู้กล่าวหา.ที่อยู่»</span><span class="tag">«คดี.เลขคดี»</span><span class="tag">«คดี.ข้อหา»</span><span class="tag">«นัด.วันที่»</span><span class="tag">«นัด.เวลา»</span><span class="tag">«นัด.สถานที่»</span><span class="tag">«ผู้ออกหมาย.ยศชื่อ»</span><span class="tag">«ผู้ออกหมาย.ตำแหน่ง»</span>
+            </div>
+            <span class="bd due" style="align-self: flex-start">คำร้องขอฝากขัง: ไม่รู้จัก «ศาล.ชื่อ»</span>
+          </aside>
+        </div>
+      </sc-if>
+
+      <!-- สิทธิ์ผู้ใช้ -->
+      <sc-if value="{{isRole}}" hint-placeholder-val="{{ false }}">
+        <div role="tabpanel" style="padding: 24px; display: flex; flex-direction: column; gap: 16px">
+          <div style="overflow-x: auto"><table class="t" style="min-width: 820px">
+            <thead><tr><th scope="col">สิทธิ์</th><th scope="col">พนักงานสอบสวน</th><th scope="col">ผู้ช่วย / ธุรการ</th><th scope="col">หัวหน้า</th><th scope="col">ผู้ดูแลระบบ</th></tr></thead>
+            <tbody>
+              <sc-for list="{{perms}}" as="p" hint-placeholder-count="8">
+                <tr><th scope="row" style="text-align: left; font-weight: 500; background: transparent; color: #0F172A; padding: 10px 14px; border-bottom: 1px solid #E2E8F0; white-space: normal">{{p.name}}</th>
+                  <sc-for list="{{p.cells}}" as="c" hint-placeholder-count="4"><td><span class="{{c.cls}}">{{c.text}}</span></td></sc-for>
+                </tr>
+              </sc-for>
+            </tbody></table></div>
+          <p class="muted" style="margin: 0; font-size: 13px">ผู้ดูแลระบบจัดการบัญชีและแบบฟอร์มได้ แต่เปิดเนื้อหาคดีและฟังเสียงไม่ได้ · การเปลี่ยนสิทธิ์ทุกครั้งถูกบันทึกในประวัติการใช้งาน</p>
+        </div>
+      </sc-if>
+
+      <!-- ประวัติการใช้งาน -->
+      <sc-if value="{{isAudit}}" hint-placeholder-val="{{ true }}">
+        <div role="tabpanel" style="padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end">
+            <label class="fld">ผู้ใช้<select><option>ทุกคน</option><option>พ.ต.ท.ทดสอบ หนึ่ง</option><option>ส.ต.อ.ทดสอบ ธุรการ</option></select></label>
+            <label class="fld">การกระทำ<select><option>ทั้งหมด</option><option>เปิดดู</option><option>แก้ไข</option><option>ดาวน์โหลด</option><option>ฟังเสียง</option><option>ยืนยัน</option></select></label>
+            <label class="fld">คดี<input value="จ.0112/2569" class="num" style="width: 160px"></label>
+            <label class="fld">ช่วงวันที่<input value="1–11 พ.ย. 2569"></label>
+            <span style="flex: 1"></span>
+            <button type="button" class="btn btn-s">ส่งออกบันทึก (CSV)</button>
+          </div>
+          <div style="overflow-x: auto"><table class="t" style="min-width: 900px">
+            <thead><tr><th scope="col">เวลา</th><th scope="col">ผู้ใช้</th><th scope="col">การกระทำ</th><th scope="col">สิ่งที่ถูกกระทำ</th><th scope="col">รายละเอียด</th><th scope="col">เครื่อง</th></tr></thead>
+            <tbody>
+              <sc-for list="{{logs}}" as="l" hint-placeholder-count="10">
+                <tr>
+                  <td class="num" style="white-space: nowrap">{{l.t}}</td>
+                  <td style="white-space: nowrap">{{l.who}}</td>
+                  <td><span class="bd {{l.cls}}">{{l.act}}</span></td>
+                  <td>{{l.obj}}</td>
+                  <td class="muted">{{l.detail}}</td>
+                  <td class="num muted" style="white-space: nowrap">{{l.ip}}</td>
+                </tr>
+              </sc-for>
+            </tbody></table></div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: 13px" class="muted">
+            <span class="bd ok">ตรวจความต่อเนื่องของบันทึกแล้ว ไม่พบการแก้ไข</span>
+            <span>บันทึกแต่ละรายการผูกค่าแฮชกับรายการก่อนหน้า ลบหรือแก้ย้อนหลังไม่ได้ · เก็บไว้ [ระยะเวลาตามนโยบายของหน่วย]</span>
+          </div>
+        </div>
+      </sc-if>
+    </section>
+  </main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tab":{"editor":"enum","options":["audit","unit","tpl","role"],"default":"audit"},"$preview":{"width":1440,"height":1160}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { tab: null }; }
+  renderVals() {
+    const t = this.state.tab || this.props.tab || 'audit';
+    const defs = [['unit', 'ข้อมูลหน่วยและพนักงานสอบสวน'], ['tpl', 'แบบฟอร์ม Word'], ['role', 'สิทธิ์ผู้ใช้'], ['audit', 'ประวัติการใช้งาน']];
+    const tabs = defs.map(([k, label]) => ({ label, on: t === k, style: t === k ? 'color:#12355B;font-weight:700;border-bottom-color:#12355B' : '', pick: () => this.setState({ tab: k }) }));
+    const Y = ['yes', '✓ ได้'], N = ['no', '— ไม่ได้'];
+    const P = [
+      ['เปิดดูคดีที่รับผิดชอบ', [Y, Y, Y, N]],
+      ['เปิดดูคดีทั้งกอง', [N, N, Y, N]],
+      ['แก้ไขข้อมูลคดีและเอกสาร', [Y, ['yes', '✓ เฉพาะที่ได้รับมอบ'], Y, N]],
+      ['ฟังเสียงการสอบปากคำ', [Y, N, Y, N]],
+      ['ยืนยันร่างคำให้การ', [Y, N, N, N]],
+      ['ออกหมายเรียกชุดใหญ่', [Y, Y, Y, N]],
+      ['ดาวน์โหลด / ส่งออกเอกสาร', [Y, Y, Y, N]],
+      ['ดูประวัติการใช้งาน', [['yes', '✓ ของตนเอง'], N, ['yes', '✓ ทั้งกอง'], ['yes', '✓ ทั้งระบบ']]],
+      ['จัดการผู้ใช้และแบบฟอร์ม', [N, N, N, Y]]
+    ];
+    const perms = P.map(([name, cs]) => ({ name, cells: cs.map(([cls, text]) => ({ cls, text })) }));
+    const L = [
+      ['11 พ.ย. 2569 10.58.12', 'พ.ต.ท.ทดสอบ หนึ่ง', 'ฟังเสียง', 'inf', 'การสอบปากคำผู้ต้องหา', 'ช่วง 11:52–14:45 · 3 นาที', '10.4.12.31'],
+      ['11 พ.ย. 2569 10.57.40', 'พ.ต.ท.ทดสอบ หนึ่ง', 'เปิดดู', 'neu', 'ร่างคำให้การผู้ต้องหา', 'ห้องสอบปากคำ · ตรวจร่าง', '10.4.12.31'],
+      ['11 พ.ย. 2569 10.12.05', 'ระบบ', 'บันทึก', 'ok', 'ไฟล์เสียงต้นฉบับ', 'SHA-256 9f2c…a41e · 48:32', 'เซิร์ฟเวอร์'],
+      ['11 พ.ย. 2569 09.12.44', 'ส.ต.อ.ทดสอบ ธุรการ', 'ดาวน์โหลด', 'due', 'หมายเรียกพยาน', 'PDF 1 ฉบับ', '10.4.12.48'],
+      ['11 พ.ย. 2569 09.05.10', 'ส.ต.อ.ทดสอบ ธุรการ', 'แก้ไข', 'late', 'ที่อยู่ผู้กล่าวหา', 'เพิ่มรหัสไปรษณีย์ 50000', '10.4.12.48'],
+      ['11 พ.ย. 2569 08.31.02', 'ส.ต.อ.ทดสอบ ธุรการ', 'นำเข้า', 'inf', 'ทะเบียนคดี_กก1-3_2569.xlsx', '1,284 แถว · แก้ระหว่างนำเข้า 3 แถว', '10.4.12.48'],
+      ['10 พ.ย. 2569 16.40.18', 'พ.ต.ท.ทดสอบ หนึ่ง', 'ดาวน์โหลด', 'due', 'หนังสือขออายัดบัญชี', 'Word 1 ฉบับ', '10.4.12.31'],
+      ['10 พ.ย. 2569 16.38.51', 'พ.ต.ท.ทดสอบ หนึ่ง', 'แก้ไข', 'late', 'หนังสือขออายัดบัญชี', 'แก้ยอดเงินจาก 280,000 เป็น 288,000', '10.4.12.31'],
+      ['10 พ.ย. 2569 14.02.09', 'พ.ต.อ.ทดสอบ หัวหน้า', 'เปิดดู', 'neu', 'ภาพรวมทั้งกอง', 'แดชบอร์ดหัวหน้า', '10.4.10.7'],
+      ['3 ต.ค. 2569 11.30.27', 'พ.ต.ท.ทดสอบ หนึ่ง', 'ยืนยัน', 'ok', 'คำให้การผู้กล่าวหา', 'ตรวจครบ 12 คู่ · ไม่มีธงเตือน', '10.4.12.31']
+    ];
+    const logs = L.map(l => ({ t: l[0], who: l[1], act: l[2], cls: l[3], obj: l[4], detail: l[5], ip: l[6] }));
+    return { tabs, isUnit: t === 'unit', isTpl: t === 'tpl', isRole: t === 'role', isAudit: t === 'audit', perms, logs };
+  }
+}
+</script>
+</body>
+</html>

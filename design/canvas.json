@@ -1,0 +1,34 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-11T05:20:00Z"},
+  "title": "CCID4 — ระบบงานสอบสวน",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 1240, "title": "1 แดชบอร์ด", "expand": "fill", "is_interactive": true},
+    "Cases.dc.html": {"x": 1520, "y": 0, "w": 1440, "h": 1040, "title": "2 รายการคดี", "expand": "fill", "is_interactive": true},
+    "Case.dc.html": {"x": 3040, "y": 0, "w": 1440, "h": 1180, "title": "3 หน้าคดี", "expand": "fill", "is_interactive": true},
+    "Record.dc.html": {"x": 4560, "y": 0, "w": 1440, "h": 900, "title": "4 ห้องสอบปากคำ — บันทึกเสียง", "expand": "fill", "is_interactive": true},
+    "Review.dc.html": {"x": 6080, "y": 0, "w": 1440, "h": 1280, "title": "5 ห้องสอบปากคำ — ตรวจและร่างคำให้การ", "expand": "fill", "is_interactive": true},
+    "Summons.dc.html": {"x": 7600, "y": 0, "w": 1440, "h": 1240, "title": "6 หมายเรียกชุดใหญ่", "expand": "fill", "is_interactive": true},
+    "Intake.dc.html": {"x": 0, "y": 1700, "w": 1440, "h": 1100, "title": "7 รับเรื่องจากประชาชน — ฝั่งเจ้าหน้าที่", "expand": "fill", "is_interactive": true},
+    "Citizen1Consent.dc.html": {"x": 1520, "y": 1700, "w": 390, "h": 844, "title": "7.1 ประชาชน — ยินยอม PDPA", "is_interactive": true},
+    "Citizen2Identity.dc.html": {"x": 1990, "y": 1700, "w": 390, "h": 844, "title": "7.2 ประชาชน — ยืนยันตัวตน", "is_interactive": true},
+    "Citizen3Chat.dc.html": {"x": 2460, "y": 1700, "w": 390, "h": 844, "title": "7.3 ประชาชน — คุยกับผู้ช่วย AI", "is_interactive": true},
+    "Citizen4Slip.dc.html": {"x": 2930, "y": 1700, "w": 390, "h": 844, "title": "7.4 ประชาชน — อัปโหลดสลิป", "is_interactive": true},
+    "Citizen5Review.dc.html": {"x": 3400, "y": 1700, "w": 390, "h": 844, "title": "7.5 ประชาชน — ทบทวนและส่ง", "is_interactive": true},
+    "Import.dc.html": {"x": 3870, "y": 1700, "w": 1440, "h": 1160, "title": "8 นำเข้าข้อมูล", "expand": "fill", "is_interactive": true},
+    "Money.dc.html": {"x": 5390, "y": 1700, "w": 1440, "h": 1000, "title": "9 เส้นทางการเงิน", "expand": "fill", "is_interactive": true},
+    "Docs.dc.html": {"x": 6910, "y": 1700, "w": 1440, "h": 1240, "title": "10 เอกสารสำนวน", "expand": "fill", "is_interactive": true},
+    "Deadlines.dc.html": {"x": 8430, "y": 1700, "w": 1440, "h": 1060, "title": "11 กรอบเวลา", "expand": "fill", "is_interactive": true},
+    "Settings.dc.html": {"x": 9950, "y": 1700, "w": 1440, "h": 1160, "title": "12 ตั้งค่าและความปลอดภัย", "expand": "fill", "is_interactive": true}
+  },
+  "order": ["Main.dc.html", "Cases.dc.html", "Case.dc.html", "Record.dc.html", "Review.dc.html", "Summons.dc.html", "Intake.dc.html", "Citizen1Consent.dc.html", "Citizen2Identity.dc.html", "Citizen3Chat.dc.html", "Citizen4Slip.dc.html", "Citizen5Review.dc.html", "Import.dc.html", "Money.dc.html", "Docs.dc.html", "Deadlines.dc.html", "Settings.dc.html"],
+  "notes": {
+    "set1": {"x": 0, "y": -300, "text": "CCID4 · ชุดที่ 1 (หน้า 1–6) — ข้อมูลจำลองทั้งหมด", "kind": "title1", "maxW": 9040},
+    "set2": {"x": 0, "y": 1400, "text": "CCID4 · ชุดที่ 2 (หน้า 7–12) — ข้อมูลจำลองทั้งหมด", "kind": "title1", "maxW": 11390}
+  },
+  "designSystems": [
+    {"title": "หมายเรียก บก.สอท.4", "namespace": "summons", "artifact": "https://claude.ai/artifact/74LgQcW3ux5yahJsWw5w9R", "version": "1793596209-8771", "copiedAt": "2026-11-11T05:20:00Z"}
+  ]
+}
