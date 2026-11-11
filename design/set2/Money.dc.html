@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>CCID4 · เส้นทางการเงิน</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&amp;family=Sarabun:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F7FA}
+*{box-sizing:border-box}
+.ui{font-family:'IBM Plex Sans Thai',system-ui,sans-serif;color:#0F172A;font-size:15px;line-height:1.6}
+a{color:#12355B}a:hover{color:#0B2440}
+:focus-visible{outline:2px solid #1D4ED8;outline-offset:2px}
+.ic{width:20px;height:20px;flex:none}
+.nav a.item{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:8px;color:#DCE4EE;text-decoration:none;font-size:15px}
+.nav a.item:hover{background:rgba(255,255,255,.08);color:#FFFFFF}
+.nav a.on{background:rgba(255,255,255,.12);color:#FFFFFF;font-weight:600;box-shadow:inset 3px 0 0 #C99A2E}
+.grp{font-size:12px;font-weight:600;color:#9FB3CC;padding:16px 12px 4px}
+.new{margin-left:auto;background:#C99A2E;color:#0F172A;font-size:12px;font-weight:600;line-height:20px;padding:0 8px;border-radius:999px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:8px;font:inherit;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none;border:1px solid transparent;white-space:nowrap}
+.btn-p{background:#12355B;color:#FFFFFF}.btn-p:hover{background:#0B2440;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#12355B;border-color:#94A3B8}.btn-s:hover{background:#F1F5F9;color:#12355B}
+.btn[disabled]{background:#E2E8F0;color:#475569;border-color:#CBD5E1;cursor:not-allowed}
+.bd{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:500;line-height:20px;border:1px solid;white-space:nowrap}
+.ok{color:#0F766E;background:#F0FDFA;border-color:#99F6E4}
+.due{color:#B45309;background:#FFFBEB;border-color:#FCD34D}
+.late{color:#B91C1C;background:#FEF2F2;border-color:#FECACA}
+.inf{color:#1D4ED8;background:#EFF6FF;border-color:#BFDBFE}
+.neu{color:#475569;background:#F1F5F9;border-color:#CBD5E1}
+.card{background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px}
+.muted{color:#475569}
+.num{font-variant-numeric:tabular-nums}
+.node{position:absolute;width:168px;height:92px;padding:8px 10px;border-radius:10px;font:inherit;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:1px;line-height:1.35;color:#0F172A}
+.node .t{font-size:11px;font-weight:600}
+.node .n{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.node .s{font-size:12px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.amt{position:absolute;transform:translate(-50%,-50%);background:#FFFFFF;border:1px solid #CBD5E1;border-radius:999px;padding:0 8px;font-size:12px;font-weight:600;line-height:20px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.lg{display:inline-flex;align-items:center;gap:6px;font-size:13px}
+.lg i{display:block;width:18px;height:12px;border-radius:3px}
+.kv{display:grid;grid-template-columns:120px minmax(0,1fr);gap:6px 12px;margin:0;font-size:14px}
+.kv dt{color:#475569}.kv dd{margin:0}
+</style>
+</helmet>
+<div class="ui" style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F7FA">
+
+<nav class="nav" aria-label="เมนูหลัก" style="flex: 1 1 248px; max-width: 100%; background: #12355B; color: #FFFFFF; padding: 20px 12px; display: flex; flex-direction: column; gap: 2px">
+  <a href="Main.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 4px 12px 16px; text-decoration: none; color: #FFFFFF">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 4 5.5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10v-6z"/><path d="M8.5 12h7"/></svg>
+    <span style="display: flex; flex-direction: column; line-height: 1.2"><span style="font-size: 22px; font-weight: 700; letter-spacing: 0.5px">CCID4</span><span style="font-size: 12px; color: #C7D2E0">บก.สอท.4</span></span>
+  </a>
+  <div class="grp">งานประจำวัน</div>
+  <a class="item" href="Main.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>แดชบอร์ด</a>
+  <a class="item" href="Cases.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>รายการคดี</a>
+  <a class="item" href="Intake.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>รับเรื่องจากประชาชน</a>
+  <a class="item" href="Deadlines.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>กรอบเวลา</a>
+  <div class="grp">เครื่องมือสอบสวน</div>
+  <a class="item" href="Review.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg>ห้องสอบปากคำ<span class="new">ใหม่</span></a>
+  <a class="item" href="Summons.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>หมายเรียกชุดใหญ่<span class="new">ใหม่</span></a>
+  <a class="item on" href="Money.dc.html" aria-current="page"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="6" r="2.5"/><circle cx="19" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M7.5 6h9M6.3 8.2l4.4 7.6M17.7 8.2l-4.4 7.6"/></svg>เส้นทางการเงิน<span class="new">ใหม่</span></a>
+  <a class="item" href="Docs.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M16 13H8M16 17H8"/></svg>เอกสารสำนวน<span class="new">ใหม่</span></a>
+  <div class="grp">หัวหน้า</div>
+  <a class="item" href="Main.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 16v-4M12 16V8M17 16v-7"/></svg>ภาพรวมทั้งกอง<span class="new">ใหม่</span></a>
+  <div class="grp">ระบบ</div>
+  <a class="item" href="Import.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5M12 3v12"/></svg>นำเข้าข้อมูล</a>
+  <a class="item" href="Settings.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>ตั้งค่าและความปลอดภัย</a>
+</nav>
+
+<div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-height: 64px; padding: 10px 32px; background: #FFFFFF; border-bottom: 1px solid #E2E8F0">
+    <nav aria-label="เส้นทาง" style="flex: 1 1 280px; font-size: 14px; display: flex; gap: 8px; align-items: center">
+      <a href="Cases.dc.html">รายการคดี</a><span class="muted" aria-hidden="true">›</span><a href="Case.dc.html" class="num">จ.0112/2569</a><span class="muted" aria-hidden="true">›</span><span aria-current="page">เส้นทางการเงิน</span>
+    </nav>
+    <span class="bd" style="color: #0F172A; border-color: #94A3B8; background: repeating-linear-gradient(135deg, #FFFFFF 0 6px, #EEF1F5 6px 12px)">ข้อมูลจำลอง</span>
+    <span class="bd" style="color: #12355B; background: #E8EEF5; border-color: #B6C6DA"><svg class="ic" style="width: 14px; height: 14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg>AI ประมวลผลในเครื่อง</span>
+    <span style="display: flex; align-items: center; gap: 10px; padding-left: 8px">
+      <span style="width: 36px; height: 36px; border-radius: 999px; background: #12355B; color: #FFFFFF; display: grid; place-items: center; font-size: 14px; font-weight: 600">ทน</span>
+      <span style="display: flex; flex-direction: column; line-height: 1.3"><span style="font-size: 14px; font-weight: 600">พ.ต.ท.ทดสอบ หนึ่ง</span><span class="muted" style="font-size: 12px">สารวัตร (สอบสวน) · หัวหน้างาน</span></span>
+    </span>
+  </header>
+
+  <main style="padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 16px; max-width: 1240px; width: 100%">
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px">
+      <div style="flex: 1 1 360px">
+        <div style="display: flex; align-items: center; gap: 10px"><h1 style="margin: 0; font-size: 28px; line-height: 1.4; font-weight: 700">เส้นทางการเงิน</h1><span class="new" style="margin-left: 0">ใหม่</span></div>
+        <p class="muted num" style="margin: 2px 0 0">คดี จ.0112/2569 · 8 จุด · 8 ทอด · ยอดของผู้เสียหาย 486,500 บาท · ข้อมูลถึง 10 พ.ย. 2569</p>
+      </div>
+      <button type="button" class="btn btn-s">นำเข้ารายการเดินบัญชี</button>
+      <button type="button" class="btn btn-s">เพิ่มบัญชีหรือกระเป๋า</button>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+      <!-- กราฟ -->
+      <section class="card" aria-labelledby="g-h" style="flex: 999 1 560px; min-width: 0; padding: 16px">
+        <h2 id="g-h" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">กราฟเส้นทางการเงิน</h2>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; padding-bottom: 12px; border-bottom: 1px solid #E2E8F0; margin-bottom: 12px">
+          <span class="lg"><i style="background: #F1F5F9; border: 2px solid #475569"></i>บัญชีผู้เสียหาย</span>
+          <span class="lg"><i style="background: #EEF3F9; border: 2px solid #12355B"></i>บัญชีธนาคาร (บัญชีม้า)</span>
+          <span class="lg"><i style="background: #F5F0FF; border: 2px solid #7C3AED"></i>ศูนย์ซื้อขายสินทรัพย์ดิจิทัล</span>
+          <span class="lg"><i style="background: #FFF4ED; border: 2px dashed #C2410C"></i>กระเป๋า USDT บน Tron</span>
+          <span class="lg"><i style="background: #FFFFFF; border: 2px dotted #64748B"></i>ถอนเงินสด</span>
+          <span class="lg"><svg width="28" height="10" aria-hidden="true"><line x1="0" y1="5" x2="28" y2="5" stroke="#475569" stroke-width="2"/></svg>โอนผ่านธนาคาร</span>
+          <span class="lg"><svg width="28" height="10" aria-hidden="true"><line x1="0" y1="5" x2="28" y2="5" stroke="#C2410C" stroke-width="2" stroke-dasharray="5 4"/></svg>โอนบนเครือข่าย</span>
+        </div>
+        <div style="overflow-x: auto">
+          <div style="position: relative; width: 792px; height: 600px; margin: 0 auto">
+            <svg width="792" height="600" viewBox="0 0 792 600" aria-hidden="true" style="position: absolute; inset: 0">
+              <defs>
+                <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#475569"/></marker>
+                <marker id="ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#C2410C"/></marker>
+              </defs>
+              <g fill="none" stroke="#475569" stroke-width="2" marker-end="url(#ah)">
+                <path d="M396 102 C396 136 204 136 204 168"/>
+                <path d="M396 102 C396 136 588 136 588 168"/>
+                <path d="M204 262 C204 296 104 296 104 328"/>
+                <path d="M204 262 C204 296 396 296 396 328"/>
+                <path d="M588 262 C588 296 396 296 396 328"/>
+                <path d="M104 422 L104 488"/>
+              </g>
+              <g fill="none" stroke="#C2410C" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ac)">
+                <path d="M396 422 L396 488"/>
+                <path d="M480 536 L602 536"/>
+              </g>
+            </svg>
+            <span class="amt" style="left: 292px; top: 134px">198,500 บาท · 2 ครั้ง</span>
+            <span class="amt" style="left: 500px; top: 134px">288,000 บาท</span>
+            <span class="amt" style="left: 140px; top: 296px">150,000 บาท</span>
+            <span class="amt" style="left: 296px; top: 312px">45,000 บาท</span>
+            <span class="amt" style="left: 500px; top: 296px">281,500 บาท</span>
+            <span class="amt" style="left: 104px; top: 456px">ถอน 148,000 บาท</span>
+            <span class="amt" style="left: 396px; top: 456px; border-color: #FDBA8C">9,200 USDT</span>
+            <span class="amt" style="left: 541px; top: 516px; border-color: #FDBA8C">9,150 USDT</span>
+            <sc-for list="{{nodes}}" as="n" hint-placeholder-count="8">
+              <button type="button" class="node" style="{{n.style}}" aria-pressed="{{n.on}}" onClick="{{n.pick}}">
+                <span class="t" style="{{n.tStyle}}">{{n.type}}</span>
+                <span class="n num">{{n.title}}</span>
+                <span class="s">{{n.sub}}</span>
+                <span class="bd {{n.cls}}" style="align-self: flex-start; font-size: 11px; padding: 0 6px; line-height: 18px; margin-top: 2px">{{n.status}}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+        <p class="muted" style="margin: 8px 0 0; font-size: 13px">กดจุดใดก็ได้เพื่อดูรายละเอียด · ความเชื่อมโยงที่ AI เสนอจากรายการเดินบัญชีต้องให้พนักงานสอบสวนยืนยันก่อนนำไปใช้</p>
+      </section>
+
+      <!-- แผงรายละเอียด -->
+      <aside class="card" aria-labelledby="d-h" style="flex: 1 1 340px; min-width: 0; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+        <span class="t" style="{{sel.tStyle}}; font-size: 13px; font-weight: 600">{{sel.type}}</span>
+        <h2 id="d-h" class="num" style="margin: -8px 0 0; font-size: 20px; font-weight: 700; line-height: 1.4">{{sel.title}}</h2>
+        <span class="bd {{sel.cls}}" style="align-self: flex-start">{{sel.status}}</span>
+        <dl class="kv num">
+          <sc-for list="{{sel.kv}}" as="k" hint-placeholder-count="6"><dt>{{k.k}}</dt><dd>{{k.v}}</dd></sc-for>
+        </dl>
+        <div style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #E2E8F0; padding-top: 14px">
+          <button type="button" class="btn btn-p" disabled="{{sel.noFreeze}}">{{sel.freezeLabel}}</button>
+          <button type="button" class="btn btn-s" disabled="{{sel.noKyc}}">ขอข้อมูล KYC</button>
+          <button type="button" class="btn btn-s" disabled="{{sel.noStmt}}">ขอรายการเดินบัญชี</button>
+          <span class="muted" style="font-size: 13px">{{sel.note}}</span>
+        </div>
+        <a href="Docs.dc.html" style="font-size: 14px; font-weight: 600">ดูหนังสือที่ร่างไว้ในเอกสารสำนวน</a>
+      </aside>
+    </div>
+  </main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { sel: 'M2' }; }
+  renderVals() {
+    const T = {
+      victim: ['บัญชีผู้เสียหาย', 'background:#F1F5F9;border:2px solid #475569', 'color:#475569'],
+      bank: ['บัญชีธนาคาร · บัญชีม้า', 'background:#EEF3F9;border:2px solid #12355B', 'color:#12355B'],
+      ex: ['ศูนย์ซื้อขายสินทรัพย์ดิจิทัล', 'background:#F5F0FF;border:2px solid #7C3AED', 'color:#6D28D9'],
+      wallet: ['กระเป๋า USDT · Tron', 'background:#FFF4ED;border:2px dashed #C2410C', 'color:#C2410C'],
+      cash: ['ถอนเงินสด', 'background:#FFFFFF;border:2px dotted #64748B', 'color:#475569']
+    };
+    const D = [
+      { id: 'V', t: 'victim', x: 312, y: 10, title: 'xxx-x-x5521-x', sub: 'นายสมมติ ตัวอย่าง', status: 'ผู้เสียหาย', cls: 'neu',
+        kv: [['ธนาคาร', 'ธนาคารสมมติ'], ['เจ้าของบัญชี', 'นายสมมติ ตัวอย่าง'], ['โอนออก', '486,500 บาท · 3 ครั้ง'], ['ช่วงเวลา', '18 ส.ค. – 21 ก.ย. 2569'], ['ที่มา', 'สลิป 2 ใบ · รายการเดินบัญชี']], freeze: false, kyc: false, stmt: false, note: 'บัญชีของผู้เสียหาย ไม่ต้องขออายัด' },
+      { id: 'M1', t: 'bank', x: 120, y: 170, title: 'xxx-x-x1234-x', sub: 'ธนาคารทดสอบ · นายทดลอง ไม่มีจริง', status: 'ยังไม่อายัด', cls: 'due',
+        kv: [['ชั้น', 'บัญชีม้าชั้น 1'], ['เจ้าของบัญชี', 'นายทดลอง ไม่มีจริง (ผู้ต้องหา)'], ['รับเข้า', '198,500 บาท'], ['โอนออก', '195,000 บาท'], ['คงเหลือล่าสุด', '3,500 บาท'], ['ที่มา', 'รายการเดินบัญชีจากธนาคาร']], freeze: true, kyc: true, stmt: true, note: 'หนังสือจะสร้างจากข้อมูลในกราฟ ตรวจก่อนลงนาม' },
+      { id: 'M2', t: 'bank', x: 504, y: 170, title: 'xxx-x-x8890-x', sub: 'ธนาคารตัวอย่าง · นายตัวอย่าง ทดลองดี', status: 'ร่างหนังสืออายัดแล้ว', cls: 'inf',
+        kv: [['ชั้น', 'บัญชีม้าชั้น 1'], ['เจ้าของบัญชี', 'นายตัวอย่าง ทดลองดี'], ['รับเข้า', '288,000 บาท · 21 ก.ย. 2569 20.15 น.'], ['โอนออก', '281,500 บาท ภายใน 4 นาที'], ['คงเหลือล่าสุด', '6,500 บาท'], ['ที่มา', 'สลิป · AI อ่าน รอตรวจ']], freeze: true, kyc: true, stmt: true, note: 'หนังสือขออายัดร่างไว้แล้ว รอลงนาม · หนังสือจะสร้างจากข้อมูลในกราฟ' },
+      { id: 'M3', t: 'bank', x: 20, y: 330, title: 'xxx-x-x4410-x', sub: 'ธนาคารทดสอบ · ยังไม่ทราบชื่อ', status: 'ยังไม่อายัด', cls: 'due',
+        kv: [['ชั้น', 'บัญชีม้าชั้น 2'], ['เจ้าของบัญชี', 'รอข้อมูลจากธนาคาร'], ['รับเข้า', '150,000 บาท'], ['ถอนเงินสด', '148,000 บาท · 3 ครั้ง']], freeze: true, kyc: true, stmt: true, note: 'ขอข้อมูลเจ้าของบัญชีพร้อมกับหนังสืออายัดได้' },
+      { id: 'EX', t: 'ex', x: 312, y: 330, title: 'ศูนย์ซื้อขายทดสอบ', sub: 'บัญชีรับฝากเงินบาท', status: 'อายัดแล้ว 120,000 บาท', cls: 'ok',
+        kv: [['ผู้ให้บริการ', 'ศูนย์ซื้อขายทดสอบ (ในประเทศ)'], ['รับฝาก', '326,500 บาท'], ['ซื้อและถอนออก', '9,200 USDT'], ['อายัดแล้ว', '120,000 บาท · 2 พ.ย. 2569'], ['บัญชีผู้ใช้', 'UID xxxx7781']], freeze: false, kyc: true, stmt: true, note: 'อายัดแล้ว · ขอข้อมูล KYC ของบัญชีผู้ใช้ได้' },
+      { id: 'ATM', t: 'cash', x: 20, y: 490, title: 'ถอนเงินสด ATM', sub: '3 ครั้ง · จ.ทดสอบ', status: 'ขอภาพกล้องได้', cls: 'neu',
+        kv: [['จำนวน', '148,000 บาท'], ['ช่วงเวลา', '3–4 ก.ย. 2569'], ['สถานที่', 'ตู้ ATM 2 จุด (จำลอง)']], freeze: false, kyc: false, stmt: false, note: 'ปลายทางเป็นเงินสด ขอภาพจากกล้องตู้ ATM แทน' },
+      { id: 'W1', t: 'wallet', x: 312, y: 490, title: 'TQ7x…k9Fa', sub: 'กระเป๋าฝากของผู้ให้บริการต่างประเทศ', status: 'ยังไม่ขอระงับ', cls: 'due',
+        kv: [['เครือข่าย', 'Tron (TRC-20)'], ['รับเข้า', '9,200 USDT จากศูนย์ซื้อขายทดสอบ'], ['โอนออก', '9,150 USDT'], ['ผู้ให้บริการ', 'ระบุได้จากที่อยู่กระเป๋า (จำลอง)']], freeze: true, kyc: true, stmt: false, freezeLabel: 'เตรียมหนังสือขอระงับ', note: 'ส่งหนังสือถึงผู้ให้บริการผ่านช่องทางที่หน่วยกำหนด' },
+      { id: 'W2', t: 'wallet', x: 604, y: 490, title: 'TLm3…2pQe', sub: 'กระเป๋าส่วนตัว · ไม่ทราบผู้ให้บริการ', status: 'ติดตามต่อ', cls: 'neu',
+        kv: [['เครือข่าย', 'Tron (TRC-20)'], ['รับเข้า', '9,150 USDT'], ['ยอดคงเหลือ', '9,150 USDT ณ 10 พ.ย. 2569'], ['ผู้ให้บริการ', 'ไม่ทราบ']], freeze: false, kyc: false, stmt: false, note: 'ยังไม่มีผู้ให้บริการที่ส่งหนังสือถึงได้ ต้องระบุผู้ให้บริการก่อน' }
+    ];
+    const s = this.state.sel;
+    const nodes = D.map(d => ({
+      type: T[d.t][0], title: d.title, sub: d.sub, status: d.status, cls: d.cls, tStyle: T[d.t][2], on: s === d.id,
+      style: 'left:' + d.x + 'px;top:' + d.y + 'px;' + T[d.t][1] + (s === d.id ? ';box-shadow:0 0 0 3px #FFFFFF,0 0 0 5px #1D4ED8' : ''),
+      pick: () => this.setState({ sel: d.id })
+    }));
+    const d = D.find(x => x.id === s);
+    const sel = {
+      type: T[d.t][0], tStyle: T[d.t][2], title: d.title, status: d.status, cls: d.cls,
+      kv: d.kv.map(([k, v]) => ({ k, v })),
+      noFreeze: !d.freeze, noKyc: !d.kyc, noStmt: !d.stmt,
+      freezeLabel: d.freezeLabel || 'เตรียมหนังสืออายัด', note: d.note
+    };
+    return { nodes, sel };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>CCID4 · ห้องสอบปากคำ (บันทึกเสียง)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&amp;family=Sarabun:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F7FA}
+*{box-sizing:border-box}
+.ui{font-family:'IBM Plex Sans Thai',system-ui,sans-serif;color:#0F172A;font-size:15px;line-height:1.6}
+a{color:#12355B}a:hover{color:#0B2440}
+:focus-visible{outline:3px solid #1D4ED8;outline-offset:3px}
+.ic{width:20px;height:20px;flex:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:0 18px;border-radius:10px;font:inherit;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none;border:1px solid transparent;white-space:nowrap}
+.btn-p{background:#12355B;color:#FFFFFF}.btn-p:hover{background:#0B2440;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#12355B;border-color:#94A3B8}.btn-s:hover{background:#F1F5F9;color:#12355B}
+.btn-xl{min-height:72px;padding:0 28px;font-size:18px;min-width:200px}
+.btn-xl .ic{width:24px;height:24px}
+.btn[disabled]{background:#CBD5E1;color:#475569;cursor:not-allowed;border-color:#CBD5E1}
+.bd{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:500;line-height:20px;border:1px solid;white-space:nowrap}
+.bd .ic{width:14px;height:14px}
+.ok{color:#0F766E;background:#F0FDFA;border-color:#99F6E4}
+.due{color:#B45309;background:#FFFBEB;border-color:#FCD34D}
+.late{color:#B91C1C;background:#FEF2F2;border-color:#FECACA}
+.card{background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px}
+.muted{color:#475569}
+.num{font-variant-numeric:tabular-nums}
+.chk{display:flex;gap:14px;align-items:flex-start;min-height:56px;padding:12px 16px;border-top:1px solid #E2E8F0;cursor:pointer}
+.chk input{width:24px;height:24px;margin:2px 0 0;accent-color:#12355B;flex:none}
+</style>
+</helmet>
+<div class="ui" style="min-height: 100vh; display: flex; flex-direction: column; background: #F5F7FA">
+
+  <!-- แถบบนแบบโฟกัส -->
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-height: 64px; padding: 10px 24px; background: #FFFFFF; border-bottom: 1px solid #E2E8F0">
+    <a class="btn btn-s" href="Case.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>ออกจากโหมดโฟกัส</a>
+    <span style="display: flex; align-items: center; gap: 8px; color: #12355B"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 4 5.5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10v-6z"/><path d="M8.5 12h7"/></svg><strong style="font-size: 17px">CCID4</strong></span>
+    <span style="flex: 1 1 300px; line-height: 1.35"><span style="display: block; font-weight: 600">สอบปากคำผู้ต้องหา · นายทดลอง ไม่มีจริง</span><span class="muted num" style="font-size: 13px">คดี จ.0112/2569 · ห้องสอบปากคำ 2 · ผู้ร่วมฟัง: ทนายความ 1 คน</span></span>
+    <span class="bd" style="color: #0F172A; border-color: #94A3B8; background: repeating-linear-gradient(135deg, #FFFFFF 0 6px, #EEF1F5 6px 12px)">ข้อมูลจำลอง</span>
+    <span class="bd" style="color: #12355B; background: #E8EEF5; border-color: #B6C6DA"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg>AI ประมวลผลในเครื่อง</span>
+  </header>
+
+  <!-- ขั้นตอน -->
+  <nav aria-label="ขั้นตอน" style="display: flex; justify-content: center; gap: 8px; padding: 16px 24px 0; flex-wrap: wrap">
+    <button type="button" onClick="{{goPre}}" class="btn" style="{{s1}}">1 · แจ้งสิทธิก่อนเริ่ม</button>
+    <button type="button" onClick="{{goRec}}" class="btn" style="{{s2}}">2 · บันทึกเสียง</button>
+    <span class="btn" style="background: transparent; color: #475569; cursor: default">3 · ตรวจร่างคำให้การ</span>
+  </nav>
+
+  <!-- ขั้น 1: แจ้งสิทธิ -->
+  <sc-if value="{{isPre}}" hint-placeholder-val="{{ false }}">
+    <main style="flex: 1; width: 100%; max-width: 1120px; margin: 0 auto; padding: 24px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+      <section class="card" aria-labelledby="ck-h" style="flex: 1 1 400px; min-width: 0">
+        <div style="padding: 20px 16px 12px">
+          <h1 id="ck-h" style="margin: 0; font-size: 22px; font-weight: 700">เช็กลิสต์ก่อนเริ่ม</h1>
+          <p class="muted" style="margin: 4px 0 0; font-size: 14px">ติ๊กเมื่อทำแล้ว ระบบจะตรวจซ้ำจากเสียงหลังจบการบันทึก</p>
+        </div>
+        <sc-for list="{{checks}}" as="c" hint-placeholder-count="5">
+          <label class="chk"><input type="checkbox" checked="{{c.on}}" onChange="{{c.toggle}}"><span style="line-height: 1.45"><span style="display: block; font-size: 16px; font-weight: 500">{{c.label}}</span><span class="muted" style="font-size: 13px">{{c.hint}}</span></span></label>
+        </sc-for>
+        <div style="padding: 16px; border-top: 1px solid #E2E8F0; display: flex; flex-wrap: wrap; align-items: center; gap: 16px">
+          <button type="button" class="btn btn-p btn-xl" disabled="{{notReady}}" onClick="{{goRec}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" fill="currentColor"/></svg>เริ่มบันทึก</button>
+          <span class="muted" style="font-size: 14px">{{readyText}}</span>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="sc-h" style="flex: 1 1 440px; min-width: 0; padding: 24px">
+        <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap">
+          <h2 id="sc-h" style="margin: 0; font-size: 18px; font-weight: 700">สคริปต์แจ้งสิทธิ (อ่านออกเสียง)</h2>
+          <span class="muted" style="font-size: 13px">ตาม ป.วิ.อ. มาตรา 134/4 · แก้ข้อความได้ในตั้งค่า</span>
+        </div>
+        <div style="margin-top: 16px; padding: 20px 24px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; font-size: 20px; line-height: 1.8">
+          <p style="margin: 0 0 14px">ข้าพเจ้า พ.ต.ท.ทดสอบ หนึ่ง พนักงานสอบสวน ขอแจ้งให้ท่านทราบว่า ท่านถูกกล่าวหาว่ากระทำความผิดฐาน ฉ้อโกงประชาชน และยินยอมให้ผู้อื่นใช้บัญชีเงินฝาก</p>
+          <p style="margin: 0 0 14px"><strong>หนึ่ง</strong> ท่านมีสิทธิที่จะให้การหรือไม่ให้การก็ได้ ถ้าท่านให้การ ถ้อยคำที่ท่านให้การนั้นอาจใช้เป็นพยานหลักฐานในการพิจารณาคดีได้</p>
+          <p style="margin: 0 0 14px"><strong>สอง</strong> ท่านมีสิทธิให้ทนายความหรือผู้ซึ่งท่านไว้วางใจเข้าฟังการสอบปากคำได้</p>
+          <p style="margin: 0">การสอบปากคำครั้งนี้มีการบันทึกเสียงไว้เป็นหลักฐาน</p>
+        </div>
+        <p class="muted" style="margin: 12px 0 0; font-size: 13px">ตัวอย่างข้อความเพื่อการออกแบบ ให้ใช้ข้อความตามแบบฟอร์มของหน่วย</p>
+      </section>
+    </main>
+  </sc-if>
+
+  <!-- ขั้น 2: กำลังบันทึก -->
+  <sc-if value="{{isRec}}" hint-placeholder-val="{{ true }}">
+    <main style="flex: 1; width: 100%; max-width: 960px; margin: 0 auto; padding: 32px 24px 40px; display: flex; flex-direction: column; align-items: center; gap: 28px; text-align: center">
+      <span class="bd" style="{{stateStyle}}; font-size: 16px; padding: 6px 16px; gap: 10px"><span style="{{dotStyle}}"></span>{{stateText}}</span>
+
+      <div role="timer" aria-label="เวลาที่บันทึก" class="num" style="font-size: 112px; line-height: 1.1; font-weight: 600; color: #0F172A; letter-spacing: 2px">{{clock}}</div>
+
+      <div style="width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 8px">
+        <div aria-hidden="true" style="height: 56px; display: flex; align-items: center; justify-content: center; gap: 4px">
+          <sc-for list="{{levels}}" as="l" hint-placeholder-count="32"><span style="{{l.style}}"></span></sc-for>
+        </div>
+        <span class="muted" style="font-size: 14px">ระดับเสียง · {{levelText}} · ไมโครโฟนห้อง 2 (รอบทิศ)</span>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 16px">
+        <button type="button" class="btn btn-s btn-xl" onClick="{{togglePause}}">
+          <sc-if value="{{paused}}" hint-placeholder-val="{{ false }}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z" fill="currentColor"/></svg></sc-if>
+          <sc-if value="{{running}}" hint-placeholder-val="{{ true }}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor"/><rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor"/></svg></sc-if>
+          {{pauseLabel}}
+        </button>
+        <button type="button" class="btn btn-s btn-xl" onClick="{{addMark}}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/></svg>ทำเครื่องหมาย</button>
+        <a class="btn btn-p btn-xl" href="Review.dc.html"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg>จบการบันทึก</a>
+      </div>
+
+      <div class="card" style="width: 100%; max-width: 640px; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; text-align: left">
+        <span style="display: flex; align-items: center; gap: 10px; color: #0F766E; font-weight: 600"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><path d="m9 14 2 2 4-4"/></svg><span>บันทึกขึ้นเซิร์ฟเวอร์ของหน่วยแล้วถึงนาทีที่ <span class="num">{{synced}}</span></span></span>
+        <span class="muted" style="font-size: 13px">หากเครือข่ายหลุด เสียงยังบันทึกในเครื่องนี้และส่งต่อเมื่อเชื่อมต่อได้ · จะคำนวณ SHA-256 ของไฟล์ต้นฉบับเมื่อจบการบันทึก</span>
+        <div style="border-top: 1px solid #E2E8F0; padding-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+          <span class="muted" style="font-size: 13px; font-weight: 600">เครื่องหมาย {{markCount}} จุด</span>
+          <sc-for list="{{marks}}" as="m" hint-placeholder-count="2"><span class="bd" style="color: #12355B; background: #E8EEF5; border-color: #B6C6DA"><span class="num">{{m.t}}</span> {{m.note}}</span></sc-for>
+        </div>
+      </div>
+
+      <span class="bd ok"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>เช็กลิสต์แจ้งสิทธิครบ 5 ข้อ ก่อนเริ่ม</span>
+    </main>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"phase":{"editor":"enum","options":["rec","pre"],"default":"rec"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { phase: null, paused: false, secs: 42 * 60 + 17, checks: [true, true, true, true, false], marks: [{ t: '12:05', note: 'ผู้ต้องหาขอพักดื่มน้ำ' }, { t: '31:40', note: 'กล่าวถึงเลขบัญชีที่สอง' }] };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => {
+      if (!this.state.paused && this.phase() === 'rec') this.setState({ secs: this.state.secs + 1 });
+    }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  phase() { return this.state.phase || this.props.phase || 'rec'; }
+  renderVals() {
+    const p = this.phase();
+    const s = this.state.secs;
+    const pad = n => String(n).padStart(2, '0');
+    const clock = pad(Math.floor(s / 3600)) + ':' + pad(Math.floor(s / 60) % 60) + ':' + pad(s % 60);
+    const syncedS = Math.max(0, s - 7);
+    const paused = this.state.paused;
+    const levels = Array.from({ length: 32 }, (_, i) => {
+      const v = paused ? 0.08 : Math.abs(Math.sin(i * 0.7 + s * 1.3) * Math.cos(i * 0.31 + s * 0.5));
+      const h = Math.round(6 + v * 48);
+      return { style: 'display:block;width:8px;border-radius:4px;height:' + h + 'px;background:' + (v > 0.85 ? '#B45309' : '#12355B') };
+    });
+    const labels = [
+      ['ตรวจสอบตัวตนผู้ถูกสอบปากคำกับบัตรประชาชน', 'ชื่อ อายุ ที่อยู่ ตรงกับข้อมูลในคดี'],
+      ['แจ้งข้อกล่าวหาให้ทราบ', 'อ่านข้อหาตามสคริปต์ด้านขวา'],
+      ['แจ้งสิทธิให้การหรือไม่ให้การ และถ้อยคำอาจใช้เป็นพยานหลักฐาน', 'ป.วิ.อ. มาตรา 134/4 ข้อหนึ่ง'],
+      ['แจ้งสิทธิมีทนายความหรือผู้ไว้วางใจเข้าฟัง', 'ป.วิ.อ. มาตรา 134/4 ข้อสอง · บันทึกชื่อผู้เข้าฟัง'],
+      ['แจ้งว่ามีการบันทึกเสียง และสอบถามความต้องการล่าม', 'ภาษาที่ใช้: ไทย']
+    ];
+    const checks = labels.map(([label, hint], i) => ({
+      label, hint, on: this.state.checks[i],
+      toggle: () => { const c = this.state.checks.slice(); c[i] = !c[i]; this.setState({ checks: c }); }
+    }));
+    const left = this.state.checks.filter(x => !x).length;
+    const on = 'background:#12355B;color:#FFFFFF';
+    const off = 'background:#FFFFFF;color:#12355B;border-color:#94A3B8';
+    return {
+      isPre: p === 'pre', isRec: p === 'rec',
+      s1: p === 'pre' ? on : off, s2: p === 'rec' ? on : off,
+      goPre: () => this.setState({ phase: 'pre' }),
+      goRec: () => this.setState({ phase: 'rec' }),
+      checks, notReady: left > 0,
+      readyText: left > 0 ? 'ติ๊กให้ครบทุกข้อจึงเริ่มบันทึกได้ (เหลือ ' + left + ' ข้อ)' : 'พร้อมเริ่มบันทึก',
+      clock, levels,
+      levelText: paused ? 'หยุดรับเสียง' : 'ปกติ',
+      paused, running: !paused,
+      pauseLabel: paused ? 'บันทึกต่อ' : 'พัก',
+      togglePause: () => this.setState({ paused: !paused }),
+      stateText: paused ? 'พักการบันทึก' : 'กำลังบันทึก',
+      stateStyle: paused ? 'color:#B45309;background:#FFFBEB;border-color:#FCD34D' : 'color:#B91C1C;background:#FEF2F2;border-color:#FECACA',
+      dotStyle: 'display:block;width:12px;height:12px;border-radius:999px;background:' + (paused ? '#B45309' : '#B91C1C'),
+      synced: pad(Math.floor(syncedS / 60)) + ':' + pad(syncedS % 60),
+      marks: this.state.marks, markCount: this.state.marks.length,
+      addMark: () => this.setState({ marks: this.state.marks.concat([{ t: pad(Math.floor(s / 60)) + ':' + pad(s % 60), note: 'เครื่องหมายใหม่' }]) })
+    };
+  }
+}
+</script>
+</body>
+</html>

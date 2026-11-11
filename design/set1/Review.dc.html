@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>CCID4 · ตรวจและร่างคำให้การ</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&amp;family=Sarabun:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F7FA}
+*{box-sizing:border-box}
+.ui{font-family:'IBM Plex Sans Thai',system-ui,sans-serif;color:#0F172A;font-size:15px;line-height:1.6}
+a{color:#12355B}a:hover{color:#0B2440}
+:focus-visible{outline:2px solid #1D4ED8;outline-offset:2px}
+.ic{width:20px;height:20px;flex:none}
+.nav a.item{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:8px;color:#DCE4EE;text-decoration:none;font-size:15px}
+.nav a.item:hover{background:rgba(255,255,255,.08);color:#FFFFFF}
+.nav a.on{background:rgba(255,255,255,.12);color:#FFFFFF;font-weight:600;box-shadow:inset 3px 0 0 #C99A2E}
+.grp{font-size:12px;font-weight:600;color:#9FB3CC;padding:16px 12px 4px}
+.new{margin-left:auto;background:#C99A2E;color:#0F172A;font-size:12px;font-weight:600;line-height:20px;padding:0 8px;border-radius:999px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:8px;font:inherit;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none;border:1px solid transparent;white-space:nowrap}
+.btn-p{background:#12355B;color:#FFFFFF}.btn-p:hover{background:#0B2440;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#12355B;border-color:#94A3B8}.btn-s:hover{background:#F1F5F9;color:#12355B}
+.btn-sm{min-height:44px;padding:0 12px;font-size:14px}
+.btn[disabled]{background:#CBD5E1;color:#475569;border-color:#CBD5E1;cursor:not-allowed}
+.bd{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:500;line-height:20px;border:1px solid;white-space:nowrap}
+.bd .ic{width:14px;height:14px}
+.ok{color:#0F766E;background:#F0FDFA;border-color:#99F6E4}
+.due{color:#B45309;background:#FFFBEB;border-color:#FCD34D}
+.late{color:#B91C1C;background:#FEF2F2;border-color:#FECACA}
+.inf{color:#1D4ED8;background:#EFF6FF;border-color:#BFDBFE}
+.neu{color:#475569;background:#F1F5F9;border-color:#CBD5E1}
+.card{background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px}
+.muted{color:#475569}
+.num{font-variant-numeric:tabular-nums}
+.w{border:0;background:transparent;font:inherit;font-size:16px;line-height:1.9;color:#0F172A;padding:0 2px;border-radius:4px;cursor:pointer}
+.w:hover{background:#E8EEF5}
+.tt{border:1px solid #B6C6DA;background:#E8EEF5;color:#12355B;font:inherit;font-size:13px;font-weight:600;border-radius:6px;padding:0 10px;min-height:32px;cursor:pointer;font-variant-numeric:tabular-nums}
+.tt:hover{background:#D5DEEA}
+.spk{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
+.spk i{width:10px;height:10px;border-radius:3px;display:block}
+mark.flag{background:#FEF3C7;color:#0F172A;border-bottom:2px dashed #B45309;padding:0 2px}
+.doc{font-family:'Sarabun',serif;font-size:17px;line-height:1.8}
+.chk{display:flex;gap:10px;align-items:center;min-height:44px;cursor:pointer;font-size:14px}
+.chk input{width:20px;height:20px;margin:0;accent-color:#12355B}
+</style>
+</helmet>
+<div class="ui" style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F7FA">
+
+<nav class="nav" aria-label="เมนูหลัก" style="flex: 1 1 248px; max-width: 100%; background: #12355B; color: #FFFFFF; padding: 20px 12px; display: flex; flex-direction: column; gap: 2px">
+  <a href="Main.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 4px 12px 16px; text-decoration: none; color: #FFFFFF">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 4 5.5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10v-6z"/><path d="M8.5 12h7"/></svg>
+    <span style="display: flex; flex-direction: column; line-height: 1.2">
+      <span style="font-size: 22px; font-weight: 700; letter-spacing: 0.5px">CCID4</span>
+      <span style="font-size: 12px; color: #C7D2E0">บก.สอท.4</span>
+    </span>
+  </a>
+  <div class="grp">งานประจำวัน</div>
+  <a class="item" href="Main.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>แดชบอร์ด</a>
+  <a class="item" href="Cases.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>รายการคดี</a>
+  <a class="item" href="Intake.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>รับเรื่องจากประชาชน</a>
+  <a class="item" href="Deadlines.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>กรอบเวลา</a>
+  <div class="grp">เครื่องมือสอบสวน</div>
+  <a class="item on" href="Review.dc.html" aria-current="page"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg>ห้องสอบปากคำ<span class="new">ใหม่</span></a>
+  <a class="item" href="Summons.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>หมายเรียกชุดใหญ่<span class="new">ใหม่</span></a>
+  <a class="item" href="Money.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="6" r="2.5"/><circle cx="19" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M7.5 6h9M6.3 8.2l4.4 7.6M17.7 8.2l-4.4 7.6"/></svg>เส้นทางการเงิน<span class="new">ใหม่</span></a>
+  <a class="item" href="Docs.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M16 13H8M16 17H8"/></svg>เอกสารสำนวน<span class="new">ใหม่</span></a>
+  <div class="grp">หัวหน้า</div>
+  <a class="item" href="Main.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 16v-4M12 16V8M17 16v-7"/></svg>ภาพรวมทั้งกอง<span class="new">ใหม่</span></a>
+  <div class="grp">ระบบ</div>
+  <a class="item" href="Import.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5M12 3v12"/></svg>นำเข้าข้อมูล</a>
+  <a class="item" href="Settings.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>ตั้งค่าและความปลอดภัย</a>
+</nav>
+
+<div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-height: 64px; padding: 10px 32px; background: #FFFFFF; border-bottom: 1px solid #E2E8F0">
+    <nav aria-label="เส้นทาง" style="flex: 1 1 280px; font-size: 14px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+      <a href="Cases.dc.html">รายการคดี</a><span class="muted" aria-hidden="true">›</span><a href="Case.dc.html" class="num">จ.0112/2569</a><span class="muted" aria-hidden="true">›</span><span aria-current="page">ตรวจร่างคำให้การ</span>
+    </nav>
+    <span class="bd" style="color: #0F172A; border-color: #94A3B8; background: repeating-linear-gradient(135deg, #FFFFFF 0 6px, #EEF1F5 6px 12px)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2v7.3M14 9.3V2M8.5 2h7M14 9.3a6.5 6.5 0 1 1-4 0"/></svg>ข้อมูลจำลอง</span>
+    <span class="bd" style="color: #12355B; background: #E8EEF5; border-color: #B6C6DA" title="โมเดล AI ทำงานบนเซิร์ฟเวอร์ของหน่วยงาน ไม่มีข้อมูลส่งออกภายนอก"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg>AI ประมวลผลในเครื่อง</span>
+    <span style="display: flex; align-items: center; gap: 10px; padding-left: 8px">
+      <span style="width: 36px; height: 36px; border-radius: 999px; background: #12355B; color: #FFFFFF; display: grid; place-items: center; font-size: 14px; font-weight: 600">ทน</span>
+      <span style="display: flex; flex-direction: column; line-height: 1.3"><span style="font-size: 14px; font-weight: 600">พ.ต.ท.ทดสอบ หนึ่ง</span><span class="muted" style="font-size: 12px">สารวัตร (สอบสวน) · หัวหน้างาน</span></span>
+    </span>
+  </header>
+
+  <main style="padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 16px; max-width: 1240px; width: 100%">
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px">
+      <div style="flex: 1 1 420px">
+        <h1 style="margin: 0; font-size: 26px; line-height: 1.4; font-weight: 700">ตรวจและร่างคำให้การผู้ต้องหา</h1>
+        <p class="muted num" style="margin: 2px 0 0; font-size: 14px">นายทดลอง ไม่มีจริง · 11 พ.ย. 2569 เวลา 10.12 น. · ความยาว 48:32 · ผู้พูด 3 คน</p>
+      </div>
+      <span class="bd neu num" title="ค่าแฮชของไฟล์เสียงต้นฉบับ ใช้ยืนยันว่าไฟล์ไม่ถูกแก้ไข"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>เสียงต้นฉบับ SHA-256 9f2c 81d0 … 7b3e a41e</span>
+    </div>
+
+    <!-- เครื่องเล่นเสียง -->
+    <section class="card" aria-label="เครื่องเล่นเสียง" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap">
+        <button type="button" class="btn btn-p" style="width: 52px; height: 52px; padding: 0; border-radius: 999px" aria-label="{{playLabel}}" onClick="{{togglePlay}}">
+          <sc-if value="{{playing}}" hint-placeholder-val="{{ false }}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor"/><rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor"/></svg></sc-if>
+          <sc-if value="{{stopped}}" hint-placeholder-val="{{ true }}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4l12 8-12 8z" fill="currentColor"/></svg></sc-if>
+        </button>
+        <span class="num" style="font-size: 20px; font-weight: 600">{{now}} <span class="muted" style="font-size: 15px; font-weight: 400">/ 48:32</span></span>
+        <span style="display: flex; gap: 14px; flex-wrap: wrap; margin-left: auto">
+          <span class="spk"><i style="background: #2563EB"></i>พนักงานสอบสวน</span>
+          <span class="spk"><i style="background: #C2410C"></i>ผู้ต้องหา</span>
+          <span class="spk"><i style="background: #7C3AED"></i>ทนายความ</span>
+        </span>
+        <label class="muted" style="display: flex; align-items: center; gap: 8px; font-size: 14px">ความเร็ว
+          <select style="min-height: 44px; border: 1px solid #94A3B8; border-radius: 8px; font: inherit; padding: 0 10px; color: #0F172A; background: #FFFFFF"><option>1.0×</option><option>0.75×</option><option>1.25×</option></select>
+        </label>
+      </div>
+      <div style="position: relative; height: 64px; display: flex; align-items: center; gap: 2px" aria-hidden="true">
+        <sc-for list="{{wave}}" as="b" hint-placeholder-count="140"><span style="{{b.style}}"></span></sc-for>
+        <span style="{{headStyle}}"></span>
+      </div>
+      <div class="muted num" style="display: flex; justify-content: space-between; font-size: 12px"><span>00:00</span><span>12:00</span><span>24:00</span><span>36:00</span><span>48:32</span></div>
+    </section>
+
+    <!-- ตรวจการแจ้งสิทธิ -->
+    <section class="card" aria-labelledby="rt-h" style="padding: 14px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; border-color: #FECACA; background: #FFFBFB">
+      <h2 id="rt-h" style="margin: 0; font-size: 15px; font-weight: 700">ตรวจการแจ้งสิทธิ ป.วิ.อ. ม.134/4 จากเสียง</h2>
+      <button type="button" class="bd ok" style="cursor: pointer; min-height: 32px; font: inherit; font-size: 13px" onClick="{{jump31}}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>แจ้งข้อกล่าวหา · พบที่ 00:31</button>
+      <button type="button" class="bd ok" style="cursor: pointer; min-height: 32px; font: inherit; font-size: 13px" onClick="{{jump45}}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>สิทธิให้การหรือไม่ให้การ · พบที่ 00:45</button>
+      <span class="bd late"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>สิทธิมีทนายความหรือผู้ไว้วางใจ · ไม่พบ</span>
+      <span class="muted" style="font-size: 13px; flex: 1 1 280px">พบเสียงทนายความที่ 01:10 แต่ไม่พบประโยคแจ้งสิทธิข้อนี้ ฟังช่วง 00:40–02:00 ด้วยตนเองก่อนยืนยัน</span>
+    </section>
+
+    <!-- สองคอลัมน์ -->
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+      <section class="card" aria-labelledby="tr-h" style="flex: 1 1 440px; min-width: 0">
+        <div style="padding: 16px 20px; border-bottom: 1px solid #E2E8F0; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap">
+          <h2 id="tr-h" style="margin: 0; font-size: 17px; font-weight: 600">ข้อความถอดเสียง</h2>
+          <span class="muted" style="font-size: 13px">กดคำใดก็ได้เพื่อเล่นเสียงตรงนั้น · ถอดโดย AI ในเครื่อง</span>
+        </div>
+        <div style="padding: 8px 20px 16px; display: flex; flex-direction: column; max-height: 640px; overflow-y: auto">
+          <sc-for list="{{segs}}" as="s" hint-placeholder-count="10">
+            <div style="{{s.rowStyle}}">
+              <div style="display: flex; align-items: center; gap: 10px"><span class="spk"><i style="{{s.dot}}"></i>{{s.who}}</span><span class="muted num" style="font-size: 12px">{{s.time}}</span></div>
+              <p style="margin: 2px 0 0">
+                <sc-for list="{{s.words}}" as="w" hint-placeholder-count="3"><button type="button" class="w" style="{{w.style}}" onClick="{{w.play}}">{{w.text}}</button></sc-for>
+              </p>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="qa-h" style="flex: 1 1 480px; min-width: 0">
+        <div style="padding: 16px 20px; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+          <h2 id="qa-h" style="margin: 0; font-size: 17px; font-weight: 600">ร่างคำให้การแบบถาม-ตอบ</h2>
+          <span class="bd inf">AI ร่าง · คนตรวจ</span>
+          <span class="muted num" style="margin-left: auto; font-size: 13px">ตรวจแล้ว {{doneCount}} จาก 4 คู่</span>
+        </div>
+        <div style="padding: 8px 20px 16px; display: flex; flex-direction: column">
+          <sc-for list="{{pairs}}" as="p" hint-placeholder-count="4">
+            <article style="padding: 14px 0; border-bottom: 1px solid #E2E8F0; display: flex; flex-direction: column; gap: 8px">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+                <button type="button" class="tt" onClick="{{p.play}}" aria-label="เล่นเสียงช่วง {{p.range}}">▶ {{p.range}}</button>
+                <span class="muted" style="font-size: 13px">คู่ที่ {{p.n}}</span>
+                <label class="chk" style="margin-left: auto"><input type="checkbox" checked="{{p.done}}" onChange="{{p.toggle}}">ตรวจแล้ว</label>
+              </div>
+              <sc-if value="{{p.hasQ}}" hint-placeholder-val="{{ true }}">
+                <p class="doc" style="margin: 0"><strong>ถาม</strong> {{p.q}}</p>
+              </sc-if>
+              <p class="doc" style="margin: 0"><strong>{{p.aLabel}}</strong> {{p.a1}}<sc-if value="{{p.hasFlag}}" hint-placeholder-val="{{ false }}"><mark class="flag">{{p.flag}}</mark></sc-if>{{p.a2}}</p>
+              <sc-if value="{{p.hasFlag}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px">
+                  <span style="display: flex; align-items: center; gap: 6px; color: #B45309; font-size: 14px; font-weight: 600"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/></svg>{{p.flagTitle}}</span>
+                  <span style="font-size: 13px; flex: 1 1 200px">{{p.flagNote}}</span>
+                  <button type="button" class="btn btn-s btn-sm" onClick="{{p.playFlag}}">ฟังช่วงนั้น</button>
+                  <sc-if value="{{p.hasFix}}" hint-placeholder-val="{{ false }}"><button type="button" class="btn btn-s btn-sm">{{p.fix}}</button></sc-if>
+                </div>
+              </sc-if>
+              <sc-if value="{{p.isRights}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px">
+                  <span style="display: flex; align-items: center; gap: 6px; color: #B91C1C; font-size: 14px; font-weight: 600"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/></svg>ข้อความนี้ระบุว่าแจ้งสิทธิครบ</span>
+                  <span style="font-size: 13px; flex: 1 1 200px">แต่ตรวจไม่พบการแจ้งสิทธิมีทนายความในเสียง</span>
+                </div>
+              </sc-if>
+            </article>
+          </sc-for>
+        </div>
+
+        <!-- ยืนยัน -->
+        <div style="padding: 16px 20px; background: #F8FAFC; border-top: 1px solid #E2E8F0; border-radius: 0 0 10px 10px; display: flex; flex-direction: column; gap: 12px">
+          <label class="chk" style="align-items: flex-start"><input type="checkbox" checked="{{manual}}" onChange="{{toggleManual}}" style="margin-top: 2px"><span style="line-height: 1.5">ข้าพเจ้าฟังช่วงแจ้งสิทธิด้วยตนเองแล้ว และยืนยันว่าได้แจ้งสิทธิครบตามกฎหมาย <span class="muted">(บันทึกไว้ในประวัติการใช้งาน)</span></span></label>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+            <button type="button" class="btn btn-p" disabled="{{blocked}}">ยืนยันร่างคำให้การ</button>
+            <button type="button" class="btn btn-s">ส่งออก Word</button>
+            <button type="button" class="btn btn-s">ส่งออก PDF</button>
+            <span style="font-size: 13px; flex: 1 1 220px" class="muted">{{blockReason}}</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1280}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { t: 845, playing: false, done: [true, false, false, true], manual: false }; }
+  componentDidMount() { this.timer = setInterval(() => { if (this.state.playing) this.setState({ t: Math.min(2912, this.state.t + 1) }); }, 1000); }
+  componentWillUnmount() { clearInterval(this.timer); }
+  renderVals() {
+    const T = this.state.t;
+    const pad = n => String(n).padStart(2, '0');
+    const fmt = s => pad(Math.floor(s / 60)) + ':' + pad(s % 60);
+    const go = s => () => this.setState({ t: s });
+    const SP = { a: ['พนักงานสอบสวน', '#2563EB', '#EFF4FF'], b: ['ผู้ต้องหา', '#C2410C', '#FFF4ED'], c: ['ทนายความ', '#7C3AED', '#F5F0FF'] };
+    const raw = [
+      ['a', 12, [[12, 'วันนี้วันที่สิบเอ็ด พฤศจิกายน'], [15, 'สองห้าหกเก้า'], [17, 'เวลาสิบโมงสิบสองนาที'], [20, 'เริ่มสอบปากคำ']]],
+      ['a', 31, [[31, 'ท่านถูกกล่าวหาว่า'], [33, 'ฉ้อโกงประชาชน'], [36, 'และยินยอมให้ผู้อื่นใช้บัญชีเงินฝาก']]],
+      ['a', 45, [[45, 'ท่านมีสิทธิที่จะให้การ'], [48, 'หรือไม่ให้การก็ได้'], [51, 'ถ้าให้การ ถ้อยคำนั้น'], [54, 'อาจใช้เป็นพยานหลักฐาน'], [57, 'ในการพิจารณาคดีได้']]],
+      ['b', 64, [[64, 'ครับ'], [65, 'เข้าใจครับ']]],
+      ['c', 70, [[70, 'ทนายความขอแถลงว่า'], [73, 'ผู้ต้องหาประสงค์จะให้การ']]],
+      ['a', 712, [[712, 'บัญชีที่ลงท้ายหนึ่งสองสามสี่'], [716, 'เป็นของคุณไหม']]],
+      ['b', 725, [[725, 'ใช่ครับ'], [727, 'เปิดไว้ตอนต้นปี'], [731, 'ที่สาขาในตัวเมือง']]],
+      ['a', 820, [[820, 'มีคนอื่นใช้บัญชีนี้ไหม']]],
+      ['b', 828, [[828, 'ผมให้สมุดกับบัตรเอทีเอ็ม'], [833, 'กับคนที่รู้จักในกลุ่มออนไลน์'], [838, 'เขาบอกว่าจะให้ค่าเช่า'], [842, 'สามพันบาท']]],
+      ['a', 871, [[871, 'ได้รับเงินจริงไหม']]],
+      ['b', 876, [[876, 'ได้ครับ'], [878, 'โอนมาครั้งเดียว']]]
+    ];
+    const all = [];
+    raw.forEach(r => r[2].forEach(w => all.push(w[0])));
+    const activeStart = all.filter(x => x <= T).pop();
+    const segs = raw.map(([k, t0, words], i) => {
+      const nextT = raw[i + 1] ? raw[i + 1][1] : 99999;
+      const cur = T >= t0 && T < nextT;
+      return {
+        who: SP[k][0], time: fmt(t0), dot: 'background:' + SP[k][1],
+        rowStyle: 'padding:10px 12px;margin:4px 0;border-radius:8px;background:' + (cur ? SP[k][2] : 'transparent') + ';box-shadow:' + (cur ? 'inset 0 0 0 1px ' + SP[k][1] : 'none'),
+        words: words.map(([wt, text]) => ({
+          text, play: go(wt),
+          style: wt === activeStart ? 'background:#12355B;color:#FFFFFF' : ''
+        }))
+      };
+    });
+    const spkAt = i => { const m = [0, 0, 0, 1, 2, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 2, 0, 1, 1]; return ['a', 'b', 'c'][m[Math.floor(i / 6) % m.length]]; };
+    const pos = T / 2912;
+    const wave = Array.from({ length: 140 }, (_, i) => {
+      const v = Math.abs(Math.sin(i * 1.7) * 0.6 + Math.sin(i * 0.37) * 0.4);
+      const h = Math.round(8 + v * 50);
+      const played = i / 140 <= pos;
+      return { style: 'display:block;flex:1 1 0;min-width:2px;border-radius:2px;height:' + h + 'px;background:' + SP[spkAt(i)][1] + ';opacity:' + (played ? 1 : 0.35) };
+    });
+    const pd = [
+      { range: '00:12–01:20', play: go(12), hasQ: false, aLabel: 'บันทึก', a1: 'พนักงานสอบสวนได้แจ้งข้อกล่าวหาและแจ้งสิทธิตามกฎหมายให้ผู้ต้องหาทราบแล้ว ผู้ต้องหาเข้าใจและประสงค์จะให้การ โดยมีทนายความเข้าฟังการสอบปากคำ', isRights: true },
+      { range: '11:52–12:20', play: go(712), hasQ: true, q: 'บัญชีเงินฝากธนาคารทดสอบ เลขที่ xxx-x-x1234-x เป็นของท่านหรือไม่', aLabel: 'ตอบ', a1: 'ข้าฯ เป็นเจ้าของบัญชีดังกล่าว เปิดบัญชีไว้เมื่อต้นปี ', hasFlag: true, flag: '2569', a2: ' ที่สาขาในตัวเมือง', flagTitle: 'ตัวเลขนี้ไม่พบในเสียง', flagNote: 'ช่วง 12:07 พูดเพียงว่า "ตอนต้นปี" ไม่ได้ระบุปี', playFlag: go(727), hasFix: true, fix: 'ลบปีออก' },
+      { range: '13:40–14:30', play: go(820), hasQ: true, q: 'มีบุคคลอื่นใช้บัญชีดังกล่าวหรือไม่', aLabel: 'ตอบ', a1: 'ข้าฯ ได้มอบสมุดบัญชีและบัตรเอทีเอ็มให้แก่บุคคลที่รู้จักในกลุ่มสนทนาออนไลน์ โดยบุคคลดังกล่าวตกลงให้ค่าเช่าบัญชีเป็นเงิน ', hasFlag: true, flag: '5,000', a2: ' บาท', flagTitle: 'ตัวเลขนี้ไม่พบในเสียง', flagNote: 'ช่วง 14:02 ได้ยินว่า "สามพันบาท"', playFlag: go(842), hasFix: true, fix: 'แก้เป็น 3,000' },
+      { range: '14:31–14:45', play: go(871), hasQ: true, q: 'ท่านได้รับเงินค่าเช่าบัญชีจริงหรือไม่', aLabel: 'ตอบ', a1: 'ข้าฯ ได้รับเงินจริง โดยโอนเข้ามาเพียงครั้งเดียว' }
+    ];
+    const pairs = pd.map((p, i) => Object.assign({ hasFlag: false, hasFix: false, isRights: false, flag: '', a2: '', q: '' }, p, {
+      n: i + 1, done: this.state.done[i],
+      toggle: () => { const d = this.state.done.slice(); d[i] = !d[i]; this.setState({ done: d }); }
+    }));
+    const doneCount = this.state.done.filter(Boolean).length;
+    const left = 4 - doneCount;
+    const manual = this.state.manual;
+    let blockReason = 'พร้อมยืนยัน · ชื่อผู้ยืนยันและเวลาจะถูกบันทึก';
+    if (!manual && left > 0) blockReason = 'ยืนยันได้เมื่อตรวจครบทุกคู่ (เหลือ ' + left + ' คู่) และยืนยันการแจ้งสิทธิด้วยตนเอง';
+    else if (!manual) blockReason = 'ต้องยืนยันการแจ้งสิทธิด้วยตนเองก่อน เพราะระบบตรวจไม่พบ 1 ข้อ';
+    else if (left > 0) blockReason = 'ยืนยันได้เมื่อตรวจครบทุกคู่ (เหลือ ' + left + ' คู่)';
+    return {
+      now: fmt(T), playing: this.state.playing, stopped: !this.state.playing,
+      playLabel: this.state.playing ? 'หยุดชั่วคราว' : 'เล่น',
+      togglePlay: () => this.setState({ playing: !this.state.playing }),
+      jump31: go(31), jump45: go(45),
+      wave, headStyle: 'position:absolute;top:0;bottom:0;width:2px;background:#0F172A;left:' + (pos * 100).toFixed(2) + '%',
+      segs, pairs, doneCount,
+      manual, toggleManual: () => this.setState({ manual: !manual }),
+      blocked: !(manual && left === 0), blockReason
+    };
+  }
+}
+</script>
+</body>
+</html>

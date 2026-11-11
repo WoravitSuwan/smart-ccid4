@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>CCID4 · แดชบอร์ด</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&amp;family=Sarabun:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F7FA}
+*{box-sizing:border-box}
+.ui{font-family:'IBM Plex Sans Thai',system-ui,sans-serif;color:#0F172A;font-size:15px;line-height:1.6}
+a{color:#12355B}a:hover{color:#0B2440}
+:focus-visible{outline:2px solid #1D4ED8;outline-offset:2px}
+.ic{width:20px;height:20px;flex:none}
+.nav a.item{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:8px;color:#DCE4EE;text-decoration:none;font-size:15px}
+.nav a.item:hover{background:rgba(255,255,255,.08);color:#FFFFFF}
+.nav a.on{background:rgba(255,255,255,.12);color:#FFFFFF;font-weight:600;box-shadow:inset 3px 0 0 #C99A2E}
+.grp{font-size:12px;font-weight:600;color:#9FB3CC;padding:16px 12px 4px}
+.new{margin-left:auto;background:#C99A2E;color:#0F172A;font-size:12px;font-weight:600;line-height:20px;padding:0 8px;border-radius:999px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:8px;font:inherit;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none;border:1px solid transparent;white-space:nowrap}
+.btn-p{background:#12355B;color:#FFFFFF}.btn-p:hover{background:#0B2440;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#12355B;border-color:#94A3B8}.btn-s:hover{background:#F1F5F9;color:#12355B}
+.bd{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:500;line-height:20px;border:1px solid;white-space:nowrap}
+.bd .ic{width:14px;height:14px}
+.ok{color:#0F766E;background:#F0FDFA;border-color:#99F6E4}
+.due{color:#B45309;background:#FFFBEB;border-color:#FCD34D}
+.late{color:#B91C1C;background:#FEF2F2;border-color:#FECACA}
+.inf{color:#1D4ED8;background:#EFF6FF;border-color:#BFDBFE}
+.neu{color:#475569;background:#F1F5F9;border-color:#CBD5E1}
+.card{background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px}
+.muted{color:#475569}
+.num{font-variant-numeric:tabular-nums}
+.stat{display:flex;flex-direction:column;gap:6px;padding:20px;text-decoration:none;color:#0F172A}
+.stat:hover{border-color:#94A3B8;color:#0F172A}
+.seg{min-height:44px;padding:0 16px;border-radius:6px;border:0;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.brow{position:relative;display:grid;grid-template-columns:200px minmax(0,1fr) 120px;gap:12px;align-items:center;min-height:44px}
+.brow .tip{display:none;position:absolute;left:212px;top:-34px;background:#0F172A;color:#FFFFFF;font-size:13px;padding:4px 10px;border-radius:6px;white-space:nowrap;z-index:2}
+.brow:hover .tip{display:block}
+.brow:hover .bar{background:#0B2440}
+.lrow{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 20px;border-top:1px solid #E2E8F0}
+</style>
+</helmet>
+<div class="ui" style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F7FA">
+
+<!-- เมนูข้าง -->
+<nav class="nav" aria-label="เมนูหลัก" style="flex: 1 1 248px; max-width: 100%; background: #12355B; color: #FFFFFF; padding: 20px 12px; display: flex; flex-direction: column; gap: 2px">
+  <a href="Main.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 4px 12px 16px; text-decoration: none; color: #FFFFFF">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 4 5.5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10v-6z"/><path d="M8.5 12h7"/></svg>
+    <span style="display: flex; flex-direction: column; line-height: 1.2">
+      <span style="font-size: 22px; font-weight: 700; letter-spacing: 0.5px">CCID4</span>
+      <span style="font-size: 12px; color: #C7D2E0">บก.สอท.4</span>
+    </span>
+  </a>
+  <div class="grp">งานประจำวัน</div>
+  <a class="item on" href="Main.dc.html" aria-current="page"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>แดชบอร์ด</a>
+  <a class="item" href="Cases.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>รายการคดี</a>
+  <a class="item" href="Intake.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>รับเรื่องจากประชาชน</a>
+  <a class="item" href="Deadlines.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>กรอบเวลา</a>
+  <div class="grp">เครื่องมือสอบสวน</div>
+  <a class="item" href="Review.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg>ห้องสอบปากคำ<span class="new">ใหม่</span></a>
+  <a class="item" href="Summons.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>หมายเรียกชุดใหญ่<span class="new">ใหม่</span></a>
+  <a class="item" href="Money.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="6" r="2.5"/><circle cx="19" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M7.5 6h9M6.3 8.2l4.4 7.6M17.7 8.2l-4.4 7.6"/></svg>เส้นทางการเงิน<span class="new">ใหม่</span></a>
+  <a class="item" href="Docs.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M16 13H8M16 17H8"/></svg>เอกสารสำนวน<span class="new">ใหม่</span></a>
+  <div class="grp">หัวหน้า</div>
+  <a class="item" href="Main.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 16v-4M12 16V8M17 16v-7"/></svg>ภาพรวมทั้งกอง<span class="new">ใหม่</span></a>
+  <div class="grp">ระบบ</div>
+  <a class="item" href="Import.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5M12 3v12"/></svg>นำเข้าข้อมูล</a>
+  <a class="item" href="Settings.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>ตั้งค่าและความปลอดภัย</a>
+</nav>
+
+<div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+  <!-- แถบบน -->
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-height: 64px; padding: 10px 32px; background: #FFFFFF; border-bottom: 1px solid #E2E8F0">
+    <label style="flex: 1 1 280px; max-width: 460px; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border: 1px solid #94A3B8; border-radius: 8px; color: #475569">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">ค้นหา</span>
+      <input type="search" placeholder="ค้นหาเลขคดี ชื่อบุคคล เลขบัญชี" style="flex: 1; min-width: 0; border: 0; outline: 0; font: inherit; font-size: 15px; color: #0F172A; background: transparent">
+    </label>
+    <span style="flex: 1 1 0"></span>
+    <span class="bd" style="color: #0F172A; border-color: #94A3B8; background: repeating-linear-gradient(135deg, #FFFFFF 0 6px, #EEF1F5 6px 12px)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2v7.3M14 9.3V2M8.5 2h7M14 9.3a6.5 6.5 0 1 1-4 0"/></svg>ข้อมูลจำลอง</span>
+    <span class="bd" style="color: #12355B; background: #E8EEF5; border-color: #B6C6DA" title="โมเดล AI ทำงานบนเซิร์ฟเวอร์ของหน่วยงาน ไม่มีข้อมูลส่งออกภายนอก"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg>AI ประมวลผลในเครื่อง</span>
+    <span style="display: flex; align-items: center; gap: 10px; padding-left: 8px">
+      <span style="width: 36px; height: 36px; border-radius: 999px; background: #12355B; color: #FFFFFF; display: grid; place-items: center; font-size: 14px; font-weight: 600">ทน</span>
+      <span style="display: flex; flex-direction: column; line-height: 1.3"><span style="font-size: 14px; font-weight: 600">พ.ต.ท.ทดสอบ หนึ่ง</span><span class="muted" style="font-size: 12px">สารวัตร (สอบสวน) · หัวหน้างาน</span></span>
+    </span>
+  </header>
+
+  <main style="padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 24px; max-width: 1240px; width: 100%">
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px">
+      <div style="flex: 1 1 320px">
+        <h1 style="margin: 0; font-size: 28px; line-height: 1.4; font-weight: 700">แดชบอร์ด</h1>
+        <p class="muted" style="margin: 2px 0 0; font-size: 15px">วันพุธที่ 11 พฤศจิกายน 2569 · ข้อมูลล่าสุด 08.45 น.</p>
+      </div>
+      <div role="group" aria-label="มุมมอง" style="display: inline-flex; gap: 4px; padding: 4px; background: #E8EDF3; border-radius: 10px">
+        <button type="button" class="seg" style="{{mineStyle}}" aria-pressed="{{isMine}}" onClick="{{showMine}}">งานของฉัน</button>
+        <button type="button" class="seg" style="{{allStyle}}" aria-pressed="{{isAll}}" onClick="{{showAll}}">ทั้งกอง (มุมมองหัวหน้า)</button>
+      </div>
+    </div>
+
+    <!-- การ์ดสรุป -->
+    <section aria-label="สรุปงาน" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px">
+      <a class="card stat" href="Cases.dc.html">
+        <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600">ครบกำหนดภายใน 3 วัน</span>
+        <span class="num" style="font-size: 40px; line-height: 1.2; font-weight: 700">{{c1}} <span style="font-size: 16px; font-weight: 500" class="muted">คดี</span></span>
+        <span class="bd due" style="align-self: flex-start"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>ใกล้ครบกำหนด</span>
+        <span class="muted" style="font-size: 13px">{{c1d}}</span>
+      </a>
+      <a class="card stat" href="Intake.dc.html">
+        <span style="font-size: 14px; font-weight: 600">เรื่องแจ้งใหม่รอรับ</span>
+        <span class="num" style="font-size: 40px; line-height: 1.2; font-weight: 700">{{c2}} <span style="font-size: 16px; font-weight: 500" class="muted">เรื่อง</span></span>
+        <span class="bd inf" style="align-self: flex-start"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>รอรับเรื่อง</span>
+        <span class="muted" style="font-size: 13px">{{c2d}}</span>
+      </a>
+      <a class="card stat" href="Review.dc.html">
+        <span style="font-size: 14px; font-weight: 600">การสอบปากคำรอตรวจ</span>
+        <span class="num" style="font-size: 40px; line-height: 1.2; font-weight: 700">{{c3}} <span style="font-size: 16px; font-weight: 500" class="muted">ครั้ง</span></span>
+        <span class="bd inf" style="align-self: flex-start"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.17 6.81a1 1 0 0 0-3.99-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/></svg>ร่างจาก AI รอคนตรวจ</span>
+        <span class="muted" style="font-size: 13px">{{c3d}}</span>
+      </a>
+      <a class="card stat" href="Summons.dc.html">
+        <span style="font-size: 14px; font-weight: 600">หมายเรียกที่นัดสัปดาห์นี้</span>
+        <span class="num" style="font-size: 40px; line-height: 1.2; font-weight: 700">{{c4}} <span style="font-size: 16px; font-weight: 500" class="muted">ฉบับ</span></span>
+        <span class="bd neu" style="align-self: flex-start"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>12–18 พ.ย. 2569</span>
+        <span class="muted" style="font-size: 13px">{{c4d}}</span>
+      </a>
+      <a class="card stat" href="Money.dc.html">
+        <span style="font-size: 14px; font-weight: 600">คดีออนไลน์ที่รอหนังสืออายัด</span>
+        <span class="num" style="font-size: 40px; line-height: 1.2; font-weight: 700">{{c5}} <span style="font-size: 16px; font-weight: 500" class="muted">คดี</span></span>
+        <span class="bd due" style="align-self: flex-start"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>ยังไม่ส่งหนังสือ</span>
+        <span class="muted" style="font-size: 13px">{{c5d}}</span>
+      </a>
+    </section>
+
+    <!-- มุมมองหัวหน้า -->
+    <sc-if value="{{isAll}}" hint-placeholder-val="{{ true }}">
+      <section aria-labelledby="chief-h" style="display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; align-items: center; gap: 10px">
+          <h2 id="chief-h" style="margin: 0; font-size: 20px; font-weight: 700">ภาพรวมทั้งกอง</h2>
+          <span class="new" style="margin-left: 0">ใหม่</span>
+          <span class="muted" style="font-size: 14px">กก.1–กก.3 · พนักงานสอบสวน 6 นาย · คดียังไม่สิ้นสุด 186 คดี</span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 16px">
+          <div class="card" style="flex: 3 1 520px; min-width: 0; padding: 20px 24px">
+            <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 12px">
+              <h3 style="margin: 0; font-size: 17px; font-weight: 600">ภาระงานรายพนักงานสอบสวน</h3>
+              <span class="muted" style="font-size: 13px">คดีที่ยังไม่สิ้นสุด · เฉลี่ย 31 คดีต่อนาย</span>
+            </div>
+            <div role="table" aria-label="ภาระงานรายพนักงานสอบสวน" style="display: flex; flex-direction: column; gap: 4px">
+              <div role="row" class="brow muted" style="min-height: 28px; font-size: 13px"><span role="columnheader">พนักงานสอบสวน</span><span role="columnheader">จำนวนคดี</span><span role="columnheader">ใกล้ครบกำหนด</span></div>
+              <sc-for list="{{bars}}" as="b" hint-placeholder-count="6">
+                <div role="row" class="brow">
+                  <span role="cell" style="font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{b.name}}</span>
+                  <span role="cell" style="display: flex; align-items: center; gap: 8px">
+                    <span class="bar" style="{{b.barStyle}}"></span>
+                    <span class="num" style="font-size: 14px; font-weight: 600">{{b.n}}</span>
+                  </span>
+                  <span role="cell"><span class="bd {{b.cls}}">{{b.dueText}}</span></span>
+                  <span class="tip">{{b.tip}}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #E2E8F0; display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px" class="muted">
+              <span>วางเมาส์บนแท่งเพื่อดูรายละเอียด · สเกลเต็ม 50 คดี</span>
+              <a href="Cases.dc.html" style="margin-left: auto; font-weight: 600">ดูเป็นตาราง</a>
+            </div>
+          </div>
+
+          <div class="card" style="flex: 2 1 360px; min-width: 0; display: flex; flex-direction: column">
+            <div style="padding: 20px 20px 12px; display: flex; align-items: baseline; gap: 8px">
+              <h3 style="margin: 0; font-size: 17px; font-weight: 600">คดีใกล้ครบกำหนดทั้งกอง</h3>
+              <span class="muted" style="font-size: 13px">7 วันข้างหน้า</span>
+            </div>
+            <sc-for list="{{chiefDue}}" as="d" hint-placeholder-count="5">
+              <a class="lrow" href="Case.dc.html" style="text-decoration: none; color: #0F172A">
+                <span class="num" style="font-weight: 600; color: #12355B">{{d.no}}</span>
+                <span style="display: flex; flex-direction: column; min-width: 0; line-height: 1.4"><span style="font-size: 14px">{{d.what}}</span><span class="muted" style="font-size: 13px">{{d.who}}</span></span>
+                <span class="bd {{d.cls}}">{{d.left}}</span>
+              </a>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- งานของฉัน -->
+    <div style="display: flex; flex-wrap: wrap; gap: 16px">
+      <section class="card" aria-labelledby="dl-h" style="flex: 3 1 520px; min-width: 0">
+        <div style="padding: 20px 20px 12px; display: flex; align-items: baseline; gap: 8px">
+          <h2 id="dl-h" style="margin: 0; font-size: 17px; font-weight: 600">กำหนดเวลาของฉันที่ใกล้ถึง</h2>
+          <a href="Cases.dc.html" style="margin-left: auto; font-size: 14px; font-weight: 600">ดูทั้งหมด</a>
+        </div>
+        <sc-for list="{{myDue}}" as="d" hint-placeholder-count="5">
+          <a class="lrow" href="Case.dc.html" style="text-decoration: none; color: #0F172A">
+            <span class="num" style="font-weight: 600; color: #12355B">{{d.no}}</span>
+            <span style="display: flex; flex-direction: column; min-width: 0; line-height: 1.4"><span style="font-size: 14px">{{d.what}}</span><span class="muted" style="font-size: 13px">{{d.charge}}</span></span>
+            <span class="bd {{d.cls}}">{{d.left}}</span>
+          </a>
+        </sc-for>
+      </section>
+
+      <section class="card" aria-labelledby="ai-h" style="flex: 2 1 360px; min-width: 0; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+        <h2 id="ai-h" style="margin: 0; font-size: 17px; font-weight: 600">งานที่ AI ร่างไว้ รอคนตรวจ</h2>
+        <p class="muted" style="margin: 0; font-size: 13px">AI ร่างเท่านั้น ทุกรายการต้องมีผู้ตรวจและยืนยันก่อนนำไปใช้</p>
+        <a href="Review.dc.html" class="card" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; text-decoration: none; color: #0F172A; min-height: 64px">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#12355B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg>
+          <span style="flex: 1; line-height: 1.4"><span style="display: block; font-size: 14px; font-weight: 600">ร่างคำให้การผู้ต้องหา · จ.0112/2569</span><span class="muted" style="font-size: 13px">48 นาที · ธงเตือน 2 จุด · การแจ้งสิทธิขาด 1 ข้อ</span></span>
+          <span class="bd late"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/></svg>ต้องตรวจ</span>
+        </a>
+        <a href="Review.dc.html" class="card" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; text-decoration: none; color: #0F172A; min-height: 64px">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#12355B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg>
+          <span style="flex: 1; line-height: 1.4"><span style="display: block; font-size: 14px; font-weight: 600">ร่างคำให้การพยาน · จ.0098/2569</span><span class="muted" style="font-size: 13px">22 นาที · ไม่มีธงเตือน</span></span>
+          <span class="bd inf">รอตรวจ</span>
+        </a>
+        <a href="Intake.dc.html" class="card" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; text-decoration: none; color: #0F172A; min-height: 64px">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#12355B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M16 13H8M16 17H8"/></svg>
+          <span style="flex: 1; line-height: 1.4"><span style="display: block; font-size: 14px; font-weight: 600">สลิปโอนเงินที่ระบบอ่านแล้ว 4 ใบ</span><span class="muted" style="font-size: 13px">จากเรื่องแจ้งออนไลน์ · ตรวจยอดและเลขบัญชี</span></span>
+          <span class="bd inf">รอตรวจ</span>
+        </a>
+      </section>
+    </div>
+  </main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { view: 'all' }; }
+  renderVals() {
+    const all = this.state.view === 'all';
+    const on = 'background: #FFFFFF; color: #12355B; box-shadow: 0 1px 2px rgba(15,23,42,.12)';
+    const off = 'background: transparent; color: #334155';
+    const people = [
+      ['ร.ต.อ.ทดสอบ สาม', 46, 3], ['พ.ต.ต.ทดสอบ สอง', 41, 2], ['พ.ต.ท.ทดสอบ หนึ่ง', 34, 4],
+      ['ร.ต.อ.หญิงทดสอบ สี่', 29, 1], ['ร.ต.ท.ทดสอบ ห้า', 22, 1], ['ร.ต.ท.ทดสอบ หก', 14, 0]
+    ];
+    const bars = people.map(([name, n, d]) => ({
+      name, n,
+      barStyle: 'display:block;height:20px;border-radius:0 4px 4px 0;background:#12355B;width:' + Math.round(n / 50 * 100) + '%',
+      cls: d >= 3 ? 'due' : (d === 0 ? 'neu' : 'inf'),
+      dueText: d === 0 ? 'ไม่มี' : d + ' คดี',
+      tip: name + ' · ' + n + ' คดี · ใกล้ครบกำหนด ' + d + ' คดี'
+    }));
+    return {
+      isAll: all, isMine: !all,
+      allStyle: all ? on : off, mineStyle: all ? off : on,
+      showAll: () => this.setState({ view: 'all' }),
+      showMine: () => this.setState({ view: 'mine' }),
+      c1: all ? 11 : 4, c1d: all ? 'ฝากขัง 5 · ผัดฟ้อง 3 · ส่งสำนวน 3' : 'ฝากขัง 2 · ผัดฟ้อง 1 · ส่งสำนวน 1',
+      c2: all ? 23 : 7, c2d: all ? 'ออนไลน์ 17 · อาญาทั่วไป 6' : 'ออนไลน์ 5 · อาญาทั่วไป 2',
+      c3: all ? 9 : 3, c3d: all ? 'มีธงเตือนที่ต้องดู 4 ครั้ง' : 'มีธงเตือนที่ต้องดู 1 ครั้ง',
+      c4: all ? 64 : 18, c4d: all ? 'มาตามนัดแล้ว 21 · รอ 43' : 'มาตามนัดแล้ว 6 · รอ 12',
+      c5: all ? 17 : 5, c5d: all ? 'ยอดเงินที่ขออายัดรวม 3.8 ล้านบาท' : 'ยอดเงินที่ขออายัดรวม 1.24 ล้านบาท',
+      bars,
+      chiefDue: [
+        { no: 'จ.0076/2569', what: 'ส่งสำนวนต่ออัยการ · 10 พ.ย. 2569', who: 'พ.ต.ท.ทดสอบ หนึ่ง', cls: 'late', left: 'เกินกำหนด 1 วัน' },
+        { no: 'จ.0098/2569', what: 'ส่งสำนวนต่ออัยการ · 12 พ.ย. 2569', who: 'พ.ต.ท.ทดสอบ หนึ่ง', cls: 'due', left: 'อีก 1 วัน' },
+        { no: 'จ.0141/2569', what: 'ฝากขังครั้งที่ 2 · 12 พ.ย. 2569', who: 'ร.ต.อ.ทดสอบ สาม', cls: 'due', left: 'อีก 1 วัน' },
+        { no: 'จ.0112/2569', what: 'ฝากขังครั้งที่ 3 · 13 พ.ย. 2569', who: 'พ.ต.ท.ทดสอบ หนึ่ง', cls: 'due', left: 'อีก 2 วัน' },
+        { no: 'จ.0093/2569', what: 'ผัดฟ้องครั้งที่ 4 · 14 พ.ย. 2569', who: 'พ.ต.ต.ทดสอบ สอง', cls: 'due', left: 'อีก 3 วัน' },
+        { no: 'จ.0127/2569', what: 'ส่งสำนวนต่ออัยการ · 17 พ.ย. 2569', who: 'ร.ต.อ.หญิงทดสอบ สี่', cls: 'inf', left: 'อีก 6 วัน' }
+      ],
+      myDue: [
+        { no: 'จ.0076/2569', what: 'ส่งสำนวนต่ออัยการ · 10 พ.ย. 2569', charge: 'ปลอมเอกสารและใช้เอกสารปลอม', cls: 'late', left: 'เกินกำหนด 1 วัน' },
+        { no: 'จ.0098/2569', what: 'ส่งสำนวนต่ออัยการ · 12 พ.ย. 2569', charge: 'ฉ้อโกงผ่านระบบคอมพิวเตอร์ (ซื้อขายออนไลน์)', cls: 'due', left: 'อีก 1 วัน' },
+        { no: 'จ.0112/2569', what: 'ฝากขังครั้งที่ 3 · 13 พ.ย. 2569', charge: 'ฉ้อโกงประชาชนผ่านระบบคอมพิวเตอร์ (หลอกลงทุน)', cls: 'due', left: 'อีก 2 วัน' },
+        { no: 'จ.0087/2569', what: 'ผัดฟ้องครั้งที่ 2 · 14 พ.ย. 2569', charge: 'ยินยอมให้ผู้อื่นใช้บัญชีเงินฝาก (บัญชีม้า)', cls: 'due', left: 'อีก 3 วัน' },
+        { no: 'จ.0130/2569', what: 'สอบปากคำผู้กล่าวหา · 18 พ.ย. 2569', charge: 'ลักทรัพย์', cls: 'inf', left: 'อีก 7 วัน' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
