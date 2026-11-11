@@ -1,0 +1,22 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-11T05:20:00Z"},
+  "title": "CCID4 — ระบบงานสอบสวน",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 1240, "title": "1 แดชบอร์ด", "expand": "fill", "is_interactive": true},
+    "Cases.dc.html": {"x": 1520, "y": 0, "w": 1440, "h": 1040, "title": "2 รายการคดี", "expand": "fill", "is_interactive": true},
+    "Case.dc.html": {"x": 3040, "y": 0, "w": 1440, "h": 1180, "title": "3 หน้าคดี", "expand": "fill", "is_interactive": true},
+    "Record.dc.html": {"x": 4560, "y": 0, "w": 1440, "h": 900, "title": "4 ห้องสอบปากคำ — บันทึกเสียง", "expand": "fill", "is_interactive": true},
+    "Review.dc.html": {"x": 6080, "y": 0, "w": 1440, "h": 1280, "title": "5 ห้องสอบปากคำ — ตรวจและร่างคำให้การ", "expand": "fill", "is_interactive": true},
+    "Summons.dc.html": {"x": 7600, "y": 0, "w": 1440, "h": 1240, "title": "6 หมายเรียกชุดใหญ่", "expand": "fill", "is_interactive": true}
+  },
+  "order": ["Main.dc.html", "Cases.dc.html", "Case.dc.html", "Record.dc.html", "Review.dc.html", "Summons.dc.html"],
+  "notes": {
+    "set1": {"x": 0, "y": -300, "text": "CCID4 · ชุดที่ 1 (หน้า 1–6) — ข้อมูลจำลองทั้งหมด", "kind": "title1", "maxW": 9040}
+  },
+  "designSystems": [
+    {"title": "หมายเรียก บก.สอท.4", "namespace": "summons", "artifact": "https://claude.ai/artifact/74LgQcW3ux5yahJsWw5w9R", "version": "1793596209-8771", "copiedAt": "2026-11-11T05:20:00Z"}
+  ]
+}
