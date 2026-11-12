@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>CCID4 · เข้าสู่ระบบ</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F7FA}
+*{box-sizing:border-box}
+.ui{font-family:'IBM Plex Sans Thai',system-ui,sans-serif;color:#0F172A;font-size:15px;line-height:1.6}
+a{color:#12355B}a:hover{color:#0B2440}
+:focus-visible{outline:2px solid #1D4ED8;outline-offset:2px}
+.muted{color:#475569}
+.fld{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600}
+.fld input{min-height:48px;padding:0 14px;border:1px solid #94A3B8;border-radius:8px;font:inherit;font-size:16px;font-weight:400;color:#0F172A;background:#FFFFFF}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border-radius:8px;font:inherit;font-weight:600;font-size:16px;cursor:pointer;text-decoration:none;border:1px solid transparent}
+.btn-p{background:#12355B;color:#FFFFFF}.btn-p:hover{background:#0B2440;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#12355B;border-color:#94A3B8}.btn-s:hover{background:#F1F5F9;color:#12355B}
+.bd{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:500;line-height:20px;border:1px solid;white-space:nowrap}
+.pt{display:flex;gap:12px;align-items:flex-start}
+.pt span.i{width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,.1);display:grid;place-items:center;flex:none}
+.otp{width:48px;height:56px;text-align:center;border:1px solid #94A3B8;border-radius:8px;font:inherit;font-size:22px;font-weight:600;color:#0F172A}
+</style>
+</helmet>
+<div class="ui" style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F7FA">
+  <!-- ฝั่งแบรนด์ -->
+  <section aria-label="เกี่ยวกับระบบ" style="flex: 1 1 520px; background: #12355B; color: #FFFFFF; padding: 48px 56px; display: flex; flex-direction: column; gap: 32px; position: relative; overflow: hidden">
+    <svg aria-hidden="true" width="520" height="520" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="0.6" style="position: absolute; right: -120px; bottom: -120px"><path d="M12 2.5 4 5.5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10v-6z"/></svg>
+    <div style="display: flex; align-items: center; gap: 14px">
+      <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 4 5.5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10v-6z"/><path d="M8.5 12h7"/></svg>
+      <span style="line-height: 1.15"><span style="display: block; font-size: 34px; font-weight: 700; letter-spacing: 1px">CCID4</span><span style="font-size: 15px; color: #C7D2E0">กก.1 · บก.สอท.4</span></span>
+    </div>
+    <div>
+      <h1 style="margin: 0; font-size: 32px; line-height: 1.4; font-weight: 700">ระบบงานสอบสวน<br>ตั้งแต่รับเรื่องถึงส่งสำนวน</h1>
+      <p style="margin: 12px 0 0; font-size: 17px; color: #DCE4EE; max-width: 460px">รับแจ้ง จัดการคดี สอบปากคำ ออกหมาย สร้างเอกสารสำนวน และติดตามกรอบเวลา ในที่เดียว</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 18px; max-width: 480px">
+      <div class="pt"><span class="i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.17 6.81a1 1 0 0 0-3.99-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/></svg></span><span><strong style="display: block">AI แค่ร่าง คนตรวจและยืนยัน</strong><span style="color: #C7D2E0; font-size: 14px">ทุกเอกสารที่ AI ร่างต้องผ่านพนักงานสอบสวนก่อนใช้</span></span></div>
+      <div class="pt"><span class="i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg></span><span><strong style="display: block">ประมวลผลในเครื่องของหน่วยงาน</strong><span style="color: #C7D2E0; font-size: 14px">ข้อมูลคดีและเสียงสอบปากคำไม่ออกนอกหน่วยงาน</span></span></div>
+      <div class="pt"><span class="i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5M12 7v5l4 2"/></svg></span><span><strong style="display: block">ตรวจสอบย้อนหลังได้ทุกการกระทำ</strong><span style="color: #C7D2E0; font-size: 14px">ใครเปิด แก้ ดาวน์โหลด ฟังเสียง เมื่อไร ถูกบันทึกไว้ทั้งหมด</span></span></div>
+    </div>
+    <span style="margin-top: auto; font-size: 13px; color: #9FB3CC">ระบบภายในของหน่วยงาน · ใช้ได้เฉพาะเครือข่ายราชการหรือ VPN ของหน่วย</span>
+  </section>
+
+  <!-- ฟอร์ม -->
+  <section aria-labelledby="lg-h" style="flex: 1 1 480px; display: flex; flex-direction: column; padding: 24px 32px">
+    <div style="display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap">
+      <span class="bd" style="color: #0F172A; border-color: #94A3B8; background: repeating-linear-gradient(135deg, #FFFFFF 0 6px, #EEF1F5 6px 12px)">ข้อมูลจำลอง</span>
+      <span class="bd" style="color: #12355B; background: #E8EEF5; border-color: #B6C6DA"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>AI ประมวลผลในเครื่อง</span>
+    </div>
+    <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 32px 0">
+      <div style="width: 100%; max-width: 420px; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; padding: 32px; display: flex; flex-direction: column; gap: 18px">
+        <sc-if value="{{isCred}}" hint-placeholder-val="{{ true }}">
+          <h2 id="lg-h" style="margin: 0; font-size: 24px; font-weight: 700">เข้าสู่ระบบ</h2>
+          <p class="muted" style="margin: -10px 0 0; font-size: 14px">สำหรับเจ้าหน้าที่ กก.1 บก.สอท.4</p>
+          <label class="fld">อีเมลราชการ<input placeholder="ชื่อผู้ใช้@police.go.th" inputmode="email"></label>
+          <label class="fld">รหัสผ่าน<input type="password" value="••••••••••"></label>
+          <div style="display: flex; justify-content: space-between; font-size: 14px"><label style="display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer"><input type="checkbox" style="width: 20px; height: 20px; accent-color: #12355B">จำอุปกรณ์นี้ 8 ชั่วโมง</label><a href="#forgot" style="display: flex; align-items: center; font-weight: 600">ลืมรหัสผ่าน</a></div>
+          <button type="button" class="btn btn-p" onClick="{{next}}">ถัดไป</button>
+          <div style="display: flex; align-items: center; gap: 10px; color: #475569; font-size: 13px"><span style="flex: 1; height: 1px; background: #CBD5E1"></span>หรือ<span style="flex: 1; height: 1px; background: #CBD5E1"></span></div>
+          <button type="button" class="btn btn-s">เข้าด้วยบัญชีเครือข่ายของหน่วยงาน</button>
+        </sc-if>
+        <sc-if value="{{isOtp}}" hint-placeholder-val="{{ false }}">
+          <h2 style="margin: 0; font-size: 24px; font-weight: 700">ยืนยันตัวตนขั้นที่ 2</h2>
+          <p class="muted" style="margin: -10px 0 0; font-size: 14px">กรอกรหัส 6 หลักจากแอปยืนยันตัวตนบนโทรศัพท์ของท่าน</p>
+          <div style="display: flex; gap: 8px; justify-content: space-between"><input class="otp" aria-label="หลักที่ 1" value="3"><input class="otp" aria-label="หลักที่ 2" value="1"><input class="otp" aria-label="หลักที่ 3" value="9"><input class="otp" aria-label="หลักที่ 4" value=""><input class="otp" aria-label="หลักที่ 5" value=""><input class="otp" aria-label="หลักที่ 6" value=""></div>
+          <a class="btn btn-p" href="Main.dc.html">เข้าสู่ระบบ</a>
+          <button type="button" class="btn btn-s" onClick="{{back}}">ย้อนกลับ</button>
+        </sc-if>
+        <p class="muted" style="margin: 0; font-size: 13px">บัญชีสร้างโดยผู้ดูแลระบบของหน่วยเท่านั้น · การเข้าสู่ระบบทุกครั้งถูกบันทึก</p>
+      </div>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 24px; font-size: 14px">
+      <a href="Citizen6Track.dc.html" style="font-weight: 600; min-height: 44px; display: flex; align-items: center">ติดตามความคืบหน้าคดี (สำหรับผู้แจ้ง)</a>
+      <a href="Citizen1Consent.dc.html" style="font-weight: 600; min-height: 44px; display: flex; align-items: center">แจ้งเรื่องออนไลน์</a>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { step: 'cred' }; }
+  renderVals() {
+    const c = this.state.step === 'cred';
+    return { isCred: c, isOtp: !c, next: () => this.setState({ step: 'otp' }), back: () => this.setState({ step: 'cred' }) };
+  }
+}
+</script>
+</body>
+</html>
