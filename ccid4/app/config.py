@@ -14,7 +14,10 @@ def _bool(name: str, default: bool) -> bool:
     return default if v is None else v.strip().lower() in {"1", "true", "yes", "on"}
 
 
-DATA_DIR = Path(os.environ.get("CCID4_DATA_DIR", BASE_DIR / "data")).resolve()
+# Preview mode (e.g. on Vercel): demo data only, stored in /tmp and lost on every restart.
+PREVIEW = os.environ.get("VERCEL") == "1" or _bool("CCID4_PREVIEW", False)
+
+DATA_DIR = Path(os.environ.get("CCID4_DATA_DIR", "/tmp/ccid4" if PREVIEW else BASE_DIR / "data")).resolve()
 AUDIO_DIR = DATA_DIR / "audio"
 OUTPUT_DIR = DATA_DIR / "output"
 UPLOAD_DIR = DATA_DIR / "uploads"
@@ -24,12 +27,17 @@ for _d in (DATA_DIR, AUDIO_DIR, OUTPUT_DIR, UPLOAD_DIR):
 DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{DATA_DIR / 'ccid4.db'}")
 
 SECRET_KEY = os.environ.get("CCID4_SECRET_KEY", "")
+if not SECRET_KEY and PREVIEW:
+    # Same key on every serverless instance so logins survive; preview holds demo data only.
+    import hashlib
+    SECRET_KEY = hashlib.sha256(("ccid4-preview-" + os.environ.get("VERCEL_PROJECT_ID", "local")).encode()).hexdigest()
+    warnings.warn("โหมดตัวอย่าง: ใช้คีย์ที่คาดเดาได้ ตั้ง CCID4_SECRET_KEY ใน Vercel เพื่อความปลอดภัย")
 if not SECRET_KEY:
     SECRET_KEY = secrets.token_hex(32)
     warnings.warn("CCID4_SECRET_KEY ไม่ได้ตั้งค่า ใช้คีย์ชั่วคราว (ผู้ใช้จะต้องเข้าสู่ระบบใหม่เมื่อรีสตาร์ต)")
 
 # Show the "ข้อมูลจำลอง" badge; turn off in real deployments.
-DEMO_MODE = _bool("CCID4_DEMO_MODE", True)
+DEMO_MODE = PREVIEW or _bool("CCID4_DEMO_MODE", True)
 # Set true behind HTTPS so session cookies are Secure.
 COOKIE_SECURE = _bool("CCID4_COOKIE_SECURE", False)
 SESSION_HOURS = int(os.environ.get("CCID4_SESSION_HOURS", "8"))

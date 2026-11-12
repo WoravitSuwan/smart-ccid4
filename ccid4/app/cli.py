@@ -33,11 +33,17 @@ def create_user(email: str, name: str, role: str, password: str | None, position
     print(f"สร้าง {u.email} ({role}) แล้ว")
 
 
-def demo() -> None:
-    """Fictional data only: names, case numbers and accounts are made up."""
-    db = SessionLocal()
-    if db.execute(select(Case)).first():
-        sys.exit("ฐานข้อมูลมีคดีอยู่แล้ว ไม่ใส่ข้อมูลจำลอง")
+DEMO_ACCOUNTS = [
+    ("inv.demo@example.invalid", "demo-inv-2569", "พนักงานสอบสวน"),
+    ("chief.demo@example.invalid", "demo-chief-2569", "หัวหน้า"),
+    ("clerk.demo@example.invalid", "demo-clerk-2569", "ธุรการ"),
+]
+
+
+def seed_demo(db) -> bool:
+    """Fictional data only: names, case numbers and accounts are made up. Returns False if data exists."""
+    if db.execute(select(User)).first():
+        return False
     users = {
         "chief": User(email="chief.demo@example.invalid", full_name="พ.ต.อ.ทดสอบ หัวหน้า", position="ผู้กำกับการ", role="chief",
                       password_hash=hash_password("demo-chief-2569")),
@@ -51,17 +57,28 @@ def demo() -> None:
     c = Case(case_no="0112/2569", receipt_no="2569-10-00418", charge="ฉ้อโกงประชาชนผ่านระบบคอมพิวเตอร์", case_type="online",
              stage="สอบสวน", status="อยู่ระหว่างสอบสวน", investigator_id=users["inv"].id, damage_amount=486500,
              summary="ถูกชักชวนลงทุนผ่านกลุ่มสนทนาออนไลน์ โอนเงิน 3 ครั้ง (ข้อมูลจำลอง)")
-    db.add(c)
+    c2 = Case(case_no="0098/2569", charge="ฉ้อโกงผ่านระบบคอมพิวเตอร์ (ซื้อขายออนไลน์)", case_type="online", stage="สรุปสำนวน",
+              status="อยู่ระหว่างสอบสวน", investigator_id=users["inv"].id)
+    db.add_all([c, c2])
     db.flush()
+    base = datetime.now().replace(hour=16, minute=30, second=0, microsecond=0)
     db.add_all([
         Person(case_id=c.id, role="ผู้กล่าวหา", name="นายสมมติ ตัวอย่าง", citizen_id="3000000000456", address="99 ม.9 ต.ตัวอย่าง อ.เมืองสมมติ จ.ทดสอบ", postcode="50000"),
         Person(case_id=c.id, role="ผู้ต้องหา", name="นายทดลอง ไม่มีจริง", citizen_id="1000000000123"),
         Person(case_id=c.id, role="พยาน", name="นางสาวตัวอย่าง ใจงาม"),
-        Deadline(case_id=c.id, kind="ฝากขัง", title="ฝากขังครั้งที่ 3 ครบกำหนด", due_at=datetime.now().replace(hour=16, minute=30, second=0, microsecond=0) + timedelta(days=2),
+        Person(case_id=c2.id, role="ผู้กล่าวหา", name="นางสาวทดสอบ ใจดี"),
+        Deadline(case_id=c.id, kind="ฝากขัง", title="ฝากขังครั้งที่ 3 ครบกำหนด", due_at=base + timedelta(days=2),
                  basis="ศาลอนุญาตฝากขังครั้งที่ 2 (ข้อมูลจำลอง)"),
+        Deadline(case_id=c2.id, kind="ส่งสำนวน", title="ส่งสำนวนต่ออัยการ", due_at=base + timedelta(days=1)),
     ])
     audit.log(db, None, "create", "case", c.id, "ใส่ข้อมูลจำลองสำหรับฝึกใช้งาน")
-    print("ใส่ข้อมูลจำลองแล้ว: inv.demo@example.invalid / demo-inv-2569 · chief.demo@example.invalid / demo-chief-2569 · clerk.demo@example.invalid / demo-clerk-2569")
+    return True
+
+
+def demo() -> None:
+    if not seed_demo(SessionLocal()):
+        sys.exit("ฐานข้อมูลมีผู้ใช้อยู่แล้ว ไม่ใส่ข้อมูลจำลอง")
+    print("ใส่ข้อมูลจำลองแล้ว: " + " · ".join(f"{e} / {p}" for e, p, _ in DEMO_ACCOUNTS))
 
 
 def main() -> None:

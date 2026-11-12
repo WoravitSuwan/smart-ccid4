@@ -31,6 +31,10 @@
       <label class="f">รหัสผ่าน<input type="password" name="password" required autocomplete="current-password"></label>
       <button class="btn btn-p">เข้าสู่ระบบ</button>
       <p class="muted small" style="margin:0">บัญชีสร้างโดยผู้ดูแลระบบของหน่วย · การเข้าสู่ระบบทุกครั้งถูกบันทึก</p>
+      {% if config.PREVIEW %}
+      <div class="err" role="note"><b>ระบบตัวอย่างสำหรับดูหน้าตาเท่านั้น</b> ห้ามใส่ข้อมูลจริง ข้อมูลจะหายเมื่อเซิร์ฟเวอร์เริ่มใหม่</div>
+      <div class="card pad small"><b>บัญชีทดลอง</b>{% for e, p, r in DEMO_ACCOUNTS %}<br>{{ r }}: <span class="num">{{ e }}</span> / <span class="num">{{ p }}</span>{% endfor %}</div>
+      {% endif %}
     </form>
   </section>
 </div>

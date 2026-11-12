@@ -33,6 +33,9 @@ APP_DIR = Path(__file__).resolve().parent
 @asynccontextmanager
 async def lifespan(_app):
     init_db()
+    if config.PREVIEW:
+        from .cli import seed_demo
+        seed_demo(SessionLocal())
     yield
 
 
@@ -41,7 +44,9 @@ app.add_middleware(SessionMiddleware, secret_key=config.SECRET_KEY, session_cook
                    max_age=config.SESSION_HOURS * 3600, same_site="strict", https_only=config.COOKIE_SECURE)
 app.mount("/static", StaticFiles(directory=APP_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=APP_DIR / "templates")
-templates.env.globals.update(thai=thai, config=config, ROLES=ROLES, STAGES=STAGES, PERSON_ROLES=PERSON_ROLES,
+from .cli import DEMO_ACCOUNTS  # noqa: E402
+
+templates.env.globals.update(DEMO_ACCOUNTS=DEMO_ACCOUNTS, thai=thai, config=config, ROLES=ROLES, STAGES=STAGES, PERSON_ROLES=PERSON_ROLES,
                              SPEAKER_ROLES=SPEAKER_ROLES, asr_available=transcribe.asr_available,
                              pdf_available=documents.pdf_available)
 

@@ -40,6 +40,7 @@
       <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-s btn-sm">ออกจากระบบ</button></form>
     </header>
     <main class="content">
+      {% if config.PREVIEW %}<div class="err" role="note">ระบบตัวอย่าง: ห้ามใส่ข้อมูลจริง ข้อมูลจะหายเมื่อเซิร์ฟเวอร์เริ่มใหม่ และไม่มีการสร้าง PDF</div>{% endif %}
       {% if flash %}<div class="flash" role="status">{{ flash }}</div>{% endif %}
       {% block content %}{% endblock %}
     </main>
