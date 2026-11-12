@@ -1,0 +1,39 @@
+{% extends "base.html" %}{% set active = 'summons' %}
+{% block title %}หมายเรียกชุดใหญ่{% endblock %}
+{% block content %}
+<div class="row"><h1>หมายเรียกชุดใหญ่</h1><span class="new" style="margin-left:0">ใหม่</span></div>
+<form class="card pad row" method="post" action="/summons/import" enctype="multipart/form-data">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label class="f" style="flex:1 1 320px">1 · นำเข้าทะเบียนคดีของกอง (.xlsx หรือ .csv)<input type="file" name="file" accept=".xlsx,.csv" required></label>
+  <button class="btn btn-s" style="align-self:flex-end">นำเข้า</button>
+  <p class="muted small" style="flex-basis:100%;margin:0">ต้องมีคอลัมน์ เลขคดี ผู้กล่าวหา และที่อยู่ (ระบบหาหัวคอลัมน์ให้เอง) · คดีที่สถานะเป็น {{ config.CLOSED_STATUSES|join(', ') }} จะถูกคัดออก</p>
+</form>
+{% if imp %}
+<form method="post" action="/summons/generate" class="cols">
+  <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="imp" value="{{ imp }}">
+  <section class="card wide">
+    <div class="pad row"><h2 style="flex:1">2 · คดีที่ยังไม่สิ้นสุด {{ rows|length }} จาก {{ total }} แถว</h2><span class="bd due">ที่อยู่ไม่ครบ {{ rows|selectattr('problem')|list|length }} ราย</span></div>
+    <div class="scroll"><table class="t" style="min-width:760px">
+      <thead><tr><th scope="col"><span class="sr">เลือก</span></th><th scope="col">แถว</th><th scope="col">เลขคดี</th><th scope="col">ผู้กล่าวหา</th><th scope="col">ที่อยู่</th><th scope="col">พนักงานสอบสวน</th></tr></thead>
+      {% for r in rows %}
+      <tr {% if r.problem %}style="background:#FFFBEB"{% endif %}>
+        <td><input type="checkbox" name="row" value="{{ r.id }}" aria-label="เลือก {{ r.case_no }}" {{ 'disabled' if r.problem else 'checked' }}></td>
+        <td class="num muted">{{ r.row_no }}</td><td class="num">{{ r.case_no }}</td><td>{{ r.complainant }}</td>
+        <td>{{ r.address }} {{ r.postcode }}{% if r.problem %}<br><span class="bd due">{{ r.problem }}</span>{% endif %}</td><td>{{ r.investigator }}</td>
+      </tr>{% endfor %}
+    </table></div>
+  </section>
+  <section class="card side pad" style="display:flex;flex-direction:column;gap:10px">
+    <h2>3 · วันนัดและส่งออก</h2>
+    <label class="f">วันนัด (วว/ดด/ปปปป พ.ศ.)<input name="date" value="{{ default_date }}" required><span class="small" style="font-weight:400">ค่าเริ่มต้น วันนี้ +14 วัน</span></label>
+    <label class="f">เวลาเริ่มนัด<input name="time" value="09:00"></label>
+    <label class="chk"><input type="checkbox" name="stagger" checked>ไล่เวลาทีละ 30 นาที แยกตามพนักงานสอบสวน</label>
+    <label class="f">สถานที่นัด<input name="place" value="ห้องสอบสวน {{ config.UNIT_SHORT }}"></label>
+    <label class="chk"><input type="checkbox" name="envelopes" checked>ใบจ่าหน้าซอง DL</label>
+    {% if pdf_available() %}<label class="chk"><input type="checkbox" name="pdf" checked>สร้าง PDF ด้วย</label>{% endif %}
+    <button class="btn btn-p">ออกหมายเรียก</button>
+    <p class="muted small" style="margin:0">เอกสารใช้เลขไทยและ พ.ศ. ตามแบบ · ตราครุฑเว้นไว้ตามแบบฟอร์มของหน่วย · การออกหมายถูกบันทึกในประวัติ</p>
+  </section>
+</form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% set active = 'cases' %}
+{% block title %}สร้างคดี{% endblock %}
+{% block content %}
+<h1>สร้างคดี</h1>
+<form class="card pad" method="post" action="/cases" style="display:flex;flex-direction:column;gap:14px;max-width:880px">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <div class="grid">
+    <label class="f">เลขคดี<input name="case_no" required placeholder="เช่น 0112/2569"></label>
+    <label class="f">เลขรับแจ้ง<input name="receipt_no"></label>
+    <label class="f">ประเภท<select name="case_type"><option value="online">ออนไลน์</option><option value="general">อาญาทั่วไป</option></select></label>
+    {% if user.role != 'investigator' %}
+    <label class="f">พนักงานสอบสวน<select name="investigator_id">{% for i in investigators %}<option value="{{ i.id }}">{{ i.full_name }}</option>{% endfor %}</select></label>
+    {% endif %}
+  </div>
+  <label class="f">ข้อหา<input name="charge"></label>
+  <label class="f">ผู้กล่าวหา<input name="complainant" placeholder="คำนำหน้า ชื่อ สกุล"></label>
+  <label class="f">พฤติการณ์โดยย่อ<textarea name="summary"></textarea></label>
+  <div><button class="btn btn-p">สร้างคดี</button></div>
+</form>
+{% endblock %}

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf" content="{{ csrf }}">
+<title>บันทึกเสียง · {{ iv.title }}</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="top">
+  <a class="btn btn-s" href="/interviews/{{ iv.id }}/prepare">กลับไปเช็กลิสต์</a>
+  <span style="flex:1"><b>{{ iv.title }}</b><br><span class="muted small">คดี {{ iv.case.case_no }}</span></span>
+  {% if config.DEMO_MODE %}<span class="bd mock">ข้อมูลจำลอง</span>{% endif %}
+  <span class="bd ai">AI ประมวลผลในเครื่อง</span>
+</header>
+<main class="focus" id="rec" data-iid="{{ iv.id }}">
+  <span class="bd late" id="state" role="status" style="font-size:16px;padding:6px 16px">กำลังเตรียมไมโครโฟน</span>
+  <div class="timer" id="timer" role="timer" aria-label="เวลาที่บันทึก">00:00:00</div>
+  <div class="meter" id="meter" aria-hidden="true"></div>
+  <div class="row" style="justify-content:center;gap:16px">
+    <button type="button" class="btn btn-s btn-xl" id="pause" disabled>พัก</button>
+    <button type="button" class="btn btn-s btn-xl" id="mark" disabled>ทำเครื่องหมาย</button>
+    <button type="button" class="btn btn-p btn-xl" id="stop" disabled>จบการบันทึก</button>
+  </div>
+  <div class="card pad" style="width:100%;max-width:640px;text-align:left;display:flex;flex-direction:column;gap:6px">
+    <b style="color:var(--ok)" id="synced">ยังไม่มีข้อมูลขึ้นเซิร์ฟเวอร์</b>
+    <span class="muted small" id="queue">ส่งเสียงขึ้นเซิร์ฟเวอร์ของหน่วยทุก 5 วินาที หากเครือข่ายหลุด ระบบจะลองส่งซ้ำให้เอง อย่าปิดหน้านี้จนกว่าจะจบการบันทึก</span>
+    <span class="muted small" id="marks"></span>
+  </div>
+  <noscript><div class="err">ต้องเปิด JavaScript เพื่อบันทึกเสียง</div></noscript>
+</main>
+<script src="/static/record.js"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% set active = 'cases' %}
+{% block title %}รายการคดี{% endblock %}
+{% block content %}
+<div class="row"><h1 style="flex:1">รายการคดี</h1>{% if user.can('edit_case') %}<a class="btn btn-p" href="/cases/new">สร้างคดี</a>{% endif %}</div>
+<form class="card pad row" method="get" action="/cases">
+  <label class="f" style="flex:1 1 280px">ค้นหา<input type="search" name="q" value="{{ q }}" placeholder="เลขคดี เลขรับแจ้ง ข้อหา ชื่อบุคคล"></label>
+  <input type="hidden" name="f" value="{{ f }}">
+  <button class="btn btn-s" style="align-self:flex-end">ค้นหา</button>
+  <div class="chips" style="flex-basis:100%">
+    {% for k, label in [('all','ทั้งหมด'),('due','ใกล้ครบกำหนด / เกินกำหนด'),('online','ออนไลน์'),('general','อาญาทั่วไป')] %}
+    <a class="chip{% if f == k %} on{% endif %}" href="/cases?f={{ k }}&q={{ q|urlencode }}" {% if f == k %}aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}
+  </div>
+</form>
+<div class="card scroll">
+  <table class="t" style="min-width:860px">
+    <thead><tr><th scope="col">เลขคดี</th><th scope="col">ข้อหา</th><th scope="col">ประเภท</th><th scope="col">ผู้กล่าวหา</th><th scope="col">พนักงานสอบสวน</th><th scope="col">ขั้นของคดี</th><th scope="col">กำหนดเวลาถัดไป</th></tr></thead>
+    <tbody>
+    {% for c in rows %}{% set nxt = c.deadlines|rejectattr('done')|list|first %}
+      <tr>
+        <td class="num"><a href="/cases/{{ c.id }}"><b>{{ c.case_no }}</b></a></td>
+        <td>{{ c.charge }}</td>
+        <td><span class="bd {{ 'inf' if c.case_type == 'online' else 'neu' }}">{{ c.type_name }}</span></td>
+        <td>{{ c.complainant.name if c.complainant else '' }}</td>
+        <td>{{ c.investigator.full_name if c.investigator else '' }}</td>
+        <td>{{ c.stage }}</td>
+        <td>{% if nxt %}{% set st = deadline_state(nxt) %}{{ nxt.title }}<br><span class="bd {{ st[0] }}">{{ st[1] }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+      </tr>
+    {% else %}<tr><td colspan="7" class="muted">ไม่พบคดี</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

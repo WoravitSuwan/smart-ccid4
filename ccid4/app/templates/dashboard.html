@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% set active = 'home' %}
+{% block title %}แดชบอร์ด{% endblock %}
+{% block content %}
+<div class="row"><h1>แดชบอร์ด</h1><span class="muted">{{ thai.format_date(now, 'long') }}</span></div>
+<section class="stats" aria-label="สรุปงาน">
+  <a class="card stat" href="/deadlines"><span><b>{{ within3|length }}</b> คดี</span><span>ครบกำหนดภายใน 3 วัน</span><span class="bd due" style="align-self:flex-start">ใกล้ครบกำหนด</span></a>
+  <a class="card stat" href="/cases"><span><b>{{ waiting|length }}</b> ครั้ง</span><span>การสอบปากคำรอตรวจ</span><span class="bd inf" style="align-self:flex-start">ร่างจาก AI รอคนตรวจ</span></a>
+  <a class="card stat" href="/cases"><span><b>{{ n_cases }}</b> คดี</span><span>คดีที่ยังไม่ส่งอัยการ</span><span class="bd neu" style="align-self:flex-start">{% if user.role == 'investigator' %}ของท่าน{% else %}ทั้งกอง{% endif %}</span></a>
+</section>
+<div class="cols">
+  <section class="card wide" aria-labelledby="dl">
+    <div class="pad"><h2 id="dl">กำหนดเวลาใน 7 วัน</h2></div>
+    {% if not soon %}<p class="pad muted" style="margin:0">ไม่มีกำหนดเวลาใน 7 วันข้างหน้า</p>{% endif %}
+    <table class="t">{% for d in soon %}{% set st = deadline_state(d) %}
+      <tr><td class="num"><a href="/cases/{{ d.case_id }}?tab=time">{{ d.case.case_no }}</a></td><td>{{ d.title }}<br><span class="muted small">{{ thai.format_datetime(d.due_at) }}</span></td><td><span class="bd {{ st[0] }}">{{ st[1] }}</span></td></tr>
+    {% endfor %}</table>
+  </section>
+  <section class="card side pad" aria-labelledby="wt">
+    <h2 id="wt">การสอบปากคำที่รอตรวจ</h2>
+    <p class="muted small">AI ร่างเท่านั้น ต้องตรวจกับเสียงและยืนยันก่อนใช้</p>
+    {% for iv in waiting %}<p style="margin:6px 0"><a href="/interviews/{{ iv.id }}">{{ iv.title }}</a><br><span class="muted small">คดี {{ iv.case.case_no }} · {{ thai.mmss(iv.duration_sec) }}</span></p>{% else %}<p class="muted">ไม่มี</p>{% endfor %}
+  </section>
+</div>
+{% if workload %}
+<section class="card pad" aria-labelledby="wl">
+  <h2 id="wl">ภาระงานรายพนักงานสอบสวน <span class="new" style="margin-left:6px">ใหม่</span></h2>
+  <table class="t" style="margin-top:8px"><thead><tr><th scope="col">พนักงานสอบสวน</th><th scope="col" style="width:50%">คดีที่ยังไม่ส่งอัยการ</th><th scope="col">ใกล้ครบกำหนด</th></tr></thead>
+  {% for inv, n, due in workload %}<tr><td>{{ inv.full_name }}</td><td><span class="row" style="gap:8px"><span class="bar" style="width:{{ (n / max_load * 100)|round(0) }}%"></span><b class="num">{{ n }}</b></span></td><td><span class="bd {{ 'due' if due else 'neu' }}">{{ due }} คดี</span></td></tr>{% endfor %}
+  </table>
+</section>
+{% endif %}
+{% endblock %}

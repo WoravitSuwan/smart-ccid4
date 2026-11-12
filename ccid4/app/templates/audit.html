@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% set active = 'audit' %}
+{% block title %}ประวัติการใช้งาน{% endblock %}
+{% block content %}
+<div class="row"><h1 style="flex:1">ประวัติการใช้งาน</h1>
+{% if ok %}<span class="bd ok">ตรวจความต่อเนื่องแล้ว ไม่พบการแก้ไขย้อนหลัง</span>{% else %}<span class="bd late">พบบันทึกถูกแก้ไขหรือลบ เริ่มที่รายการ #{{ bad }}</span>{% endif %}</div>
+<form class="card pad row" method="get">
+  <label class="f">ผู้ใช้<input name="who" value="{{ who }}"></label>
+  <label class="f">การกระทำ<select name="action"><option value="">ทั้งหมด</option>{% for k, v in actions.items() %}<option value="{{ k }}" {{ 'selected' if action == k }}>{{ v }}</option>{% endfor %}</select></label>
+  <button class="btn btn-s" style="align-self:flex-end">กรอง</button>
+</form>
+<div class="card scroll"><table class="t" style="min-width:860px">
+  <thead><tr><th scope="col">#</th><th scope="col">เวลา</th><th scope="col">ผู้ใช้</th><th scope="col">การกระทำ</th><th scope="col">สิ่งที่ถูกกระทำ</th><th scope="col">รายละเอียด</th><th scope="col">เครื่อง</th></tr></thead>
+  {% for e in rows %}<tr><td class="num muted">{{ e.id }}</td><td class="num">{{ thai.format_datetime(e.at) }}</td><td>{{ e.user_name or 'ระบบ' }}</td><td><span class="bd neu">{{ actions.get(e.action, e.action) }}</span></td><td>{{ e.object_type }} {{ e.object_id }}</td><td>{{ e.detail }}</td><td class="num muted">{{ e.ip }}</td></tr>{% endfor %}
+</table></div>
+<p class="muted small">แต่ละรายการผูกค่าแฮชกับรายการก่อนหน้า หากมีการแก้หรือลบในฐานข้อมูลโดยตรง ระบบจะแจ้งที่หัวหน้านี้</p>
+{% endblock %}
