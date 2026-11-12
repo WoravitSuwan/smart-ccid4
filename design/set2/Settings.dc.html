@@ -49,7 +49,7 @@ table.t td{padding:10px 14px;border-bottom:1px solid #E2E8F0;vertical-align:midd
 <nav class="nav" aria-label="เมนูหลัก" style="flex: 1 1 248px; max-width: 100%; background: #12355B; color: #FFFFFF; padding: 20px 12px; display: flex; flex-direction: column; gap: 2px">
   <a href="Main.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 4px 12px 16px; text-decoration: none; color: #FFFFFF">
     <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 4 5.5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10v-6z"/><path d="M8.5 12h7"/></svg>
-    <span style="display: flex; flex-direction: column; line-height: 1.2"><span style="font-size: 22px; font-weight: 700; letter-spacing: 0.5px">CCID4</span><span style="font-size: 12px; color: #C7D2E0">บก.สอท.4</span></span>
+    <span style="display: flex; flex-direction: column; line-height: 1.2"><span style="font-size: 22px; font-weight: 700; letter-spacing: 0.5px">CCID4</span><span style="font-size: 12px; color: #C7D2E0">กก.1 · บก.สอท.4</span></span>
   </a>
   <div class="grp">งานประจำวัน</div>
   <a class="item" href="Main.dc.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>แดชบอร์ด</a>
@@ -107,7 +107,7 @@ table.t td{padding:10px 14px;border-bottom:1px solid #E2E8F0;vertical-align:midd
       <sc-if value="{{isUnit}}" hint-placeholder-val="{{ false }}">
         <div role="tabpanel" style="padding: 24px; display: flex; flex-direction: column; gap: 20px">
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px">
-            <label class="fld">ชื่อหน่วย (ในเอกสาร)<input value="กองบังคับการตำรวจสืบสวนสอบสวนอาชญากรรมทางเทคโนโลยี 4 (จำลอง)"></label>
+            <label class="fld">ชื่อหน่วย (ในเอกสาร)<input value="กองกำกับการ 1 กองบังคับการตำรวจสืบสวนสอบสวนอาชญากรรมทางเทคโนโลยี 4 (จำลอง)"></label>
             <label class="fld">ชื่อย่อ<input value="บก.สอท.4"></label>
             <label class="fld">ที่อยู่หน่วย<input value="99 ถนนสมมติ ต.ตัวอย่าง อ.เมืองสมมติ จ.ทดสอบ 50000"></label>
             <label class="fld">โทรศัพท์<input value="00 0000 0000"></label>
@@ -119,8 +119,8 @@ table.t td{padding:10px 14px;border-bottom:1px solid #E2E8F0;vertical-align:midd
               <tbody>
                 <tr><td>พ.ต.ท.ทดสอบ หนึ่ง</td><td>สารวัตร (สอบสวน)</td><td>กก.1</td><td class="num">00 0000 0001</td><td class="num">34</td></tr>
                 <tr><td>พ.ต.ต.ทดสอบ สอง</td><td>สารวัตร (สอบสวน)</td><td>กก.1</td><td class="num">00 0000 0002</td><td class="num">41</td></tr>
-                <tr><td>ร.ต.อ.ทดสอบ สาม</td><td>รองสารวัตร (สอบสวน)</td><td>กก.2</td><td class="num">00 0000 0003</td><td class="num">46</td></tr>
-                <tr><td>ร.ต.อ.หญิงทดสอบ สี่</td><td>รองสารวัตร (สอบสวน)</td><td>กก.2</td><td class="num">00 0000 0004</td><td class="num">29</td></tr>
+                <tr><td>ร.ต.อ.ทดสอบ สาม</td><td>รองสารวัตร (สอบสวน)</td><td>กก.1</td><td class="num">00 0000 0003</td><td class="num">46</td></tr>
+                <tr><td>ร.ต.อ.หญิงทดสอบ สี่</td><td>รองสารวัตร (สอบสวน)</td><td>กก.1</td><td class="num">00 0000 0004</td><td class="num">29</td></tr>
               </tbody></table></div>
           </div>
         </div>
@@ -231,7 +231,7 @@ class Component extends DCLogic {
       ['11 พ.ย. 2569 10.12.05', 'ระบบ', 'บันทึก', 'ok', 'ไฟล์เสียงต้นฉบับ', 'SHA-256 9f2c…a41e · 48:32', 'เซิร์ฟเวอร์'],
       ['11 พ.ย. 2569 09.12.44', 'ส.ต.อ.ทดสอบ ธุรการ', 'ดาวน์โหลด', 'due', 'หมายเรียกพยาน', 'PDF 1 ฉบับ', '10.4.12.48'],
       ['11 พ.ย. 2569 09.05.10', 'ส.ต.อ.ทดสอบ ธุรการ', 'แก้ไข', 'late', 'ที่อยู่ผู้กล่าวหา', 'เพิ่มรหัสไปรษณีย์ 50000', '10.4.12.48'],
-      ['11 พ.ย. 2569 08.31.02', 'ส.ต.อ.ทดสอบ ธุรการ', 'นำเข้า', 'inf', 'ทะเบียนคดี_กก1-3_2569.xlsx', '1,284 แถว · แก้ระหว่างนำเข้า 3 แถว', '10.4.12.48'],
+      ['11 พ.ย. 2569 08.31.02', 'ส.ต.อ.ทดสอบ ธุรการ', 'นำเข้า', 'inf', 'ทะเบียนคดี_กก1_2569.xlsx', '1,284 แถว · แก้ระหว่างนำเข้า 3 แถว', '10.4.12.48'],
       ['10 พ.ย. 2569 16.40.18', 'พ.ต.ท.ทดสอบ หนึ่ง', 'ดาวน์โหลด', 'due', 'หนังสือขออายัดบัญชี', 'Word 1 ฉบับ', '10.4.12.31'],
       ['10 พ.ย. 2569 16.38.51', 'พ.ต.ท.ทดสอบ หนึ่ง', 'แก้ไข', 'late', 'หนังสือขออายัดบัญชี', 'แก้ยอดเงินจาก 280,000 เป็น 288,000', '10.4.12.31'],
       ['10 พ.ย. 2569 14.02.09', 'พ.ต.อ.ทดสอบ หัวหน้า', 'เปิดดู', 'neu', 'ภาพรวมทั้งกอง', 'แดชบอร์ดหัวหน้า', '10.4.10.7'],
