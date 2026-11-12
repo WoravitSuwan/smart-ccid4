@@ -1,0 +1,107 @@
+{% extends "base.html" %}{% set active = 'interview' %}
+{% block title %}ตรวจคำให้การ{% endblock %}
+{% block content %}
+<nav aria-label="เส้นทาง" class="small"><a href="/cases/{{ iv.case_id }}">คดี {{ iv.case.case_no }}</a> › <span aria-current="page">{{ iv.title }}</span></nav>
+<div class="row">
+  <h1 style="flex:1 1 400px">ตรวจและร่างคำให้การ</h1>
+  {% if iv.status == 'confirmed' %}<span class="bd ok">ยืนยันแล้วโดย {{ iv.confirmed_by.full_name }} · {{ thai.format_datetime(iv.confirmed_at) }}</span>{% endif %}
+</div>
+<p class="muted num" style="margin:0">{{ iv.title }} · {{ thai.format_datetime(iv.started_at) }} · ความยาว {{ thai.mmss(iv.duration_sec) }}
+  {% if iv.sha256 %} · <span title="ค่าแฮชของไฟล์เสียงต้นฉบับ">SHA-256 {{ iv.sha256[:8] }}…{{ iv.sha256[-8:] }}</span>{% endif %}</p>
+
+{% if iv.audio_path %}
+<section class="card pad" aria-label="เครื่องเล่นเสียง" style="position:sticky;top:0;z-index:5">
+  <audio id="player" controls preload="metadata" src="/interviews/{{ iv.id }}/audio" style="width:100%"></audio>
+  <div class="row small" style="margin-top:6px">
+    <span class="spk r-investigator"><i></i>พนักงานสอบสวน</span><span class="spk r-subject"><i></i>ผู้ให้ถ้อยคำ</span><span class="spk r-lawyer"><i></i>ทนายความ/ผู้ไว้วางใจ</span>
+    {% for m in marks %}<button type="button" class="seek" data-seek="{{ m.t }}">⚑ {{ thai.mmss(m.t) }} {{ m.note }}</button>{% endfor %}
+  </div>
+</section>
+{% else %}<div class="err">ยังไม่มีไฟล์เสียง <a href="/interviews/{{ iv.id }}/prepare">ไปบันทึกหรืออัปโหลด</a></div>{% endif %}
+
+{% if iv.segments %}
+<section class="card pad" aria-labelledby="rt" style="display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center">
+  <h2 id="rt">ตรวจการแจ้งสิทธิ ป.วิ.อ. ม.134/4 จากเสียง</h2>
+  {% for r in rights %}{% if r.ok %}<button type="button" class="bd ok seek" data-seek="{{ r.found_at }}">✓ {{ r.label }} · พบที่ {{ r.when }}</button>{% else %}<span class="bd late">✗ {{ r.label }} · ไม่พบ</span>{% endif %}{% endfor %}
+  {% if not is_suspect %}<span class="muted small">ผู้ให้ถ้อยคำไม่ใช่ผู้ต้องหา ข้อนี้ใช้ประกอบเท่านั้น</span>{% endif %}
+</section>
+{% endif %}
+
+<div class="cols">
+  <section class="card wide" aria-labelledby="tr">
+    <div class="pad" style="border-bottom:1px solid var(--line)">
+      <h2 id="tr">ข้อความถอดเสียง</h2>
+      <p class="muted small" style="margin:4px 0 0">กดเวลาเพื่อเล่นเสียงตรงนั้น · {% if asr_available() %}ถอดด้วยโมเดลบนเครื่องของหน่วย{% else %}ยังไม่ได้ติดตั้งตัวถอดเสียงบนเครื่องนี้ วางข้อความถอดเสียงด้านล่างได้{% endif %}</p>
+    </div>
+    <div class="pad" style="max-height:720px;overflow-y:auto">
+      {% if speakers %}
+      <form method="post" action="/interviews/{{ iv.id }}/speakers" class="row" style="margin-bottom:10px">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        {% for spk in speakers %}<label class="f" style="flex:1 1 160px">ผู้พูด {{ spk }}<select name="role_{{ spk }}">{% for k, v in SPEAKER_ROLES.items() %}<option value="{{ k }}" {{ 'selected' if speaker_roles[spk] == k }}>{{ v }}</option>{% endfor %}</select></label>{% endfor %}
+        {% if iv.status != 'confirmed' %}<button class="btn btn-s" style="align-self:flex-end">บันทึกบทบาท</button>{% endif %}
+      </form>{% endif %}
+      {% for s in iv.segments %}
+      <div class="seg r-{{ s.role }}" id="seg-{{ s.id }}" data-start="{{ s.start }}" data-end="{{ s.end }}">
+        <span class="spk r-{{ s.role }}"><i></i>{{ SPEAKER_ROLES[s.role] }} ({{ s.speaker }})</span>
+        <button type="button" class="seek" data-seek="{{ s.start }}" aria-label="เล่นเสียงที่ {{ thai.mmss(s.start) }}">▶ {{ thai.mmss(s.start) }}</button>
+        <div>{{ s.text }}</div>
+        {% if iv.status != 'confirmed' %}<details><summary class="small muted">แก้ข้อความช่วงนี้</summary>
+          <form method="post" action="/interviews/{{ iv.id }}/segments/{{ s.id }}" style="display:flex;flex-direction:column;gap:6px;margin-top:6px">
+            <input type="hidden" name="csrf" value="{{ csrf }}"><textarea name="text">{{ s.text }}</textarea>
+            <div class="row"><select name="role" aria-label="บทบาทผู้พูด">{% for k, v in SPEAKER_ROLES.items() %}<option value="{{ k }}" {{ 'selected' if s.role == k }}>{{ v }}</option>{% endfor %}</select><button class="btn btn-s btn-sm">บันทึก</button></div>
+          </form></details>{% endif %}
+      </div>
+      {% endfor %}
+      {% if iv.status != 'confirmed' %}
+      <details {{ 'open' if not iv.segments }} style="margin-top:12px"><summary><b>{{ 'แทนที่' if iv.segments else 'วาง' }}ข้อความถอดเสียง</b></summary>
+        <form method="post" action="/interviews/{{ iv.id }}/transcript" style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+          <input type="hidden" name="csrf" value="{{ csrf }}">
+          <textarea name="text" rows="8" placeholder="[00:45] S1: ท่านมีสิทธิที่จะให้การหรือไม่ให้การก็ได้ ...&#10;[01:04] S2: ครับ เข้าใจครับ&#10;หรือวางไฟล์ SRT / WebVTT / JSON จากเครื่องถอดเสียงของหน่วย"></textarea>
+          <button class="btn btn-s" style="align-self:flex-start">นำเข้าข้อความ</button>
+        </form></details>{% endif %}
+    </div>
+  </section>
+
+  <section class="card wide" aria-labelledby="qa">
+    <div class="pad row" style="border-bottom:1px solid var(--line)">
+      <h2 id="qa" style="flex:1">ร่างคำให้การแบบถาม-ตอบ</h2>
+      <span class="bd inf">จัดคู่จากเสียง · คนตรวจ</span>
+      {% if iv.segments and iv.status != 'confirmed' %}<form method="post" action="/interviews/{{ iv.id }}/draft"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-s btn-sm">{{ 'สร้างร่างใหม่' if iv.pairs else 'สร้างร่างจากข้อความถอดเสียง' }}</button></form>{% endif %}
+    </div>
+    <div class="pad">
+      {% if iv.pairs %}<p class="muted small" style="margin:0 0 6px">ตรวจแล้ว {{ iv.pairs|selectattr('reviewed')|list|length }} จาก {{ iv.pairs|length }} คู่ · ร่างใช้คำถามและคำตอบตามที่พูดจริง เปลี่ยนเฉพาะสรรพนามเป็น "ข้าฯ"</p>{% endif %}
+      {% for p in iv.pairs %}
+      <form class="pair" id="pair-{{ p.id }}" method="post" action="/interviews/{{ iv.id }}/pairs/{{ p.id }}">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <div class="row"><button type="button" class="seek" data-seek="{{ p.start }}">▶ {{ thai.mmss(p.start) }}–{{ thai.mmss(p.end) }}</button><span class="muted small">คู่ที่ {{ loop.index }}</span></div>
+        <label class="f">ถาม<textarea name="question" class="doc" {{ 'readonly' if iv.status == 'confirmed' }}>{{ p.question }}</textarea></label>
+        <label class="f">ตอบ<textarea name="answer" class="doc" {{ 'readonly' if iv.status == 'confirmed' }}>{{ p.answer }}</textarea></label>
+        {% for fl in flags[p.id] %}<div class="flag" role="note">⚑ {{ fl.message }} <button type="button" class="seek" data-seek="{{ p.start }}">ฟังช่วงนี้</button></div>{% endfor %}
+        {% if iv.status != 'confirmed' %}<div class="row" style="margin-top:6px"><label class="chk"><input type="checkbox" name="reviewed" {{ 'checked' if p.reviewed }}>ตรวจกับเสียงแล้ว</label><button class="btn btn-s btn-sm">บันทึกคู่นี้</button></div>
+        {% else %}<span class="bd ok">ตรวจแล้ว</span>{% endif %}
+      </form>
+      {% else %}<p class="muted">ยังไม่มีร่าง {% if iv.segments %}กด "สร้างร่าง" ด้านบน{% else %}ต้องมีข้อความถอดเสียงก่อน{% endif %}</p>{% endfor %}
+    </div>
+    <div class="pad" id="confirm" style="background:#F8FAFC;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px">
+      {% if iv.status != 'confirmed' %}
+      {% if is_suspect and not (rights|selectattr('ok')|list|length == rights|length) %}
+      <form method="post" action="/interviews/{{ iv.id }}/rights-manual" class="row">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <label class="chk" style="flex:1 1 300px"><input type="checkbox" name="ok" {{ 'checked' if iv.rights_manual_confirmed }}>ข้าพเจ้าฟังช่วงแจ้งสิทธิด้วยตนเองแล้ว และยืนยันว่าได้แจ้งสิทธิครบตามกฎหมาย (บันทึกในประวัติ)</label>
+        <button class="btn btn-s btn-sm">บันทึก</button>
+      </form>{% endif %}
+      <form method="post" action="/interviews/{{ iv.id }}/confirm" class="row">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <button class="btn btn-p" {{ 'disabled' if blockers }}>ยืนยันคำให้การ</button>
+        <span class="muted small" style="flex:1 1 240px">{{ blockers|join(' · ') if blockers else 'พร้อมยืนยัน · ชื่อผู้ยืนยันและเวลาจะถูกบันทึก หลังยืนยันแก้ไม่ได้' }}</span>
+      </form>{% endif %}
+      {% if iv.pairs %}<div class="row">
+        <a class="btn btn-s" href="/interviews/{{ iv.id }}/export.docx">ส่งออก Word{{ '' if iv.status == 'confirmed' else ' (ร่าง)' }}</a>
+        {% if pdf_available() %}<a class="btn btn-s" href="/interviews/{{ iv.id }}/export.pdf">ส่งออก PDF{{ '' if iv.status == 'confirmed' else ' (ร่าง)' }}</a>{% endif %}
+        <a class="btn btn-s" href="/interviews/{{ iv.id }}/export.docx?times=0">Word ไม่มีเวลาในเสียง</a>
+      </div>{% endif %}
+    </div>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/review.js"></script>{% endblock %}

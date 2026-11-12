@@ -1,0 +1,2 @@
+# Optional: on-prem speech recognition (needs a GPU for real-time-ish speed on long interviews)
+faster-whisper==1.1.0

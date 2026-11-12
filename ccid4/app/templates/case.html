@@ -1,0 +1,90 @@
+{% extends "base.html" %}{% set active = 'cases' %}
+{% block title %}คดี {{ c.case_no }}{% endblock %}
+{% block content %}
+<nav aria-label="เส้นทาง" class="small"><a href="/cases">รายการคดี</a> › <span aria-current="page">{{ c.case_no }}</span></nav>
+<section class="card pad" style="display:flex;flex-direction:column;gap:14px">
+  <div class="row">
+    <h1 class="num">คดีที่ {{ c.case_no }}</h1>
+    <span class="bd {{ 'inf' if c.case_type == 'online' else 'neu' }}">{{ c.type_name }}</span>
+    <span class="bd inf">{{ c.status }}</span>
+    {% set nxt = c.deadlines|rejectattr('done')|list|first %}
+    {% if nxt %}{% set st = deadline_state(nxt) %}<span class="bd {{ st[0] }}">{{ nxt.title }} · {{ st[1] }}</span>{% endif %}
+  </div>
+  <p style="margin:0;font-size:17px">{{ c.charge or 'ยังไม่ระบุข้อหา' }}</p>
+  <p class="muted" style="margin:0">พนักงานสอบสวน <b style="color:var(--ink)">{{ c.investigator.full_name if c.investigator else '—' }}</b>{% if c.receipt_no %} · เลขรับแจ้ง {{ c.receipt_no }}{% endif %}</p>
+  <ol aria-label="ขั้นของคดี" style="list-style:none;margin:0;padding:12px 0 0;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+    {% set cur = STAGES.index(c.stage) if c.stage in STAGES else 0 %}
+    {% for s in STAGES %}<li {% if loop.index0 == cur %}aria-current="step"{% endif %}><span class="bd {{ 'ok' if loop.index0 < cur else ('inf' if loop.index0 == cur else 'neu') }}">{{ loop.index }} · {{ s }}</span></li>{% endfor %}
+  </ol>
+</section>
+<div class="cols">
+  <section class="card wide">
+    <nav class="tabs" aria-label="ข้อมูลคดี">
+      {% for k, label in [('people','บุคคลและการสอบปากคำ'),('info','ข้อมูลคดี'),('time','กรอบเวลา')] %}
+      <a class="{{ 'on' if tab == k }}" href="?tab={{ k }}" {% if tab == k %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+    </nav>
+    <div class="pad" style="display:flex;flex-direction:column;gap:16px">
+    {% if tab == 'people' %}
+      <table class="t"><thead><tr><th scope="col">บทบาท</th><th scope="col">ชื่อ</th><th scope="col">เลขประจำตัว</th><th scope="col">การสอบปากคำ</th><th scope="col"><span class="sr">การทำงาน</span></th></tr></thead>
+      {% for p in c.persons %}{% set ivs = c.interviews|selectattr('person_id','equalto',p.id)|list %}
+        <tr><td>{{ p.role }}</td><td>{{ p.name }}</td><td class="num">{{ thai.mask_citizen_id(p.citizen_id) }}</td>
+          <td>{% for iv in ivs %}<a href="/interviews/{{ iv.id }}">{{ thai.format_date(iv.created_at) }}</a> <span class="bd {{ 'ok' if iv.status == 'confirmed' else 'due' }}">{{ 'ยืนยันแล้ว' if iv.status == 'confirmed' else 'รอตรวจ' if iv.status in ('drafted','transcribed','recorded') else 'กำลังบันทึก' }}</span><br>{% else %}<span class="muted">ยังไม่สอบ</span>{% endfor %}</td>
+          <td>{% if user.can('listen_audio') %}<form method="post" action="/cases/{{ c.id }}/interviews"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="person_id" value="{{ p.id }}"><button class="btn btn-p btn-sm">เริ่มสอบปากคำ</button></form>{% endif %}</td></tr>
+      {% else %}<tr><td colspan="5" class="muted">ยังไม่มีบุคคล</td></tr>{% endfor %}
+      </table>
+      {% if user.can('edit_case') %}
+      <form method="post" action="/cases/{{ c.id }}/persons" class="card pad" style="display:flex;flex-direction:column;gap:10px;background:#F8FAFC">
+        <h2>เพิ่มบุคคล</h2><input type="hidden" name="csrf" value="{{ csrf }}">
+        <div class="grid">
+          <label class="f">บทบาท<select name="role">{% for r in PERSON_ROLES %}<option>{{ r }}</option>{% endfor %}</select></label>
+          <label class="f">ชื่อ-สกุล<input name="name" required></label>
+          <label class="f">เลขประจำตัวประชาชน<input name="citizen_id" inputmode="numeric"></label>
+          <label class="f">โทรศัพท์<input name="phone"></label>
+          <label class="f">ที่อยู่<input name="address"></label>
+          <label class="f">รหัสไปรษณีย์<input name="postcode" inputmode="numeric"></label>
+        </div>
+        <div><button class="btn btn-s">เพิ่มบุคคล</button></div>
+      </form>{% endif %}
+    {% elif tab == 'info' %}
+      <form method="post" action="/cases/{{ c.id }}/edit" style="display:flex;flex-direction:column;gap:12px">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <label class="f">ข้อหา<input name="charge" value="{{ c.charge }}"></label>
+        <div class="grid">
+          <label class="f">ขั้นของคดี<select name="stage">{% for s in STAGES %}<option {{ 'selected' if s == c.stage }}>{{ s }}</option>{% endfor %}</select></label>
+          <label class="f">สถานะ<input name="status" value="{{ c.status }}"></label>
+          <label class="f">ความเสียหาย (บาท)<input name="damage_amount" value="{{ '%.2f'|format(c.damage_amount) }}" inputmode="decimal"></label>
+        </div>
+        <label class="f">พฤติการณ์โดยย่อ<textarea name="summary">{{ c.summary }}</textarea></label>
+        {% if user.can('edit_case') %}<div><button class="btn btn-p">บันทึก</button></div>{% endif %}
+      </form>
+    {% else %}
+      <table class="t"><thead><tr><th scope="col">กำหนด</th><th scope="col">ครบกำหนด</th><th scope="col">ที่มา</th><th scope="col">สถานะ</th><th scope="col"><span class="sr">การทำงาน</span></th></tr></thead>
+      {% for d in c.deadlines %}{% set st = deadline_state(d) %}
+        <tr><td>{{ d.title }}<br><span class="muted small">{{ d.kind }}</span></td><td class="num">{{ thai.format_datetime(d.due_at) }}</td>
+          <td class="small">{{ d.legal_ref }}{% if d.basis %}<br><span class="muted">{{ d.basis }}</span>{% endif %}</td>
+          <td><span class="bd {{ st[0] }}">{{ st[1] }}</span>{% if not d.confirmed %}<br><span class="bd neu" style="margin-top:4px">ยังไม่ยืนยันวันครบอำนาจ</span>{% endif %}</td>
+          <td>{% if user.can('edit_case') %}{% if not d.confirmed %}<form method="post" action="/deadlines/{{ d.id }}/confirm"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-s btn-sm">ยืนยันวันครบ</button></form>{% endif %}<form method="post" action="/deadlines/{{ d.id }}/done"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-s btn-sm">{{ 'ยกเลิกเสร็จ' if d.done else 'ทำเสร็จแล้ว' }}</button></form>{% endif %}</td></tr>
+      {% else %}<tr><td colspan="5" class="muted">ยังไม่มีกำหนดเวลา</td></tr>{% endfor %}
+      </table>
+      {% if user.can('edit_case') %}
+      <form method="post" action="/cases/{{ c.id }}/deadlines" class="card pad" style="display:flex;flex-direction:column;gap:10px;background:#F8FAFC">
+        <h2>เพิ่มกำหนดเวลา</h2><input type="hidden" name="csrf" value="{{ csrf }}">
+        <div class="grid">
+          <label class="f">ประเภท<select name="kind"><option>ฝากขัง</option><option>ผัดฟ้อง</option><option>ส่งสำนวน</option><option>นัดหมาย</option><option>อื่น ๆ</option></select></label>
+          <label class="f">รายการ<input name="title" required placeholder="เช่น ฝากขังครั้งที่ 3 ครบกำหนด"></label>
+          <label class="f">วันที่ (วว/ดด/ปปปป พ.ศ.)<input name="due_date" required placeholder="13/11/2569"></label>
+          <label class="f">เวลา<input name="due_time" value="16:30"></label>
+        </div>
+        <label class="f">ที่มาของการคำนวณ<input name="basis" placeholder="เช่น ศาลอนุญาตฝากขังครั้งที่ 2 เมื่อ 1 พ.ย. 2569"></label>
+        <div><button class="btn btn-s">เพิ่มกำหนดเวลา</button></div>
+      </form>{% endif %}
+    {% endif %}
+    </div>
+  </section>
+  <aside class="card side pad">
+    <h2>ไทม์ไลน์กิจกรรม</h2>
+    {% for e in logs %}<p style="margin:8px 0"><span>{{ e.detail or e.action }}</span><br><span class="muted small num">{{ thai.format_datetime(e.at) }} · {{ e.user_name or 'ระบบ' }}</span></p>{% else %}<p class="muted">ยังไม่มีกิจกรรม</p>{% endfor %}
+    <p class="muted small">ทุกการเปิด แก้ ดาวน์โหลด และฟังเสียง ถูกบันทึกไว้</p>
+  </aside>
+</div>
+{% endblock %}

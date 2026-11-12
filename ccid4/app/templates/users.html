@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% set active = 'users' %}
+{% block title %}ผู้ใช้และสิทธิ์{% endblock %}
+{% block content %}
+<h1>ผู้ใช้และสิทธิ์</h1>
+<div class="card scroll"><table class="t" style="min-width:760px">
+  <thead><tr><th scope="col">อีเมล</th><th scope="col">ยศ ชื่อ สกุล</th><th scope="col">ตำแหน่ง</th><th scope="col">บทบาท</th><th scope="col">สถานะ</th><th scope="col"><span class="sr">การทำงาน</span></th></tr></thead>
+  {% for u in rows %}<tr><td>{{ u.email }}</td><td>{{ u.full_name }}</td><td>{{ u.position }}</td><td>{{ u.role_name }}</td>
+    <td><span class="bd {{ 'ok' if u.active else 'neu' }}">{{ 'ใช้งาน' if u.active else 'ปิดใช้งาน' }}</span></td>
+    <td>{% if u.id != user.id %}<form method="post" action="/admin/users/{{ u.id }}/toggle"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-s btn-sm">{{ 'ปิดใช้งาน' if u.active else 'เปิดใช้งาน' }}</button></form>{% endif %}</td></tr>{% endfor %}
+</table></div>
+<form class="card pad" method="post" action="/admin/users" style="display:flex;flex-direction:column;gap:10px;max-width:880px">
+  <h2>เพิ่มผู้ใช้</h2><input type="hidden" name="csrf" value="{{ csrf }}">
+  <div class="grid">
+    <label class="f">อีเมลราชการ<input type="email" name="email" required></label>
+    <label class="f">ยศ ชื่อ สกุล<input name="full_name" required></label>
+    <label class="f">ตำแหน่ง<input name="position"></label>
+    <label class="f">โทรศัพท์ (พิมพ์ในหมาย)<input name="phone"></label>
+    <label class="f">บทบาท<select name="role">{% for k, v in ROLES.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+    <label class="f">รหัสผ่านเริ่มต้น<input type="password" name="password" required minlength="10" autocomplete="new-password"></label>
+  </div>
+  <div><button class="btn btn-p">เพิ่มผู้ใช้</button></div>
+  <p class="muted small" style="margin:0">ผู้ดูแลระบบจัดการบัญชีได้ แต่เปิดดูเนื้อหาคดีและฟังเสียงไม่ได้</p>
+</form>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% set active = 'deadlines' %}
+{% block title %}กรอบเวลา{% endblock %}
+{% block content %}
+<h1>กรอบเวลา</h1>
+<p class="muted" style="margin:0">ระบบนับเวลาจากข้อมูลที่บันทึก พนักงานสอบสวนต้องตรวจทานกับเอกสารต้นฉบับและยืนยันวันครบอำนาจเอง</p>
+<div class="card scroll">
+  <table class="t" style="min-width:760px">
+    <thead><tr><th scope="col">คดี</th><th scope="col">กำหนด</th><th scope="col">ครบกำหนด</th><th scope="col">นับถอยหลัง</th><th scope="col">ที่มาทางกฎหมาย</th></tr></thead>
+    {% for d in rows %}{% set st = deadline_state(d) %}
+    <tr><td class="num"><a href="/cases/{{ d.case_id }}?tab=time">{{ d.case.case_no }}</a></td><td>{{ d.title }}{% if not d.confirmed %}<br><span class="bd neu">ยังไม่ยืนยัน</span>{% endif %}</td>
+      <td class="num">{{ thai.format_datetime(d.due_at) }}</td><td><span class="bd {{ st[0] }}">{{ st[1] }}</span></td><td class="small">{{ d.legal_ref }}{% if d.basis %}<br><span class="muted">{{ d.basis }}</span>{% endif %}</td></tr>
+    {% else %}<tr><td colspan="5" class="muted">ไม่มีกำหนดเวลาที่ยังไม่เสร็จ</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

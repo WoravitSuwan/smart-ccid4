@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf" content="{{ csrf }}">
+<title>{% block title %}CCID4{% endblock %} · {{ config.UNIT_SHORT }}</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+{% macro item(href, label, key, active, badge=None) -%}
+<a class="item{% if key == active %} on{% endif %}" href="{{ href }}"{% if key == active %} aria-current="page"{% endif %}>{{ label }}{% if badge %}<span class="new">{{ badge }}</span>{% endif %}</a>
+{%- endmacro %}
+<div class="shell">
+  <nav class="nav" aria-label="เมนูหลัก">
+    <a class="brand" href="/">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 4 5.5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10v-6z"/><path d="M8.5 12h7"/></svg>
+      <span><b>CCID4</b><small>{{ config.UNIT_SHORT }}</small></span>
+    </a>
+    {% set active = active|default('') %}
+    {% if user.role != 'admin' %}
+    <div class="grp">งานประจำวัน</div>
+    {{ item('/', 'แดชบอร์ด', 'home', active) }}
+    {{ item('/cases', 'รายการคดี', 'cases', active) }}
+    {{ item('/deadlines', 'กรอบเวลา', 'deadlines', active) }}
+    <div class="grp">เครื่องมือสอบสวน</div>
+    {{ item('/cases?f=all', 'ห้องสอบปากคำ', 'interview', active, 'ใหม่') }}
+    {% if user.can('summons') %}{{ item('/summons', 'หมายเรียกชุดใหญ่', 'summons', active, 'ใหม่') }}{% endif %}
+    {% endif %}
+    {% if user.can('view_audit') or user.can('manage_users') %}<div class="grp">ระบบ</div>{% endif %}
+    {% if user.can('view_audit') %}{{ item('/audit', 'ประวัติการใช้งาน', 'audit', active) }}{% endif %}
+    {% if user.can('manage_users') %}{{ item('/admin/users', 'ผู้ใช้และสิทธิ์', 'users', active) }}{% endif %}
+  </nav>
+  <div class="main">
+    <header class="top">
+      <span style="flex:1"></span>
+      {% if config.DEMO_MODE %}<span class="bd mock">ข้อมูลจำลอง</span>{% endif %}
+      <span class="bd ai" title="ถอดเสียงและสร้างร่างบนเครื่องของหน่วยงาน ข้อมูลไม่ส่งออกภายนอก">AI ประมวลผลในเครื่อง</span>
+      <span class="small"><b>{{ user.full_name }}</b><br><span class="muted">{{ user.role_name }}</span></span>
+      <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-s btn-sm">ออกจากระบบ</button></form>
+    </header>
+    <main class="content">
+      {% if flash %}<div class="flash" role="status">{{ flash }}</div>{% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% set active = 'summons' %}
+{% block title %}ออกหมายเรียกแล้ว{% endblock %}
+{% block content %}
+<h1>ออกหมายเรียก {{ count }} ฉบับแล้ว</h1>
+<p class="muted">นัด {{ thai.format_date(appt, 'long') }} · ตรวจเอกสารก่อนพิมพ์และลงนาม</p>
+<div class="card pad" style="display:flex;flex-direction:column;gap:8px">
+  {% for l in links %}<a class="btn btn-s" style="justify-content:flex-start" href="{{ l }}">ดาวน์โหลด {{ l.split('/')[-1] }}</a>{% endfor %}
+</div>
+<a href="/summons">กลับไปหน้าหมายเรียก</a>
+{% endblock %}

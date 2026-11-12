@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% set active = 'interview' %}
+{% block title %}เตรียมสอบปากคำ{% endblock %}
+{% block content %}
+<nav aria-label="เส้นทาง" class="small"><a href="/cases/{{ iv.case_id }}">คดี {{ iv.case.case_no }}</a> › <span aria-current="page">{{ iv.title }}</span></nav>
+<h1>ก่อนเริ่มบันทึก · {{ iv.title }}</h1>
+<div class="cols">
+  <form class="card wide pad" method="post" action="/interviews/{{ iv.id }}/prepare" style="display:flex;flex-direction:column;gap:6px">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <h2>เช็กลิสต์</h2>
+    <p class="muted small" style="margin:0 0 6px">ติ๊กเมื่อทำแล้ว ระบบจะตรวจซ้ำจากเสียงหลังจบการบันทึก</p>
+    {% for key, label in checklist %}
+    <label class="chk"><input type="checkbox" name="{{ key }}" {{ 'checked' if checked.get(key) }}><span>{{ label }}</span></label>
+    {% endfor %}
+    <div class="row" style="margin-top:10px"><button class="btn btn-p btn-xl">เริ่มบันทึกเสียง</button><span class="muted small">เบราว์เซอร์จะขออนุญาตใช้ไมโครโฟน</span></div>
+  </form>
+  <section class="card side pad">
+    <h2>สคริปต์แจ้งสิทธิ (อ่านออกเสียง)</h2>
+    <div class="card pad" style="margin-top:10px;font-size:19px;line-height:1.8;background:#F8FAFC">
+      <p>ข้าพเจ้า {{ user.full_name }} พนักงานสอบสวน ขอแจ้งให้ท่านทราบว่า ท่านถูกกล่าวหาว่ากระทำความผิดฐาน {{ iv.case.charge or '[ข้อหา]' }}</p>
+      <p>หนึ่ง ท่านมีสิทธิที่จะให้การหรือไม่ให้การก็ได้ ถ้าท่านให้การ ถ้อยคำที่ท่านให้การนั้นอาจใช้เป็นพยานหลักฐานในการพิจารณาคดีได้</p>
+      <p>สอง ท่านมีสิทธิให้ทนายความหรือผู้ซึ่งท่านไว้วางใจเข้าฟังการสอบปากคำได้</p>
+      <p style="margin:0">การสอบปากคำครั้งนี้มีการบันทึกเสียงไว้เป็นหลักฐาน</p>
+    </div>
+    <p class="muted small">ใช้ข้อความตามแบบฟอร์มของหน่วย · อ่านให้ตรงตามนี้เพื่อให้ระบบตรวจพบในเสียงได้</p>
+    <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+    <h2>มีไฟล์เสียงจากเครื่องบันทึกอื่น</h2>
+    <form method="post" action="/interviews/{{ iv.id }}/upload-audio" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="file" name="file" accept="audio/*,.wav,.mp3,.m4a,.webm,.ogg" required>
+      <button class="btn btn-s">อัปโหลดเป็นไฟล์ต้นฉบับ</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

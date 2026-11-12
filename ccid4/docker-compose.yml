@@ -1,0 +1,22 @@
+# Runs CCID4 on the unit's own server. Put an HTTPS reverse proxy (deploy/Caddyfile) in front.
+services:
+  app:
+    build: .
+    env_file: .env
+    volumes:
+      - ccid4-data:/data          # database, original audio, generated documents: back this up
+    ports:
+      - "127.0.0.1:8000:8000"     # only reachable through the reverse proxy
+    restart: unless-stopped
+  proxy:
+    image: caddy:2.8.4
+    ports:
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on: [app]
+    restart: unless-stopped
+volumes:
+  ccid4-data:
+  caddy-data:
