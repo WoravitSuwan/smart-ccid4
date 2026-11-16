@@ -49,3 +49,42 @@ def soft_delete(user, case: Case, reason: str) -> None:
     case.deleted_by = user
     case.save(update_fields=["deleted_at", "deleted_by"])
     log(user, "delete", "case", case.pk, f"ลบคดี {case} (ลบแบบกู้คืนได้) เหตุผล: {reason}")
+
+
+def changed_labels(form) -> list[str]:
+    return [str(form.fields[f].label) for f in form.changed_data if f in form.fields]
+
+
+@transaction.atomic
+def save_case(user, case: Case, case_form, accuser_form, property_fs, suspect_fs, witness_fs) -> list[str]:
+    """Save every tab of the case page in one transaction (A4.1). Returns a short list of what changed."""
+    from parties import services as party_services
+
+    summary = []
+    if case_form.has_changed():
+        case_form.save()
+        log(user, "edit", "case", case.pk, f"แก้ไขข้อมูลคดี {case}: {', '.join(changed_labels(case_form))}")
+        summary.append("ข้อมูลคดี")
+    if accuser_form.has_changed():
+        party_services.save_party(user, case, "accuser", 1, accuser_form.cleaned_data)
+        summary.append("ผู้กล่าวหา")
+    if property_fs.has_changed():
+        for obj in property_fs.save(commit=False):
+            obj.case = case
+            obj.save()
+        for obj in property_fs.deleted_objects:
+            obj.delete()
+        log(user, "edit", "case", case.pk, f"แก้ไขบัญชีทรัพย์คดี {case}")
+        summary.append("บัญชีทรัพย์")
+    for role, fs, label in (("suspect", suspect_fs, "ผู้ต้องหา"), ("witness", witness_fs, "พยาน")):
+        if fs.has_changed():
+            order = 0
+            for form in fs.forms:
+                if not form.cleaned_data:
+                    continue
+                if party_services.save_party(user, case, role, order + 1, form.cleaned_data):
+                    order += 1
+            summary.append(label)
+    if summary:
+        case.save(update_fields=["updated_at"])
+    return summary

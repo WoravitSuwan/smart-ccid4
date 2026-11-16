@@ -93,6 +93,11 @@ class Case(models.Model):
     def __str__(self):
         return self.case_no or self.receipt_no or f"คดี #{self.pk}"
 
+    def get_absolute_url(self):
+        from django.urls import reverse
+
+        return reverse("cases:detail", args=[self.pk])
+
     @property
     def label(self):
         return str(self)

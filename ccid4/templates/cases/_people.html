@@ -1,0 +1,38 @@
+{# Many people of one role as sub-tabs. Context: fs, prefix, role, noun #}
+{{ fs.management_form }}
+{% for e in fs.non_form_errors %}<p class="chip chip-danger">{{ e }}</p>{% endfor %}
+<div data-tabs="{{ prefix }}" class="flex flex-col gap-4">
+  <div class="flex flex-wrap items-center gap-2">
+    <div class="subtabs" role="tablist" aria-label="รายชื่อ{{ noun }}" data-formset-tabs="{{ prefix }}">
+      {% for form in fs %}
+      <button type="button" class="subtab" role="tab" data-tab="{{ prefix }}-{{ forloop.counter0 }}" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+        <span class="avatar" aria-hidden="true">{{ forloop.counter|thai_digits }}</span><span data-tab-name>{{ form.display_name }}</span>
+        {% if form.errors %}<span class="tab-err" title="มีช่องที่ต้องแก้"></span>{% endif %}
+      </button>
+      {% endfor %}
+    </div>
+    {% if editable %}<button type="button" class="btn btn-secondary btn-sm" data-formset-add="{{ prefix }}"><svg class="w-4 h-4"><use href="#i-plus"/></svg>เพิ่ม{{ noun }}</button>{% endif %}
+  </div>
+  <div class="empty-state" data-formset-empty="{{ prefix }}" {% if fs.forms %}hidden{% endif %}>
+    <svg class="w-8 h-8"><use href="#i-user"/></svg>
+    <p>ยังไม่มี{{ noun }}ในคดีนี้</p>
+    {% if editable %}<button type="button" class="btn btn-primary btn-sm" data-formset-add="{{ prefix }}">+ เพิ่ม{{ noun }}คนแรก</button>{% endif %}
+  </div>
+  <div data-formset-rows="{{ prefix }}">
+    {% for form in fs %}
+    <div role="tabpanel" data-panel="{{ prefix }}-{{ forloop.counter0 }}" aria-label="{{ noun }}คนที่ {{ forloop.counter }}" {% if not forloop.first %}hidden{% endif %}>
+      {% include "cases/_party.html" with removable=editable %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% if editable %}
+<template id="tpl-{{ prefix }}-tab">
+  <button type="button" class="subtab" role="tab" data-tab="{{ prefix }}-__prefix__" aria-selected="false"><span class="avatar" aria-hidden="true">__num__</span><span data-tab-name>{{ noun }}คนที่ __num__ (ใหม่)</span></button>
+</template>
+<template id="tpl-{{ prefix }}">
+  <div role="tabpanel" data-panel="{{ prefix }}-__prefix__" aria-label="{{ noun }}คนที่ __num__" hidden>
+    {% include "cases/_party.html" with form=fs.empty_form removable=True %}
+  </div>
+</template>
+{% endif %}

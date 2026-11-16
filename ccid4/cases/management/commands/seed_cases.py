@@ -53,6 +53,7 @@ class Command(BaseCommand):
             ctype = types[i % len(types)]
             offense, law, months = rnd.choice(OFFENSES[ctype])
             reported = now - timedelta(days=rnd.randint(0, 200), hours=rnd.randint(0, 23))
+            reported = reported.replace(second=0, microsecond=0)
             status = statuses[i % len(statuses)]
             case = Case.objects.create(
                 case_type=ctype,
@@ -66,7 +67,7 @@ class Command(BaseCommand):
                 reported_at=reported,
                 incident_from=reported - timedelta(days=rnd.randint(1, 30)),
                 location=f"{fake.street_address()} {fake.province()}",
-                circumstances=fake.paragraph(nb_sentences=3),
+                circumstances=fake.paragraph(nb_sentences=3).strip(),
                 damage_amount=Decimal(rnd.choice([0, 3500, 25000, 148500, 486500, 1250000])),
                 owner=rnd.choice(owners),
                 title=offense,

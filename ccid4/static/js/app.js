@@ -47,15 +47,137 @@ document.addEventListener('alpine:init', () => {
     close() { this.open = false; },
   }));
 
+  // Collapsible right-hand panel on the case page; remembers its state per browser.
+  Alpine.data('sidePanel', () => ({
+    open: true,
+    init() {
+      try { this.open = localStorage.getItem('ccid4.panel') !== 'closed'; } catch (e) { /* storage blocked */ }
+    },
+    toggle() {
+      this.open = !this.open;
+      try { localStorage.setItem('ccid4.panel', this.open ? 'open' : 'closed'); } catch (e) { /* ignore */ }
+    },
+    get closed() { return !this.open; },
+    get toggleLabel() { return this.open ? 'ซ่อนแผงงาน' : 'แสดงแผงงาน'; },
+    get panelClass() { return this.open ? 'lg:w-80' : 'lg:w-16'; },
+  }));
+
   // Unsaved-changes guard used by forms with x-data="dirtyForm".
   Alpine.data('dirtyForm', () => ({
     dirty: false,
     init() {
       this.$el.addEventListener('input', () => { this.dirty = true; });
+      this.$el.addEventListener('change', () => { this.dirty = true; });
       this.$el.addEventListener('submit', () => { this.dirty = false; });
       window.addEventListener('beforeunload', (e) => { if (this.dirty) { e.preventDefault(); e.returnValue = ''; } });
     },
+    get clean() { return !this.dirty; },
+    get dirtyClass() { return this.dirty ? 'is-dirty' : ''; },
+    get saveLabel() { return this.dirty ? 'บันทึก (ยังไม่บันทึก)' : 'บันทึก'; },
   }));
+});
+
+// ---------- Tabs: <div data-tabs="name"> with [role=tab][data-tab] buttons and [role=tabpanel][data-panel] panels ----------
+function tabRoot(el) { return el.closest('[data-tabs]'); }
+function ownTabs(root, sel) { return [...root.querySelectorAll(sel)].filter((el) => tabRoot(el) === root); }
+
+function selectTab(root, name, focus) {
+  const tabs = ownTabs(root, '[role="tab"]');
+  if (!tabs.some((t) => t.dataset.tab === name)) return;
+  tabs.forEach((t) => {
+    const on = t.dataset.tab === name;
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
+    t.tabIndex = on ? 0 : -1;
+    if (on && focus) t.focus();
+  });
+  ownTabs(root, '[role="tabpanel"]').forEach((p) => { p.hidden = p.dataset.panel !== name; });
+  const field = root.querySelector(':scope > input[data-tab-field]') || document.querySelector(`input[data-tab-field="${root.dataset.tabs}"]`);
+  if (field) field.value = name;
+  if (root.dataset.tabs === 'case' && history.replaceState) history.replaceState(null, '', `#${name}`);
+}
+
+document.addEventListener('click', (e) => {
+  const tab = e.target.closest('[role="tab"][data-tab]');
+  if (tab && !tab.disabled) { selectTab(tabRoot(tab), tab.dataset.tab); return; }
+  const jump = e.target.closest('[data-goto-tab]');
+  if (jump) { const root = document.querySelector('[data-tabs="case"]'); if (root) selectTab(root, jump.dataset.gotoTab, true); }
+});
+
+document.addEventListener('keydown', (e) => {
+  const tab = e.target.closest && e.target.closest('[role="tab"][data-tab]');
+  if (!tab || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+  const tabs = ownTabs(tabRoot(tab), '[role="tab"]').filter((t) => !t.disabled);
+  let i = tabs.indexOf(tab);
+  if (e.key === 'ArrowRight') i = (i + 1) % tabs.length;
+  if (e.key === 'ArrowLeft') i = (i - 1 + tabs.length) % tabs.length;
+  if (e.key === 'Home') i = 0;
+  if (e.key === 'End') i = tabs.length - 1;
+  e.preventDefault();
+  selectTab(tabRoot(tab), tabs[i].dataset.tab, true);
+});
+
+function initTabs(scope) {
+  scope.querySelectorAll('[data-tabs]').forEach((root) => {
+    const wanted = root.dataset.tabs === 'case' ? (root.dataset.initial || location.hash.slice(1)) : '';
+    const tabs = ownTabs(root, '[role="tab"]').filter((t) => !t.disabled);
+    const pick = tabs.find((t) => t.dataset.tab === wanted) || tabs.find((t) => t.getAttribute('aria-selected') === 'true') || tabs[0];
+    if (pick) selectTab(root, pick.dataset.tab);
+  });
+}
+
+// ---------- Formsets: add rows/people from <template> without a page reload ----------
+const thaiDigits = (v) => String(v).replace(/[0-9]/g, (d) => '๐๑๒๓๔๕๖๗๘๙'[d]);
+
+function formsetAdd(prefix) {
+  const total = document.querySelector(`input[name="${prefix}-TOTAL_FORMS"]`);
+  if (!total) return;
+  const n = parseInt(total.value, 10);
+  const fill = (tpl) => tpl.innerHTML.replaceAll('__prefix__', String(n)).replaceAll('__num__', thaiDigits(n + 1));
+  const rowTpl = document.getElementById(`tpl-${prefix}`);
+  const tabTpl = document.getElementById(`tpl-${prefix}-tab`);
+  const rows = document.querySelector(`[data-formset-rows="${prefix}"]`);
+  const tabs = document.querySelector(`[data-formset-tabs="${prefix}"]`);
+  if (rowTpl && rows) rows.insertAdjacentHTML('beforeend', fill(rowTpl));
+  if (tabTpl && tabs) tabs.insertAdjacentHTML('beforeend', fill(tabTpl));
+  total.value = String(n + 1);
+  const count = document.querySelector(`[data-count-for="${prefix}"]`);
+  if (count) count.textContent = thaiDigits(n + 1);
+  const empty = document.querySelector(`[data-formset-empty="${prefix}"]`);
+  if (empty) empty.hidden = true;
+  if (tabs) selectTab(tabRoot(tabs), `${prefix}-${n}`);
+  const first = rows && rows.lastElementChild && rows.lastElementChild.querySelector('input:not([type=hidden]), textarea');
+  if (first) first.focus();
+  total.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+document.addEventListener('click', (e) => {
+  const add = e.target.closest('[data-formset-add]');
+  if (add) { e.preventDefault(); formsetAdd(add.dataset.formsetAdd); }
+});
+
+// Deleting a person/row is marked visually until saved.
+document.addEventListener('change', (e) => {
+  const box = e.target.closest('input[type=checkbox][name$="-DELETE"]');
+  if (!box) return;
+  const holder = box.closest('[data-panel], tr');
+  if (holder) holder.classList.toggle('is-deleted', box.checked);
+  if (holder && holder.dataset.panel) {
+    const tab = document.querySelector(`[role="tab"][data-tab="${holder.dataset.panel}"]`);
+    if (tab) tab.classList.toggle('is-deleted', box.checked);
+  }
+});
+
+// Sub-tab labels follow the name typed into that person's form.
+document.addEventListener('input', (e) => {
+  const el = e.target;
+  if (!el.name || !/-(title|first_name|last_name)$/.test(el.name)) return;
+  const panel = el.closest('[data-panel]');
+  if (!panel) return;
+  const pre = el.name.replace(/(title|first_name|last_name)$/, '');
+  const v = (k) => (panel.querySelector(`[name="${pre}${k}"]`) || {}).value || '';
+  const name = `${v('title')}${v('first_name')} ${v('last_name')}`.trim();
+  const label = document.querySelector(`[role="tab"][data-tab="${panel.dataset.panel}"] [data-tab-name]`);
+  if (label && name) label.textContent = name;
 });
 
 // HTMX sends the CSRF token on every request.
@@ -65,6 +187,7 @@ document.addEventListener('htmx:configRequest', (e) => {
 
 // Stagger elements marked .reveal inside the same parent.
 document.addEventListener('DOMContentLoaded', () => {
+  initTabs(document);
   const groups = new Map();
   document.querySelectorAll('.reveal').forEach((el) => {
     const n = groups.get(el.parentElement) || 0;

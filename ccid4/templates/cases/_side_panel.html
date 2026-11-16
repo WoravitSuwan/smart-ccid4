@@ -1,0 +1,29 @@
+<aside x-data="sidePanel" class="side-panel w-full shrink-0 lg:sticky lg:top-[76px]" :class="panelClass" aria-label="งานและกำหนดเวลา">
+  <div class="card glass p-3 flex flex-col gap-3">
+    <div class="flex items-center gap-2">
+      <button type="button" class="btn btn-secondary btn-sm" @click="toggle" :aria-expanded="open" :aria-label="toggleLabel" :title="toggleLabel"><svg class="w-4 h-4"><use href="#i-panel"/></svg></button>
+      <h2 class="text-base font-bold" x-show="open">งานและกำหนดเวลา</h2>
+    </div>
+    <div x-show="open" class="flex flex-col gap-4">
+      <section class="flex flex-col gap-2">
+        <h3 class="section-title text-sm">กำหนดเวลาตามกฎหมาย</h3>
+        <div class="empty-state text-sm"><svg class="w-6 h-6"><use href="#i-clock"/></svg>
+          <p>คำนวณอัตโนมัติจากเวลาจับกุม ฝากขัง และวันรับคำร้องทุกข์</p><p class="text-xs">เปิดใช้ในเฟส 3</p></div>
+      </section>
+      <section class="flex flex-col gap-2">
+        <h3 class="section-title text-sm">สิ่งที่ต้องทำ</h3>
+        <ul class="flex flex-col gap-2 text-sm">
+          {% if not case.parties.all %}<li class="dl-item">เพิ่มผู้กล่าวหา</li>{% endif %}
+          {% if not case.dr_complaint_no %}<li class="dl-item">กรอกบันทึกประจำวันรับคำร้องทุกข์</li>{% endif %}
+          {% if not case.offense %}<li class="dl-item">ระบุฐานความผิด</li>{% endif %}
+          {% if not case.max_penalty_months and not case.max_fine %}<li class="dl-item">ระบุโทษสูงสุด (ใช้คำนวณฝากขัง)</li>{% endif %}
+        </ul>
+        <p class="text-xs text-muted">รายการเบื้องต้นจากข้อมูลที่ยังขาด · กติกาเต็มและเพิ่มเองได้ในเฟส 3</p>
+      </section>
+      <section class="flex flex-col gap-2">
+        <h3 class="section-title text-sm">ทำแล้ว</h3>
+        <p class="text-sm text-muted">ยังไม่มีรายการ</p>
+      </section>
+    </div>
+  </div>
+</aside>

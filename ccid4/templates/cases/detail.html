@@ -1,6 +1,115 @@
 {% extends "base.html" %}
 {% block title %}คดี {{ case.label }}{% endblock %}
 {% block content %}
-<h1>คดี {{ case.label }}</h1>
-<p class="text-muted">หน้าคดีเต็มรูปแบบอยู่ในเฟส 2</p>
+<nav class="text-sm reveal" aria-label="เส้นทาง"><a href="{% url 'cases:list' %}">คดีของฉัน</a> › {{ case.label }}</nav>
+
+<header class="card glass glow-border case-head p-5 flex flex-wrap items-start gap-4 reveal">
+  <span class="stat-icon"><svg class="w-5 h-5"><use href="#i-folder"/></svg></span>
+  <div class="flex-1 min-w-[240px] flex flex-col gap-2 relative z-10">
+    <div class="flex flex-wrap items-center gap-2">
+      <h1 class="text-2xl">{{ case.label }}</h1>
+      <span class="chip {% if case.status == 'closed' %}chip-success{% elif case.status == 'investigating' %}chip-primary{% else %}chip-warning{% endif %}">{{ case.get_status_display }}</span>
+      <span class="chip chip-muted">{{ case.get_case_type_display }}</span>
+      {% if not editable %}<span class="chip chip-muted"><svg class="w-4 h-4"><use href="#i-lock"/></svg>อ่านอย่างเดียว</span>{% endif %}
+    </div>
+    <p class="text-muted">{{ case.offense|default:"ยังไม่ระบุฐานความผิด" }}{% if case.title %} · {{ case.title }}{% endif %}</p>
+    <p class="text-sm text-muted">พนักงานสอบสวน {{ case.owner.display_name }} · รับแจ้ง {{ case.reported_at|be_datetime }} · อัปเดต {{ case.updated_at|be_datetime }}</p>
+  </div>
+  <div class="relative z-10 flex flex-col items-end gap-2">
+    {% with d=case.nearest_deadline %}
+      {% if d %}<span class="chip chip-{{ d.tone }} chip-live text-base"><svg class="w-4 h-4"><use href="#i-clock"/></svg>{{ d.label }}</span>
+      {% else %}<span class="chip chip-muted"><svg class="w-4 h-4"><use href="#i-clock"/></svg>ยังไม่มีกำหนดเวลาที่ต้องติดตาม</span>{% endif %}
+    {% endwith %}
+  </div>
+</header>
+
+<div class="flex flex-col lg:flex-row gap-4 items-start">
+  <form method="post" class="flex-1 min-w-0 w-full flex flex-col gap-4" x-data="dirtyForm" novalidate>{% csrf_token %}
+    <input type="hidden" name="tab" value="info" data-tab-field="case">
+    <div data-tabs="case" data-initial="{{ first_error_tab }}" class="card p-0 reveal">
+      <div class="tabbar px-3 pt-2" role="tablist" aria-label="ส่วนของคดี">
+        {% for key, label in tabs %}
+          {% if key in soon_tabs %}
+          <button type="button" class="tab" role="tab" data-tab="{{ key }}" disabled aria-selected="false" title="เปิดใช้ใน{{ soon_tabs|get_item:key }}">{{ label }} <span class="text-xs">เร็ว ๆ นี้</span></button>
+          {% else %}
+          <button type="button" class="tab" role="tab" data-tab="{{ key }}" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="panel-{{ key }}">
+            {{ label }}
+            {% if key == "suspects" %}<span class="count" data-count-for="sus">{{ suspect_fs.total_form_count|thai_digits }}</span>{% elif key == "witnesses" %}<span class="count" data-count-for="wit">{{ witness_fs.total_form_count|thai_digits }}</span>{% endif %}
+            {% if errors|get_item:key %}<span class="tab-err" title="มีช่องที่ต้องแก้"></span>{% endif %}
+          </button>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      <fieldset class="p-5">
+        <legend class="sr-only">ข้อมูลคดี</legend>
+
+        {# ---------- ข้อมูลคดี ---------- #}
+        <div role="tabpanel" id="panel-info" data-panel="info" class="flex flex-col gap-6">
+          {% if case_form.non_field_errors %}<p class="chip chip-danger">{{ case_form.non_field_errors|join:" " }}</p>{% endif %}
+          <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{% for f in case_form.head_fields %}{% include "partials/field.html" %}{% endfor %}</div>
+          {% for name, fields in case_form.groups %}
+          <section class="flex flex-col gap-3">
+            <div class="flex flex-wrap items-center gap-2">
+              <h3 class="section-title flex-1">{{ name }}</h3>
+              {% if forloop.first %}<button type="button" class="btn btn-secondary btn-sm" disabled title="เปิดใช้ในเฟส 5"><span class="ai-badge">AI</span>ให้ AI วิเคราะห์ใหม่</button>{% endif %}
+              {% if forloop.counter == 2 %}<span class="chip chip-warning text-xs">ต้องกรอกก่อน</span>{% elif forloop.counter == 3 %}<span class="chip chip-muted text-xs">กรอกเมื่อมี</span>{% endif %}
+            </div>
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{% for f in fields %}{% include "partials/field.html" %}{% endfor %}</div>
+          </section>
+          {% endfor %}
+          <section class="flex flex-col gap-3">
+            <div class="flex flex-wrap items-center gap-2"><h3 class="section-title flex-1">พฤติการณ์แห่งคดี</h3>
+              <button type="button" class="btn btn-secondary btn-sm" disabled title="เปิดใช้ในเฟส 5"><span class="ai-badge">AI</span>สรุปพฤติการณ์</button></div>
+            {% with f=case_form.circumstances %}{{ f }}{% for e in f.errors %}<p class="text-danger text-sm">{{ e }}</p>{% endfor %}{% endwith %}
+          </section>
+        </div>
+
+        {# ---------- ผู้กล่าวหา ---------- #}
+        <div role="tabpanel" id="panel-accuser" data-panel="accuser" class="flex flex-col gap-6" hidden>
+          {% include "cases/_party.html" with form=accuser_form role="accuser" removable=False %}
+          <section class="flex flex-col gap-3">
+            <div class="flex flex-wrap items-center gap-2"><h3 class="section-title flex-1">บัญชีทรัพย์ถูกประทุษร้าย</h3>
+              {% if editable %}<button type="button" class="btn btn-secondary btn-sm" data-formset-add="prop"><svg class="w-4 h-4"><use href="#i-plus"/></svg>เพิ่มทรัพย์</button>{% endif %}</div>
+            {{ property_fs.management_form }}
+            <div class="overflow-x-auto rounded-card border border-border">
+            <table class="tbl">
+              <thead><tr><th>ชื่อทรัพย์</th><th class="w-28">จำนวน</th><th class="w-40">มูลค่า (บาท)</th><th class="w-36">สถานะ</th><th>หมายเหตุ</th>{% if editable %}<th class="w-16">ลบ</th>{% endif %}</tr></thead>
+              <tbody data-formset-rows="prop">
+                {% for form in property_fs %}{% include "cases/_property_row.html" %}{% endfor %}
+              </tbody>
+            </table>
+            </div>
+            <p class="empty-state text-sm" data-formset-empty="prop" {% if property_fs.forms %}hidden{% endif %}>ยังไม่มีรายการทรัพย์</p>
+            {% if editable %}<template id="tpl-prop">{% include "cases/_property_row.html" with form=property_fs.empty_form %}</template>{% endif %}
+          </section>
+          <section class="flex flex-col gap-2">
+            <h3 class="section-title">ประวัติแชทกับผู้ช่วย AI</h3>
+            <div class="empty-state text-sm"><p>แสดงเมื่อผู้แจ้งแจ้งความผ่านลิงก์หรือ QR (เฟส 6)</p></div>
+          </section>
+        </div>
+
+        {# ---------- ผู้ต้องหา / พยาน ---------- #}
+        <div role="tabpanel" id="panel-suspects" data-panel="suspects" hidden>
+          {% include "cases/_people.html" with fs=suspect_fs prefix="sus" role="suspect" noun="ผู้ต้องหา" %}
+        </div>
+        <div role="tabpanel" id="panel-witnesses" data-panel="witnesses" hidden>
+          {% include "cases/_people.html" with fs=witness_fs prefix="wit" role="witness" noun="พยาน" %}
+        </div>
+      </fieldset>
+    </div>
+
+    <div class="savebar card glass p-3 flex flex-wrap items-center gap-3" :class="dirtyClass">
+      {% if editable %}
+      <button class="btn btn-primary" name="save" value="1"><svg class="w-5 h-5"><use href="#i-save"/></svg>บันทึก</button>
+      <span class="flex items-center gap-2 text-sm text-warning-ink" x-show="dirty" role="status"><span class="dot-alert m-0"></span>ยังไม่บันทึก</span>
+      <span class="flex items-center gap-2 text-sm text-muted" x-show="clean"><svg class="w-4 h-4 text-success"><use href="#i-check"/></svg>บันทึกทุกแท็บแล้ว</span>
+      {% endif %}
+      <span class="flex-1"></span>
+      <button type="button" class="btn btn-secondary" :disabled="dirty" disabled title="บันทึกก่อนจึงออกเอกสารได้ · เครื่องสร้างเอกสารเปิดใช้ในเฟส 4"><svg class="w-5 h-5"><use href="#i-file"/></svg>ออกเอกสาร</button>
+      <button type="button" class="btn btn-secondary" disabled title="เปิดใช้ในเฟส 3"><svg class="w-5 h-5"><use href="#i-timeline"/></svg>Timeline คดี</button>
+    </div>
+  </form>
+  {% include "cases/_side_panel.html" %}
+</div>
 {% endblock %}

@@ -2,14 +2,29 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.html import format_html
 from django.views.decorators.http import require_POST
 
 from audit.services import log
+from parties.forms import PartyForm, PartyFormSet, PropertyFormSet
+from parties.models import CaseParty, PropertyItem
+from parties.services import party_initial
 
 from . import services
-from .forms import CaseCreateForm
+from .forms import CaseCreateForm, CaseDetailForm
 from .models import Case, CaseStatus, CaseType
+
+TABS = [
+    ("info", "ข้อมูลคดี"),
+    ("accuser", "ผู้กล่าวหา"),
+    ("suspects", "ผู้ต้องหา"),
+    ("witnesses", "พยาน"),
+    ("investigator", "พนักงานสอบสวน"),
+    ("dika", "ค้นฎีกา"),
+]
+SOON_TABS = {"investigator": "เฟส 3", "dika": "เฟส 5"}
 
 
 def visible(user):
@@ -68,8 +83,112 @@ def case_delete(request, pk):
     return redirect("cases:list")
 
 
+def can_edit(user, case: Case) -> bool:
+    if not user.can("case.edit"):
+        return False
+    if case.owner_id == user.pk or case.shared_with.filter(pk=user.pk).exists():
+        return True
+    return user.can("case.view_group") and case.owner.unit_group == user.unit_group
+
+
+def build_forms(case: Case, data=None):
+    parties = list(case.parties.select_related("person").prefetch_related("statements__created_by"))
+    real_ids = {cp.pk: cp.person.citizen_id for cp in parties}
+    by_role = {r: [cp for cp in parties if cp.role == r] for r in ("accuser", "suspect", "witness")}
+    acc = by_role["accuser"][0] if by_role["accuser"] else None
+    forms = {
+        "case_form": CaseDetailForm(data, instance=case, prefix="c"),
+        "accuser_form": PartyForm(data, prefix="acc", initial=party_initial(acc) if acc else {}, real_citizen_ids=real_ids),
+        "property_fs": PropertyFormSet(data, prefix="prop", queryset=PropertyItem.objects.filter(case=case)),
+        "suspect_fs": PartyFormSet(
+            data, prefix="sus", initial=[party_initial(cp) for cp in by_role["suspect"]], real_citizen_ids=real_ids
+        ),
+        "witness_fs": PartyFormSet(
+            data, prefix="wit", initial=[party_initial(cp) for cp in by_role["witness"]], real_citizen_ids=real_ids
+        ),
+    }
+    # Attach the stored person to each bound form so templates can show statement versions and reveal buttons.
+    forms["accuser_form"].party = acc
+    for key, role in (("suspect_fs", "suspect"), ("witness_fs", "witness")):
+        for i, f in enumerate(forms[key].forms):
+            f.party = by_role[role][i] if i < len(by_role[role]) else None
+    return forms
+
+
+def make_read_only(forms) -> None:
+    for obj in forms.values():
+        for form in getattr(obj, "forms", [obj]):
+            for field in form.fields.values():
+                field.disabled = True
+
+
+def tab_errors(forms) -> dict:
+    return {
+        "info": bool(forms["case_form"].errors),
+        "accuser": bool(forms["accuser_form"].errors) or any(f.errors for f in forms["property_fs"].forms),
+        "suspects": any(f.errors for f in forms["suspect_fs"].forms) or bool(forms["suspect_fs"].non_form_errors()),
+        "witnesses": any(f.errors for f in forms["witness_fs"].forms) or bool(forms["witness_fs"].non_form_errors()),
+    }
+
+
 @login_required
 def case_detail(request, pk):
     case = get_case(request.user, pk)
-    log(request.user, "view", "case", case.pk)
-    return render(request, "cases/detail.html", {"case": case, "active": "cases"})
+    editable = can_edit(request.user, case)
+    if request.method == "POST":
+        if not editable:
+            raise PermissionDenied
+        forms = build_forms(case, request.POST)
+        if all(f.is_valid() for f in forms.values()):
+            changed = services.save_case(request.user, case, **forms)
+            if changed:
+                messages.success(request, "บันทึกแล้ว: " + " · ".join(changed))
+            else:
+                messages.info(request, "ไม่มีข้อมูลที่เปลี่ยน")
+            tab = request.POST.get("tab", "info")
+            return redirect(f"{case.get_absolute_url()}#{tab if tab in dict(TABS) else 'info'}")
+        messages.error(request, "ยังบันทึกไม่ได้ ตรวจช่องที่มีกรอบสีแดงในแท็บที่มีจุดเตือน")
+        status = 400
+    else:
+        forms = build_forms(case)
+        if not editable:
+            make_read_only(forms)
+        log(request.user, "view", "case", case.pk, f"เปิดหน้าคดี {case}")
+        status = 200
+    errors = tab_errors(forms) if request.method == "POST" else {}
+    ctx = forms | {
+        "case": case,
+        "editable": editable,
+        "tabs": TABS,
+        "soon_tabs": SOON_TABS,
+        "errors": errors,
+        "first_error_tab": next((t for t, e in errors.items() if e), ""),
+        "can_reveal": request.user.can("pii.reveal"),
+        "active": "cases",
+    }
+    return render(request, "cases/detail.html", ctx, status=status)
+
+
+@login_required
+@require_POST
+def reveal_citizen_id(request, pk, party_id):
+    """Show a full citizen ID for one person. Needs pii.reveal and is always written to the audit log."""
+    case = get_case(request.user, pk)
+    if not request.user.can("pii.reveal"):
+        raise PermissionDenied
+    cp = get_object_or_404(CaseParty.objects.select_related("person"), pk=party_id, case=case)
+    log(request.user, "reveal", "person", cp.person_id, f"ดูเลขประจำตัวประชาชนเต็มของ{cp.get_role_display()} {cp.person} คดี {case}")
+    name = request.POST.get("field", "")
+    if not name.endswith("-citizen_id") or not name.replace("-", "").replace("_", "").isalnum():
+        name = "citizen_id"
+    return HttpResponse(
+        format_html(
+            '<input type="text" name="{}" value="{}" class="input" id="id_{}" maxlength="20" inputmode="numeric" '
+            'aria-describedby="{}-hint"><p class="text-xs text-warning-ink" id="{}-hint">แสดงเต็มแล้ว (บันทึกในประวัติการใช้งาน)</p>',
+            name,
+            cp.person.citizen_id,
+            name,
+            name,
+            name,
+        )
+    )

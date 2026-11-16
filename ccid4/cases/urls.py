@@ -8,4 +8,5 @@ urlpatterns = [
     path("new/", views.case_create, name="create"),
     path("<int:pk>/", views.case_detail, name="detail"),
     path("<int:pk>/delete/", views.case_delete, name="delete"),
+    path("<int:pk>/parties/<int:party_id>/reveal/", views.reveal_citizen_id, name="reveal_id"),
 ]
