@@ -17,7 +17,7 @@
   </div>
   <div class="relative z-10 flex flex-col items-end gap-2">
     {% with d=case.nearest_deadline %}
-      {% if d %}<span class="chip chip-{{ d.tone }} chip-live text-base"><svg class="w-4 h-4"><use href="#i-clock"/></svg>{{ d.label }}</span>
+      {% if d %}{% include "deadlines/_chip.html" %}
       {% else %}<span class="chip chip-muted"><svg class="w-4 h-4"><use href="#i-clock"/></svg>ยังไม่มีกำหนดเวลาที่ต้องติดตาม</span>{% endif %}
     {% endwith %}
   </div>
@@ -96,6 +96,40 @@
         <div role="tabpanel" id="panel-witnesses" data-panel="witnesses" hidden>
           {% include "cases/_people.html" with fs=witness_fs prefix="wit" role="witness" noun="พยาน" %}
         </div>
+
+        {# ---------- พนักงานสอบสวน (A4.6) ---------- #}
+        <div role="tabpanel" id="panel-investigator" data-panel="investigator" class="flex flex-col gap-6" hidden>
+          <section class="flex flex-col gap-3">
+            <div class="flex flex-wrap items-center gap-2"><h3 class="section-title flex-1">หนังสือออกภายนอก</h3>
+              {% if editable %}<a class="btn btn-secondary btn-sm" href="{% url 'cases:letter_new' case.pk %}"><svg class="w-4 h-4"><use href="#i-plus"/></svg>ร่างหนังสือ</a>{% endif %}</div>
+            {% if letters %}
+            <div class="overflow-x-auto rounded-card border border-border">
+              <table class="tbl">
+                <thead><tr><th>เลขที่</th><th>เรื่อง</th><th>เรียน</th><th>สถานะ</th><th></th></tr></thead>
+                <tbody>{% for lt in letters %}
+                  <tr><td class="whitespace-nowrap">{{ lt.number|default:"—" }}</td><td>{{ lt.subject }}</td><td>{{ lt.recipient }}</td>
+                    <td><span class="chip {% if lt.status == 'replied' %}chip-success{% elif lt.status == 'issued' %}chip-primary{% else %}chip-muted{% endif %}">{{ lt.get_status_display }}</span>
+                      {% if lt.replied_at %}<span class="block text-xs text-muted">ตอบ {{ lt.replied_at|be_date }}</span>{% elif lt.issued_at %}<span class="block text-xs text-muted">ออก {{ lt.issued_at|be_date }}</span>{% endif %}</td>
+                    <td><a class="btn btn-secondary btn-sm" href="{% url 'cases:letter_edit' case.pk lt.pk %}">{% if editable %}แก้/ออกหนังสือ{% else %}ดู{% endif %}</a></td></tr>
+                {% endfor %}</tbody>
+              </table>
+            </div>
+            {% else %}<p class="empty-state text-sm">ยังไม่มีหนังสือ · แบบที่มี: {% for k, t in letter_templates.items %}{{ t.label }}{% if not forloop.last %} · {% endif %}{% endfor %}</p>{% endif %}
+          </section>
+          <section class="flex flex-col gap-3">
+            <div class="flex flex-wrap items-center gap-2"><h3 class="section-title flex-1">บันทึกพนักงานสอบสวน</h3>
+              <span class="text-xs text-muted">ระบบลงรายการให้อัตโนมัติเมื่อร่าง/ออกหนังสือ บันทึกฝากขัง ฯลฯ · ติ๊กแล้วย้ายไป "ทำแล้ว"</span></div>
+            {% if editable %}
+            <div class="grid gap-2 sm:grid-cols-[2fr_2fr_auto_auto] items-end">
+              <label><span class="label">รายการ</span><input class="input" name="title" form="task-add-form" maxlength="300" placeholder="เช่น ได้รับผลตรวจลายนิ้วมือ" required></label>
+              <label><span class="label">เหตุผล/คำสั่งที่อ้างอิง</span><input class="input" name="reason" form="task-add-form" maxlength="300"></label>
+              <label class="flex items-center gap-2 min-h-[44px] text-sm"><input type="checkbox" name="done" form="task-add-form" checked> ทำแล้ว</label>
+              <button class="btn btn-secondary" form="task-add-form">เพิ่มบันทึก</button>
+            </div>
+            {% endif %}
+            <div id="inv-log">{% include "deadlines/_log.html" %}</div>
+          </section>
+        </div>
       </fieldset>
     </div>
 
@@ -107,9 +141,28 @@
       {% endif %}
       <span class="flex-1"></span>
       <button type="button" class="btn btn-secondary" :disabled="dirty" disabled title="บันทึกก่อนจึงออกเอกสารได้ · เครื่องสร้างเอกสารเปิดใช้ในเฟส 4"><svg class="w-5 h-5"><use href="#i-file"/></svg>ออกเอกสาร</button>
-      <button type="button" class="btn btn-secondary" disabled title="เปิดใช้ในเฟส 3"><svg class="w-5 h-5"><use href="#i-timeline"/></svg>Timeline คดี</button>
+      <a class="btn btn-secondary" href="{% url 'cases:timeline' case.pk %}"><svg class="w-5 h-5"><use href="#i-timeline"/></svg>Timeline คดี</a>
     </div>
   </form>
   {% include "cases/_side_panel.html" %}
 </div>
+
+{% if editable %}
+<form id="task-add-form" method="post" action="{% url 'deadlines:task_add' case.pk %}" hidden>{% csrf_token %}<input type="hidden" name="back" value="investigator"></form>
+{% for party, c, df in detention_forms %}
+<dialog id="det-{{ party.pk }}" class="modal" aria-labelledby="det-title-{{ party.pk }}">
+  <form method="post" action="{% url 'deadlines:detention_add' case.pk party.pk %}" class="flex flex-col gap-4">{% csrf_token %}
+    <div class="flex items-start gap-3">
+      <span class="stat-icon"><svg class="w-5 h-5"><use href="#i-scale"/></svg></span>
+      <div class="flex-1"><h2 id="det-title-{{ party.pk }}">บันทึก{% if c.kind == 'delay' %}ผัดฟ้อง{% else %}ฝากขัง{% endif %}ผัดที่ {{ c.plan.used_times|add:1|thai_digits }}</h2>
+        <p class="text-sm text-muted">{{ party.person.full_name }} · {{ c.plan.name }} · {{ c.plan.ref }}</p></div>
+      <button type="button" class="btn btn-secondary btn-sm" data-dialog-close aria-label="ปิด">✕</button>
+    </div>
+    <div class="grid gap-3 sm:grid-cols-2">{% for f in df %}{% include "partials/field.html" %}{% endfor %}</div>
+    <p class="text-xs text-muted">นับวันแรกเป็นวันที่หนึ่ง เช่น ฝาก ๑๒ วันตั้งแต่ ๑ ม.ค. ครบ ๑๒ ม.ค. · ระบบตรวจไม่ให้เกินครั้งละ {{ c.plan.per_days|thai_digits }} วัน และรวมไม่เกิน {{ c.plan.total_days|thai_digits }} วัน</p>
+    <div class="flex gap-2 justify-end"><button type="button" class="btn btn-secondary" data-dialog-close>ยกเลิก</button><button class="btn btn-primary">บันทึกและคำนวณใหม่</button></div>
+  </form>
+</dialog>
+{% endfor %}
+{% endif %}
 {% endblock %}

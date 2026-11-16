@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "audit",
     "cases",
     "parties",
+    "deadlines",
 ]
 
 MIDDLEWARE = [

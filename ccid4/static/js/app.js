@@ -62,12 +62,34 @@ document.addEventListener('alpine:init', () => {
     get panelClass() { return this.open ? 'lg:w-80' : 'lg:w-16'; },
   }));
 
+  // Live countdown for hour-based deadlines: <span x-data="countdown" data-until="ISO">เหลือ …</span>
+  Alpine.data('countdown', () => ({
+    init() {
+      const until = new Date(this.$el.dataset.until).getTime();
+      const tick = () => {
+        const secs = Math.round((until - Date.now()) / 1000);
+        if (secs < 0) {
+          const h = Math.ceil(-secs / 3600);
+          this.$el.textContent = h < 48 ? `เลยกำหนด ${h} ชม.` : `เลยกำหนด ${Math.floor(h / 24)} วัน`;
+          return;
+        }
+        const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60);
+        this.$el.textContent = h < 48 ? `เหลือ ${h} ชม. ${m} นาที` : `เหลือ ${Math.floor(h / 24)} วัน ${h % 24} ชม.`;
+      };
+      tick();
+      this.timer = setInterval(tick, 30000);
+    },
+    destroy() { clearInterval(this.timer); },
+  }));
+
   // Unsaved-changes guard used by forms with x-data="dirtyForm".
   Alpine.data('dirtyForm', () => ({
     dirty: false,
     init() {
-      this.$el.addEventListener('input', () => { this.dirty = true; });
-      this.$el.addEventListener('change', () => { this.dirty = true; });
+      // Inputs that belong to another form (form="...") do not make this one dirty.
+      const mark = (e) => { if (!e.target.form || e.target.form === this.$el) this.dirty = true; };
+      this.$el.addEventListener('input', mark);
+      this.$el.addEventListener('change', mark);
       this.$el.addEventListener('submit', () => { this.dirty = false; });
       window.addEventListener('beforeunload', (e) => { if (this.dirty) { e.preventDefault(); e.returnValue = ''; } });
     },
@@ -153,6 +175,19 @@ function formsetAdd(prefix) {
 document.addEventListener('click', (e) => {
   const add = e.target.closest('[data-formset-add]');
   if (add) { e.preventDefault(); formsetAdd(add.dataset.formsetAdd); }
+});
+
+// Native <dialog> modals: [data-dialog-open="id"] opens, [data-dialog-close] closes.
+document.addEventListener('click', (e) => {
+  const opener = e.target.closest('[data-dialog-open]');
+  if (opener) {
+    const dlg = document.getElementById(opener.dataset.dialogOpen);
+    if (dlg && dlg.showModal) { dlg.showModal(); const first = dlg.querySelector('input, select, textarea'); if (first) first.focus(); }
+    return;
+  }
+  const closer = e.target.closest('[data-dialog-close]');
+  if (closer) { const dlg = closer.closest('dialog'); if (dlg) dlg.close(); return; }
+  if (e.target.tagName === 'DIALOG') e.target.close(); // click on the backdrop
 });
 
 // Deleting a person/row is marked visually until saved.

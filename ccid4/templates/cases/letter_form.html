@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{% if letter %}หนังสือ {{ letter.number|default:"(ร่าง)" }}{% else %}ร่างหนังสือ{% endif %} · {{ case.label }}{% endblock %}
+{% block content %}
+<nav class="text-sm reveal" aria-label="เส้นทาง"><a href="{% url 'cases:list' %}">คดีของฉัน</a> › <a href="{% url 'cases:detail' case.pk %}#investigator">{{ case.label }}</a> › {{ tpl.label }}</nav>
+<div class="flex flex-wrap items-center gap-3 reveal">
+  <h1 class="flex-1">{{ tpl.label }}</h1>
+  {% if letter %}<span class="chip {% if letter.status == 'replied' %}chip-success{% elif letter.status == 'issued' %}chip-primary{% else %}chip-muted{% endif %}">{{ letter.get_status_display }}</span>{% endif %}
+</div>
+<div class="grid gap-4 lg:grid-cols-[2fr_1fr] items-start">
+  <form method="post" class="card p-5 flex flex-col gap-4 reveal" x-data="dirtyForm">{% csrf_token %}
+    <input type="hidden" name="t" value="{{ key }}"><input type="hidden" name="action" value="save">
+    <div class="grid gap-3 md:grid-cols-2">{% for f in form %}{% if f.field.widget.input_type == "checkbox" %}<label class="flex items-center gap-2 min-h-[44px] md:col-span-2">{{ f }} {{ f.label }}</label>{% elif f.field.widget.attrs.rows %}<div class="md:col-span-2">{% include "partials/field.html" %}</div>{% else %}{% include "partials/field.html" %}{% endif %}{% endfor %}</div>
+    <p class="text-xs text-muted">ตัวหนังสือฉบับเต็ม (Word/PDF) ออกได้เมื่อเปิดเครื่องสร้างเอกสารในเฟส 4</p>
+    {% if editable is not False %}<div class="flex gap-2"><button class="btn btn-primary">บันทึก{% if not letter %}ร่าง{% endif %}</button><a class="btn btn-secondary" href="{% url 'cases:detail' case.pk %}#investigator">กลับหน้าคดี</a></div>{% endif %}
+  </form>
+
+  {% if letter %}
+  <div class="flex flex-col gap-4">
+    <section class="card p-5 flex flex-col gap-3 reveal">
+      <h2>สถานะหนังสือ</h2>
+      <ol class="flex flex-col gap-2 text-sm">
+        <li class="dl-item">ร่างเมื่อ {{ letter.created_at|be_datetime }}</li>
+        {% if letter.issued_at %}<li class="dl-item">ออกเลขที่ <b>{{ letter.number }}</b> วันที่ {{ letter.issued_at|be_date }}</li>{% endif %}
+        {% if letter.replied_at %}<li class="dl-item">ได้รับตอบ {{ letter.replied_at|be_date }}{% if letter.reply_note %} · {{ letter.reply_note }}{% endif %}</li>{% endif %}
+      </ol>
+      {% if letter.reply_file %}<a class="btn btn-secondary btn-sm self-start" href="{% url 'cases:letter_reply_file' case.pk letter.pk %}"><svg class="w-4 h-4"><use href="#i-file"/></svg>ดาวน์โหลดหนังสือตอบ</a>{% endif %}
+      {% if editable and letter.status == "draft" %}
+      <form method="post" class="flex gap-2 flex-wrap">{% csrf_token %}
+        <button class="btn btn-primary" name="action" value="issue">ออกหนังสือ{% if not letter.number %} (ออกเลขอัตโนมัติ){% endif %}</button>
+        <button class="btn btn-danger" name="action" value="delete">ลบร่าง</button>
+      </form>
+      {% endif %}
+    </section>
+    {% if editable and letter.status != "draft" %}
+    <form method="post" enctype="multipart/form-data" class="card p-5 flex flex-col gap-3 reveal">{% csrf_token %}
+      <h2>บันทึกการได้รับหนังสือตอบ</h2>
+      <input type="hidden" name="action" value="reply">
+      {% for f in reply %}{% include "partials/field.html" %}{% endfor %}
+      <button class="btn btn-primary self-start">บันทึก</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

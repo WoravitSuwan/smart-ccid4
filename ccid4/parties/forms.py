@@ -45,7 +45,7 @@ class PartyForm(StyledMixin, forms.Form):
     last_name = forms.CharField(label="นามสกุล", required=False, max_length=120)
     citizen_id = forms.CharField(label="เลขประจำตัวประชาชน", required=False, max_length=20)
     passport_no = forms.CharField(label="เลขหนังสือเดินทาง", required=False, max_length=40)
-    birth_date = forms.DateField(label="วันเกิด", required=False, widget=forms.DateInput(attrs={"type": "date"}))
+    birth_date = forms.DateField(label="วันเกิด", required=False, widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"))
     gender = forms.CharField(label="เพศ", required=False, max_length=20)
     nationality = forms.CharField(label="สัญชาติ", required=False, max_length=60)
     religion = forms.CharField(label="ศาสนา", required=False, max_length=60)

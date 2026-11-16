@@ -109,4 +109,41 @@ class Case(models.Model):
 
     @property
     def nearest_deadline(self):
-        return None  # filled in by the deadlines app (phase 3)
+        """The most urgent legal deadline (deadlines.services.Item) or None."""
+        if not hasattr(self, "_nearest"):
+            from deadlines.services import nearest
+
+            self._nearest = nearest(self)
+        return self._nearest
+
+
+class OutgoingLetter(models.Model):
+    """หนังสือออกภายนอก (A4.6): ขอภาพ CCTV ขอข้อมูลธนาคาร ผู้ให้บริการโทรศัพท์ แพลตฟอร์ม ฯลฯ."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "ร่าง"
+        ISSUED = "issued", "ออกแล้ว"
+        REPLIED = "replied", "ได้รับตอบ"
+
+    case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name="letters", verbose_name="คดี")
+    template = models.CharField("แบบหนังสือ", max_length=30)
+    number = models.CharField("เลขที่หนังสือ", max_length=60, blank=True)
+    subject = models.CharField("เรื่อง", max_length=300)
+    recipient = models.CharField("เรียน", max_length=300)
+    fields = models.JSONField("ข้อมูลเฉพาะของแบบหนังสือ", default=dict, blank=True)
+    status = models.CharField("สถานะ", max_length=10, choices=Status.choices, default=Status.DRAFT)
+    issued_at = models.DateField("วันที่ออก", null=True, blank=True)
+    replied_at = models.DateField("วันที่ได้รับตอบ", null=True, blank=True)
+    reply_file = models.FileField("ไฟล์หนังสือตอบ", upload_to="letters/%Y/%m/", blank=True)
+    reply_note = models.CharField("สรุปผลที่ได้รับ", max_length=500, blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "หนังสือออกภายนอก"
+        verbose_name_plural = "หนังสือออกภายนอก"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.number or 'ร่าง'} {self.subject}"

@@ -1,0 +1,30 @@
+<div class="flex flex-col gap-3">
+  {% if c.missing_penalty %}
+  <p class="chip chip-warning self-start">ระบุโทษจำคุก/ปรับสูงสุดในแท็บข้อมูลคดีก่อน จึงคำนวณฝากขังได้ <button type="button" class="underline" data-goto-tab="info">ไปแท็บข้อมูลคดี</button></p>
+  {% endif %}
+  {% if c.plan %}
+  <div class="grid gap-2 sm:grid-cols-4">
+    <div class="mini-stat"><span>กติกา</span><b class="text-sm">{{ c.plan.name }}</b></div>
+    <div class="mini-stat"><span>ใช้ไปแล้ว</span><b>{{ c.plan.used_times|thai_digits }} ผัด · {{ c.plan.used_days|thai_digits }} วัน</b></div>
+    <div class="mini-stat"><span>เหลือ</span><b>{{ c.plan.remaining_times|thai_digits }} ผัด · {{ c.plan.remaining_days|thai_digits }} วัน</b></div>
+    <div class="mini-stat"><span>วันสุดท้ายถ้าผัดครบ</span><b>{% if c.plan.final_day %}{{ c.plan.final_day|be_date }}{% else %}ครั้งละ ≤ {{ c.plan.per_days|thai_digits }} วัน รวม ≤ {{ c.plan.total_days|thai_digits }} วัน{% endif %}</b></div>
+  </div>
+  {% for p in c.plan.problems %}<p class="chip chip-danger self-start">{{ p }}</p>{% endfor %}
+  {% endif %}
+  {% if c.periods %}
+  <div class="overflow-x-auto rounded-card border border-border">
+    <table class="tbl">
+      <thead><tr><th>ผัดที่</th><th>ตั้งแต่</th><th>ถึง</th><th>วัน</th><th>ศาล / เลขคำร้อง</th>{% if editable %}<th></th>{% endif %}</tr></thead>
+      <tbody>{% for d in c.periods %}
+        <tr><td>{{ forloop.counter|thai_digits }}</td><td>{{ d.start_date|be_date }}</td><td>{{ d.end_date|be_date }}</td><td>{{ d.days|thai_digits }}</td><td>{{ d.court }} {{ d.order_no }}</td>
+        {% if editable %}<td>{% if forloop.last %}<button type="button" class="btn btn-danger btn-sm" hx-post="{% url 'deadlines:detention_delete' case.pk d.pk %}" hx-params="none" hx-confirm="ลบผัดที่ {{ forloop.counter }}?">ลบ</button>{% endif %}</td>{% endif %}</tr>
+      {% endfor %}</tbody>
+    </table>
+  </div>
+  {% endif %}
+  {% if editable and c.plan %}{% if c.plan.used_times and c.plan.exhausted %}
+    <p class="text-sm text-danger">ใช้สิทธิ์{% if c.kind == 'delay' %}ผัดฟ้อง{% else %}ฝากขัง{% endif %}ครบแล้ว</p>
+  {% else %}
+    <button type="button" class="btn btn-secondary btn-sm self-start" data-dialog-open="det-{{ party.pk }}"><svg class="w-4 h-4"><use href="#i-plus"/></svg>บันทึก{% if c.kind == 'delay' %}ผัดฟ้อง{% else %}ฝากขัง{% endif %}ผัดที่ {{ c.plan.used_times|add:1|thai_digits }}</button>
+  {% endif %}{% endif %}
+</div>

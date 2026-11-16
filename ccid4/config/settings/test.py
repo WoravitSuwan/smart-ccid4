@@ -18,3 +18,5 @@ DATABASES = {"default": env.db("DATABASE_URL", default="postgres://ccid4:ccid4@l
 
 WHITENOISE_USE_FINDERS = True
 WHITENOISE_AUTOREFRESH = True
+
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}}

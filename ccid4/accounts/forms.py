@@ -62,7 +62,7 @@ class OfficerProfileForm(StyledMixin, forms.ModelForm):
     class Meta:
         model = OfficerProfile
         fields = ["birth_date", "signature"]
-        widgets = {"birth_date": forms.DateInput(attrs={"type": "date"})}
+        widgets = {"birth_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")}
 
 
 class UnitForm(StyledMixin, forms.ModelForm):

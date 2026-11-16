@@ -87,4 +87,7 @@ def save_case(user, case: Case, case_form, accuser_form, property_fs, suspect_fs
             summary.append(label)
     if summary:
         case.save(update_fields=["updated_at"])
+    from deadlines.services import sync_rule_tasks
+
+    sync_rule_tasks(case)  # A4.1: recompute tasks and deadlines on every save
     return summary

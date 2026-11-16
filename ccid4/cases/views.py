@@ -24,7 +24,7 @@ TABS = [
     ("investigator", "พนักงานสอบสวน"),
     ("dika", "ค้นฎีกา"),
 ]
-SOON_TABS = {"investigator": "เฟส 3", "dika": "เฟส 5"}
+SOON_TABS = {"dika": "เฟส 5"}
 
 
 def visible(user):
@@ -39,7 +39,9 @@ def get_case(user, pk):
 def case_list(request):
     base = visible(request.user)
     q, status, ctype = request.GET.get("q", "").strip(), request.GET.get("status", ""), request.GET.get("type", "")
-    qs = services.filter_cases(base.select_related("owner").prefetch_related("parties__person"), q, status, ctype)
+    qs = services.filter_cases(
+        base.select_related("owner").prefetch_related("parties__person", "parties__detentions", "tasks"), q, status, ctype
+    )
     page = Paginator(qs, 25).get_page(request.GET.get("page"))
     ctx = {
         "page": page,
@@ -112,6 +114,11 @@ def build_forms(case: Case, data=None):
     for key, role in (("suspect_fs", "suspect"), ("witness_fs", "witness")):
         for i, f in enumerate(forms[key].forms):
             f.party = by_role[role][i] if i < len(by_role[role]) else None
+    from deadlines.services import custody_for, load_rules
+
+    rs = load_rules()
+    for f in forms["suspect_fs"].forms:
+        f.custody = custody_for(f.party, case, rs) if f.party else None
     return forms
 
 
@@ -133,7 +140,14 @@ def tab_errors(forms) -> dict:
 
 @login_required
 def case_detail(request, pk):
-    case = get_case(request.user, pk)
+    base = get_case(request.user, pk)
+    if request.method == "GET" and not base.tasks.exclude(rule_key="").exists():
+        from deadlines.services import sync_rule_tasks
+
+        sync_rule_tasks(base)  # first open of a case made before phase 3 (or imported)
+    case = get_object_or_404(
+        visible(request.user).select_related("owner").prefetch_related("parties__person", "parties__detentions", "tasks"), pk=pk
+    )
     editable = can_edit(request.user, case)
     if request.method == "POST":
         if not editable:
@@ -156,16 +170,39 @@ def case_detail(request, pk):
         log(request.user, "view", "case", case.pk, f"เปิดหน้าคดี {case}")
         status = 200
     errors = tab_errors(forms) if request.method == "POST" else {}
-    ctx = forms | {
-        "case": case,
-        "editable": editable,
-        "tabs": TABS,
-        "soon_tabs": SOON_TABS,
-        "errors": errors,
-        "first_error_tab": next((t for t, e in errors.items() if e), ""),
-        "can_reveal": request.user.can("pii.reveal"),
-        "active": "cases",
-    }
+    from deadlines.forms import DetentionForm, TaskForm
+    from deadlines.services import panel_context, suggested_start
+
+    from .letters import LETTER_TEMPLATES
+
+    detention_forms = []
+    for f in forms["suspect_fs"].forms:
+        c = getattr(f, "custody", None)
+        if c and c.plan and not (c.plan.used_times and c.plan.exhausted):
+            limit = c.plan.per_days if not c.plan.used_times else min(c.plan.per_days, c.plan.remaining_days)
+            df = DetentionForm(prefix=f"det{f.party.pk}", initial={"start_date": suggested_start(c), "days": limit})
+            df.fields["days"].max_value = limit
+            df.fields["days"].widget.attrs["max"] = limit
+            detention_forms.append((f.party, c, df))
+    ctx = (
+        forms
+        | panel_context(case)
+        | {
+            "all_tasks": list(case.tasks.select_related("done_by", "created_by").order_by("-created_at")),
+            "letters": case.letters.all(),
+            "letter_templates": LETTER_TEMPLATES,
+            "task_form": TaskForm(),
+            "detention_forms": detention_forms,
+            "case": case,
+            "editable": editable,
+            "tabs": TABS,
+            "soon_tabs": SOON_TABS,
+            "errors": errors,
+            "first_error_tab": next((t for t, e in errors.items() if e), ""),
+            "can_reveal": request.user.can("pii.reveal"),
+            "active": "cases",
+        }
+    )
     return render(request, "cases/detail.html", ctx, status=status)
 
 
@@ -192,3 +229,34 @@ def reveal_citizen_id(request, pk, party_id):
             name,
         )
     )
+
+
+@login_required
+def case_timeline(request, pk):
+    """B10: chronological view, exportable as PDF (or .docx when LibreOffice is not installed)."""
+    from django.http import HttpResponse as Resp
+
+    from core.convert import docx_to_pdf
+
+    from .timeline import KIND_LABELS, events, to_docx
+
+    case = get_case(request.user, pk)
+    items = events(case)
+    fmt = request.GET.get("format")
+    if fmt in ("pdf", "docx"):
+        data = to_docx(case, items)
+        name = f"timeline-{case.pk}"
+        if fmt == "pdf":
+            try:
+                data, ctype, name = docx_to_pdf(data), "application/pdf", f"{name}.pdf"
+            except RuntimeError as e:
+                messages.error(request, f"{e} · ดาวน์โหลดเป็น Word แทน")
+                return redirect(f"{request.path}?format=docx")
+        else:
+            ctype, name = "application/vnd.openxmlformats-officedocument.wordprocessingml.document", f"{name}.docx"
+        log(request.user, "export", "case", case.pk, f"ส่งออก Timeline คดี {case} ({fmt})")
+        resp = Resp(data, content_type=ctype)
+        resp["Content-Disposition"] = f'attachment; filename="{name}"'
+        return resp
+    log(request.user, "view", "case", case.pk, f"เปิด Timeline คดี {case}")
+    return render(request, "cases/timeline.html", {"case": case, "items": items, "kinds": KIND_LABELS, "active": "cases"})

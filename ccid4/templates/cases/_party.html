@@ -24,8 +24,12 @@
   <section class="flex flex-col gap-3 p-4 rounded-card border border-border bg-surface-2">
     <div class="flex flex-wrap items-center gap-2">
       <h3 class="section-title flex-1">การจับกุมและควบคุมตัว</h3>
-      <span class="chip chip-muted" title="คำนวณจากเวลาถึงที่ทำการ พงส. ในเฟส 3"><svg class="w-4 h-4"><use href="#i-clock"/></svg>นับถอยหลัง 48 ชม. (เฟส 3)</span>
+      {% with it=form.custody.item %}{% if it %}
+        <span class="chip chip-{{ it.status.tone }}{% if it.status.tone != 'primary' %} chip-live{% endif %}"><svg class="w-4 h-4"><use href="#i-clock"/></svg>{{ it.deadline.short }} · <span{% if it.deadline.is_datetime %} x-data="countdown" data-until="{{ it.deadline.act_by.isoformat }}"{% endif %}>{{ it.status.text }}</span></span>
+      {% endif %}{% endwith %}
     </div>
+    {% if form.custody %}{% include "deadlines/_custody.html" with c=form.custody party=form.party %}{% elif not form.party %}
+    <p class="text-sm text-muted">บันทึกผู้ต้องหาคนนี้ก่อน จึงบันทึกฝากขัง/ผัดฟ้องได้</p>{% endif %}
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{% for f in form.suspect_fields %}{% if f.name == "marks" %}<div class="sm:col-span-2 xl:col-span-4">{% include "partials/field.html" %}</div>{% else %}{% include "partials/field.html" %}{% endif %}{% endfor %}</div>
   </section>
   {% endif %}
