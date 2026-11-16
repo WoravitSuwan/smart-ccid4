@@ -7,6 +7,7 @@ from django.views.decorators.http import require_POST
 
 from audit.services import log
 from cases.views import can_edit, get_case
+from core.convert import soffice_available
 
 from . import services
 from .models import DocumentJob, IssuedDocument
@@ -34,6 +35,7 @@ def documents_page(request, pk):
             else None
         ),
         "may_issue": may_issue(request.user, case),
+        "pdf_available": soffice_available(),
         "active": "cases",
     }
     return render(request, "documents/page.html", ctx)

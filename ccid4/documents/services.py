@@ -86,7 +86,10 @@ def build_one(job: DocumentJob, doc: catalog.DocType, obj=None) -> IssuedDocumen
         )  # fmt: skip
         issued.docx.save(_filename(doc, label, version, "docx"), ContentFile(data), save=False)
         if job.formats in ("pdf", "both"):
-            issued.pdf.save(_filename(doc, label, version, "pdf"), ContentFile(docx_to_pdf(data)), save=False)
+            try:
+                issued.pdf.save(_filename(doc, label, version, "pdf"), ContentFile(docx_to_pdf(data)), save=False)
+            except RuntimeError as e:  # no LibreOffice on this machine: keep the Word file
+                job.pdf_warning = f"{e} จึงได้เฉพาะไฟล์ Word"
         issued.save()
     return issued
 
@@ -118,7 +121,8 @@ def run_job(job_id: int) -> DocumentJob:
                         errors.append(f"{state.doc.title}: ข้ามรายการที่ยังไม่พร้อม")
             else:
                 made.append(build_one(job, state.doc))
-        files = [(d.docx, d.docx.name) for d in made if job.formats in ("docx", "both")]
+        want_docx = job.formats in ("docx", "both") or not any(d.pdf for d in made)  # no PDF possible: hand over Word
+        files = [(d.docx, d.docx.name) for d in made if want_docx]
         files += [(d.pdf, d.pdf.name) for d in made if d.pdf]
         if len(files) > 1:
             buf = BytesIO()
@@ -130,6 +134,8 @@ def run_job(job_id: int) -> DocumentJob:
                 f"เอกสาร-คดี{case.pk}-{timezone.localtime():%Y%m%d-%H%M%S}.zip", ContentFile(buf.getvalue()), save=False
             )
         job.status = DocumentJob.Status.DONE if made else DocumentJob.Status.FAILED
+        if getattr(job, "pdf_warning", ""):
+            errors.append(job.pdf_warning)
         job.error = "\n".join(errors) if errors else ("" if made else "ไม่มีเอกสารที่พร้อมออก")
     except Exception as exc:  # noqa: BLE001 - shown to the officer; details stay in the worker log
         job.status, job.error = DocumentJob.Status.FAILED, f"สร้างเอกสารไม่สำเร็จ: {exc}"
@@ -145,5 +151,6 @@ def run_job(job_id: int) -> DocumentJob:
 def bundle_files(job: DocumentJob) -> list:
     """The single file to download when the job made only one."""
     docs = list(job.documents.all())
-    files = [d.docx for d in docs if job.formats in ("docx", "both")] + [d.pdf for d in docs if d.pdf]
+    want_docx = job.formats in ("docx", "both") or not any(d.pdf for d in docs)
+    files = [d.docx for d in docs if want_docx] + [d.pdf for d in docs if d.pdf]
     return files

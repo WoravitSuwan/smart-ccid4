@@ -56,7 +56,8 @@
   <div class="savebar card glass p-3 flex flex-wrap items-center gap-3">
     <span class="text-sm">เลือกแล้ว <b data-selected-count>๐</b> เอกสาร</span>
     <fieldset class="flex flex-wrap gap-3"><legend class="sr-only">รูปแบบไฟล์</legend>
-      {% for k, v in formats.items %}<label class="flex items-center gap-2 text-sm min-h-[44px]"><input type="radio" name="format" value="{{ k }}" {% if k == "both" %}checked{% endif %}> {{ v }}</label>{% endfor %}
+      {% for k, v in formats.items %}<label class="flex items-center gap-2 text-sm min-h-[44px]{% if k != 'docx' and not pdf_available %} opacity-50{% endif %}"><input type="radio" name="format" value="{{ k }}" {% if pdf_available and k == "both" or not pdf_available and k == "docx" %}checked{% endif %}{% if k != 'docx' and not pdf_available %} disabled{% endif %}> {{ v }}</label>{% endfor %}
+      {% if not pdf_available %}<span class="text-xs text-warning-ink">เครื่องนี้ไม่มี LibreOffice จึงออกได้เฉพาะ Word</span>{% endif %}
     </fieldset>
     <span class="flex-1"></span>
     <span class="text-xs text-muted">หลายไฟล์ได้เป็น ZIP · ทุกครั้งลงบันทึกพนักงานสอบสวนอัตโนมัติ</span>
