@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "cases",
     "parties",
     "deadlines",
+    "documents",
 ]
 
 MIDDLEWARE = [

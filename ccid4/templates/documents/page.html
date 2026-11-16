@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}ออกเอกสาร · {{ case.label }}{% endblock %}
+{% block content %}
+<nav class="text-sm reveal" aria-label="เส้นทาง"><a href="{% url 'cases:list' %}">คดีของฉัน</a> › <a href="{% url 'cases:detail' case.pk %}">{{ case.label }}</a> › ออกเอกสาร</nav>
+<div class="flex flex-wrap items-end gap-3 reveal">
+  <div class="flex-1"><h1>ออกเอกสาร</h1>
+    <p class="text-muted">{{ case.label }} · พร้อมออก <b class="text-text">{{ ready_count|thai_digits }}</b> จาก {{ total|thai_digits }} รายการ · เอกสารที่จางยังขาดข้อมูล กดที่ชื่อข้อมูลเพื่อไปกรอก</p></div>
+  <label class="input flex items-center gap-2 max-w-sm"><svg class="w-5 h-5 text-muted"><use href="#i-search"/></svg><span class="sr-only">ค้นหาเอกสาร</span>
+    <input type="search" class="flex-1 bg-transparent outline-none" placeholder="ค้นหาเอกสาร" data-doc-search></label>
+</div>
+
+{% if job %}<div id="job" class="reveal">{% include "documents/_job.html" %}</div>{% endif %}
+
+<form method="post" action="{% url 'documents:issue' case.pk %}" class="flex flex-col gap-6">{% csrf_token %}
+  {% for group, items in by_group %}
+  <section class="flex flex-col gap-3 reveal" data-doc-group>
+    <h2 class="section-title">{{ group }}</h2>
+    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      {% for s in items %}
+      <div class="doc-card card {% if s.ready %}card-hover is-ready{% else %}is-locked{% endif %}" data-title="{{ s.doc.title }} {{ s.doc.no }}">
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" name="doc" value="{{ s.doc.key }}" class="mt-1 w-5 h-5 accent-[var(--primary)]" {% if not s.ready or not may_issue %}disabled{% endif %} data-doc-check>
+          <span class="doc-no">{{ s.doc.no|thai_digits }}</span>
+          <span class="flex-1 min-w-0">
+            <span class="block font-semibold leading-snug">{{ s.doc.title }}</span>
+            <span class="flex flex-wrap gap-1 mt-1">
+              {% if s.doc.per %}<span class="chip chip-muted text-xs">รายบุคคล</span>{% endif %}
+              {% if s.doc.new %}<span class="chip chip-primary text-xs">ใหม่</span>{% endif %}
+              {% if s.ready %}<span class="chip chip-success text-xs"><svg class="w-3 h-3"><use href="#i-check"/></svg>พร้อม</span>{% else %}<span class="chip chip-warning text-xs"><svg class="w-3 h-3"><use href="#i-lock"/></svg>ยังไม่พร้อม</span>{% endif %}
+            </span>
+          </span>
+        </label>
+        {% if not s.ready %}
+        <div class="doc-missing">
+          <p class="text-xs font-semibold text-muted">ยังขาด</p>
+          <ul class="flex flex-col gap-0.5">{% for m in s.all_missing %}<li class="text-sm">{% if m.url %}<a href="{{ m.url }}">{{ m.label }}</a>{% else %}{{ m.label }}{% endif %}</li>{% endfor %}</ul>
+        </div>
+        {% elif s.doc.per %}
+        <fieldset class="doc-items" data-items-for="{{ s.doc.key }}" hidden>
+          <legend class="text-xs font-semibold text-muted">ออกให้</legend>
+          {% for it in s.items %}
+          <label class="flex items-start gap-2 text-sm {% if not it.ready %}opacity-60{% endif %}">
+            <input type="checkbox" name="items-{{ s.doc.key }}" value="{{ it.id }}" {% if it.ready %}checked{% else %}disabled{% endif %} class="mt-1">
+            <span>{{ it.label }}{% if not it.ready %}<span class="block text-xs">ขาด: {% for m in it.missing %}{% if m.url %}<a href="{{ m.url }}">{{ m.label }}</a>{% else %}{{ m.label }}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</span>{% endif %}</span>
+          </label>
+          {% endfor %}
+        </fieldset>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+
+  {% if may_issue %}
+  <div class="savebar card glass p-3 flex flex-wrap items-center gap-3">
+    <span class="text-sm">เลือกแล้ว <b data-selected-count>๐</b> เอกสาร</span>
+    <fieldset class="flex flex-wrap gap-3"><legend class="sr-only">รูปแบบไฟล์</legend>
+      {% for k, v in formats.items %}<label class="flex items-center gap-2 text-sm min-h-[44px]"><input type="radio" name="format" value="{{ k }}" {% if k == "both" %}checked{% endif %}> {{ v }}</label>{% endfor %}
+    </fieldset>
+    <span class="flex-1"></span>
+    <span class="text-xs text-muted">หลายไฟล์ได้เป็น ZIP · ทุกครั้งลงบันทึกพนักงานสอบสวนอัตโนมัติ</span>
+    <button class="btn btn-primary"><svg class="w-5 h-5"><use href="#i-file"/></svg>ออกเอกสาร</button>
+  </div>
+  {% endif %}
+</form>
+
+<section class="card p-5 flex flex-col gap-3 reveal">
+  <h2>เอกสารที่ออกแล้ว</h2>
+  {% if history %}
+  <div class="overflow-x-auto"><table class="tbl">
+    <thead><tr><th>เอกสาร</th><th>ออกให้</th><th>ฉบับที่</th><th>ออกเมื่อ</th><th>ผู้ออก</th><th>ช่องที่ว่าง</th><th>ไฟล์</th></tr></thead>
+    <tbody>{% for d in history %}
+      <tr><td>{{ d.title }}</td><td>{{ d.item_label|default:"—" }}</td><td>{{ d.version|thai_digits }}</td><td class="whitespace-nowrap">{{ d.created_at|be_datetime }}</td><td>{{ d.created_by.display_name }}</td>
+        <td>{% if d.missing_fields %}<span class="chip chip-warning text-xs" title="{{ d.missing_fields|join:', ' }}">{{ d.missing_fields|length|thai_digits }} ช่อง</span>{% else %}—{% endif %}</td>
+        <td class="whitespace-nowrap"><a class="btn btn-secondary btn-sm" href="{% url 'documents:download' case.pk d.pk 'docx' %}">Word</a>{% if d.pdf %} <a class="btn btn-secondary btn-sm" href="{% url 'documents:download' case.pk d.pk 'pdf' %}">PDF</a>{% endif %}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="empty-state text-sm">ยังไม่เคยออกเอกสารในคดีนี้</p>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,13 @@
+<div class="card glass glow-border p-4 flex flex-wrap items-center gap-3" {% if job.status == "pending" or job.status == "running" %}hx-get="{% url 'documents:job' case.pk job.pk %}" hx-trigger="every 1s" hx-swap="outerHTML"{% endif %} role="status" aria-live="polite">
+  {% if job.status == "pending" or job.status == "running" %}
+    <span class="spinner" aria-hidden="true"></span><b>{{ job.get_status_display }}…</b><span class="text-sm text-muted">สร้างไฟล์และแปลง PDF ในเครื่องของหน่วย</span>
+  {% elif job.status == "done" %}
+    <span class="stat-icon"><svg class="w-5 h-5"><use href="#i-check"/></svg></span>
+    <div class="flex-1"><b>ออกเอกสารเสร็จแล้ว</b> <span class="text-sm text-muted">{{ job.documents.count|thai_digits }} ฉบับ · ลงบันทึกพนักงานสอบสวนแล้ว</span>
+      {% if job.error %}<p class="text-sm text-warning-ink whitespace-pre-line">{{ job.error }}</p>{% endif %}</div>
+    {% if job.bundle %}<a class="btn btn-primary" href="{% url 'documents:bundle' case.pk job.pk %}">ดาวน์โหลด ZIP</a>
+    {% else %}{% for d in job.documents.all %}<a class="btn btn-primary" href="{% url 'documents:download' case.pk d.pk 'docx' %}">Word</a>{% if d.pdf %}<a class="btn btn-primary" href="{% url 'documents:download' case.pk d.pk 'pdf' %}">PDF</a>{% endif %}{% endfor %}{% endif %}
+  {% else %}
+    <span class="chip chip-danger">ไม่สำเร็จ</span><p class="text-sm whitespace-pre-line">{{ job.error }}</p>
+  {% endif %}
+</div>

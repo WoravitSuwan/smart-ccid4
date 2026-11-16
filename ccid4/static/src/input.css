@@ -214,3 +214,23 @@
   .tl-item.k-incident::before { border-color: var(--danger); }
 }
 @keyframes pop { 0% { transform: scale(.6); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
+
+@layer components {
+  /* ---------- Documents (A6) ---------- */
+  .doc-card { position: relative; display: flex; flex-direction: column; gap: .6rem; padding: 1rem; }
+  .doc-card.is-locked { opacity: .62; }
+  .doc-card.is-locked:hover, .doc-card.is-locked:focus-within { opacity: 1; }
+  .doc-card.is-selected { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+  .doc-no { flex: none; min-width: 2rem; height: 2rem; padding: 0 .4rem; border-radius: 10px; display: grid; place-items: center; font-weight: 700;
+    color: var(--primary); background: var(--primary-soft); }
+  .doc-missing { display: grid; gap: .25rem; padding: .6rem .75rem; border-radius: 10px; border: 1px dashed color-mix(in srgb, var(--warning) 55%, var(--border));
+    background: color-mix(in srgb, var(--warning) 7%, var(--surface)); }
+  @media (hover: hover) {
+    .doc-card .doc-missing { display: none; }
+    .doc-card:hover .doc-missing, .doc-card:focus-within .doc-missing { display: grid; animation: fade-up .25s ease both; }
+  }
+  .doc-items { display: grid; gap: .35rem; padding: .6rem .75rem; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); }
+  .spinner { width: 22px; height: 22px; border-radius: 999px; border: 3px solid var(--primary-soft); border-top-color: var(--primary); animation: spin .8s linear infinite; }
+  .focus-flash { animation: glow-pulse 1.2s ease 2; }
+}
+@keyframes spin { to { transform: rotate(360deg); } }

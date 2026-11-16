@@ -215,6 +215,49 @@ document.addEventListener('input', (e) => {
   if (label && name) label.textContent = name;
 });
 
+// ---------- Documents page (A6.1) ----------
+function updateDocSelection() {
+  const count = document.querySelector('[data-selected-count]');
+  const checked = document.querySelectorAll('[data-doc-check]:checked');
+  if (count) count.textContent = thaiDigits(checked.length);
+  document.querySelectorAll('[data-doc-check]').forEach((box) => {
+    const items = document.querySelector(`[data-items-for="${box.value}"]`);
+    if (items) items.hidden = !box.checked;
+    box.closest('.doc-card').classList.toggle('is-selected', box.checked);
+  });
+}
+document.addEventListener('change', (e) => { if (e.target.matches('[data-doc-check]')) updateDocSelection(); });
+document.addEventListener('input', (e) => {
+  if (!e.target.matches('[data-doc-search]')) return;
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll('.doc-card').forEach((card) => { card.hidden = q && !card.dataset.title.toLowerCase().includes(q); });
+  document.querySelectorAll('[data-doc-group]').forEach((g) => { g.hidden = ![...g.querySelectorAll('.doc-card')].some((c) => !c.hidden); });
+});
+
+// Buttons that navigate (so they can be disabled while the form is dirty).
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-href]');
+  if (b && !b.disabled) window.location.href = b.dataset.href;
+});
+
+// ?focus=<field name> opens the right tab and puts the cursor in that field (links from "ยังขาด").
+function focusFromQuery() {
+  const name = new URLSearchParams(window.location.search).get('focus');
+  if (!name) return;
+  const el = document.querySelector(`[name="${CSS.escape(name)}"]`);
+  if (!el) return;
+  let panel = el.closest('[role="tabpanel"]');
+  while (panel) {
+    const root = tabRoot(panel);
+    if (root) selectTab(root, panel.dataset.panel);
+    panel = root ? root.parentElement && root.parentElement.closest('[role="tabpanel"]') : null;
+  }
+  if (el.type === 'hidden') return;
+  el.focus();
+  el.classList.add('focus-flash');
+  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
 // HTMX sends the CSRF token on every request.
 document.addEventListener('htmx:configRequest', (e) => {
   e.detail.headers['X-CSRFToken'] = document.querySelector('meta[name="csrf-token"]').content;
@@ -223,6 +266,8 @@ document.addEventListener('htmx:configRequest', (e) => {
 // Stagger elements marked .reveal inside the same parent.
 document.addEventListener('DOMContentLoaded', () => {
   initTabs(document);
+  focusFromQuery();
+  updateDocSelection();
   const groups = new Map();
   document.querySelectorAll('.reveal').forEach((el) => {
     const n = groups.get(el.parentElement) || 0;

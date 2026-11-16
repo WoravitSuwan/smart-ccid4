@@ -140,7 +140,7 @@
       <span class="flex items-center gap-2 text-sm text-muted" x-show="clean"><svg class="w-4 h-4 text-success"><use href="#i-check"/></svg>บันทึกทุกแท็บแล้ว</span>
       {% endif %}
       <span class="flex-1"></span>
-      <button type="button" class="btn btn-secondary" :disabled="dirty" disabled title="บันทึกก่อนจึงออกเอกสารได้ · เครื่องสร้างเอกสารเปิดใช้ในเฟส 4"><svg class="w-5 h-5"><use href="#i-file"/></svg>ออกเอกสาร</button>
+      <button type="button" class="btn btn-secondary" :disabled="dirty" data-href="{% url 'documents:page' case.pk %}" title="บันทึกก่อนจึงออกเอกสารได้"><svg class="w-5 h-5"><use href="#i-file"/></svg>ออกเอกสาร</button>
       <a class="btn btn-secondary" href="{% url 'cases:timeline' case.pk %}"><svg class="w-5 h-5"><use href="#i-timeline"/></svg>Timeline คดี</a>
     </div>
   </form>

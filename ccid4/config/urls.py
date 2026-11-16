@@ -10,5 +10,6 @@ urlpatterns = [
     path("audit/", include("audit.urls")),
     path("cases/", include("cases.urls")),
     path("cases/", include("deadlines.urls")),
+    path("cases/", include("documents.urls")),
     path("django-admin/", admin.site.urls),
 ]
