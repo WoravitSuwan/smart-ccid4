@@ -5,15 +5,27 @@ Stored dates are CE/UTC; everything shown to people is BE in Asia/Bangkok.
 Screen text uses Arabic digits and short BE dates; documents use Thai digits
 and full BE dates, following the unit's summons design system.
 """
+
 from __future__ import annotations
 
 import re
 from datetime import date, datetime, timedelta
 
-MONTHS = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
-          "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
-MONTHS_SHORT = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
-                "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]
+MONTHS = [
+    "มกราคม",
+    "กุมภาพันธ์",
+    "มีนาคม",
+    "เมษายน",
+    "พฤษภาคม",
+    "มิถุนายน",
+    "กรกฎาคม",
+    "สิงหาคม",
+    "กันยายน",
+    "ตุลาคม",
+    "พฤศจิกายน",
+    "ธันวาคม",
+]
+MONTHS_SHORT = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]
 _TH_DIGITS = str.maketrans("0123456789", "๐๑๒๓๔๕๖๗๘๙")
 _AR_DIGITS = str.maketrans("๐๑๒๓๔๕๖๗๘๙", "0123456789")
 
@@ -100,8 +112,7 @@ def mask_account(acc: str | None) -> str:
 
 
 # ---------- Thai number words (for checking figures against speech) ----------
-_UNITS = {"ศูนย์": 0, "หนึ่ง": 1, "เอ็ด": 1, "สอง": 2, "ยี่": 2, "สาม": 3, "สี่": 4,
-          "ห้า": 5, "หก": 6, "เจ็ด": 7, "แปด": 8, "เก้า": 9}
+_UNITS = {"ศูนย์": 0, "หนึ่ง": 1, "เอ็ด": 1, "สอง": 2, "ยี่": 2, "สาม": 3, "สี่": 4, "ห้า": 5, "หก": 6, "เจ็ด": 7, "แปด": 8, "เก้า": 9}
 _MULT = {"สิบ": 10, "ร้อย": 100, "พัน": 1000, "หมื่น": 10_000, "แสน": 100_000}
 _WORD_RE = re.compile("(?:" + "|".join(sorted(list(_UNITS) + list(_MULT) + ["ล้าน"], key=len, reverse=True)) + ")+")
 _TOKEN_RE = re.compile("|".join(sorted(list(_UNITS) + list(_MULT) + ["ล้าน"], key=len, reverse=True)))

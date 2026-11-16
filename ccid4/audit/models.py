@@ -2,10 +2,23 @@ from django.conf import settings
 from django.db import models
 
 ACTIONS = {
-    "login": "เข้าสู่ระบบ", "login_failed": "เข้าสู่ระบบไม่สำเร็จ", "logout": "ออกจากระบบ", "locked": "ล็อกบัญชี",
-    "2fa_enabled": "เปิดใช้ 2FA", "2fa_verified": "ยืนยัน 2FA", "2fa_failed": "2FA ไม่สำเร็จ",
-    "view": "เปิดดู", "reveal": "ดูข้อมูลเต็ม", "create": "สร้าง", "edit": "แก้ไข", "delete": "ลบ",
-    "export": "ส่งออก", "download": "ดาวน์โหลด", "listen": "ฟังเสียง", "confirm": "ยืนยัน", "import": "นำเข้า",
+    "login": "เข้าสู่ระบบ",
+    "login_failed": "เข้าสู่ระบบไม่สำเร็จ",
+    "logout": "ออกจากระบบ",
+    "locked": "ล็อกบัญชี",
+    "2fa_enabled": "เปิดใช้ 2FA",
+    "2fa_verified": "ยืนยัน 2FA",
+    "2fa_failed": "2FA ไม่สำเร็จ",
+    "view": "เปิดดู",
+    "reveal": "ดูข้อมูลเต็ม",
+    "create": "สร้าง",
+    "edit": "แก้ไข",
+    "delete": "ลบ",
+    "export": "ส่งออก",
+    "download": "ดาวน์โหลด",
+    "listen": "ฟังเสียง",
+    "confirm": "ยืนยัน",
+    "import": "นำเข้า",
 }
 
 

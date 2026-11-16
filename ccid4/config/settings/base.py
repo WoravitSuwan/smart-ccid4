@@ -1,4 +1,5 @@
 """Shared settings. Secrets and hosts come from the environment (.env), never from code."""
+
 from pathlib import Path
 
 import environ

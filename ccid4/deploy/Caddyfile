@@ -1,0 +1,11 @@
+# HTTPS inside the unit's network (browsers only allow the microphone over HTTPS).
+# "tls internal" uses Caddy's own CA: install its root certificate on the unit's computers,
+# or replace it with the unit's certificate:  tls /certs/ccid4.crt /certs/ccid4.key
+{$CCID4_HOST:ccid4.local} {
+	tls internal
+	request_body {
+		max_size 2GB
+	}
+	encode gzip
+	reverse_proxy web:8000
+}

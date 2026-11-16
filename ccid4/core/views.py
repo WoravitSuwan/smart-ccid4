@@ -10,9 +10,20 @@ def home(request):
 
 @login_required
 def styleguide(request):
-    return render(request, "core/styleguide.html", {"active": "", "statuses": [
-        ("success", "เสร็จแล้ว"), ("warning", "ใกล้ครบกำหนด"), ("danger", "เลยกำหนด"), ("primary", "กำลังสอบสวน"), ("ai", "ร่างโดย AI – รอตรวจ"),
-    ]})
+    return render(
+        request,
+        "core/styleguide.html",
+        {
+            "active": "",
+            "statuses": [
+                ("success", "เสร็จแล้ว"),
+                ("warning", "ใกล้ครบกำหนด"),
+                ("danger", "เลยกำหนด"),
+                ("primary", "กำลังสอบสวน"),
+                ("ai", "ร่างโดย AI – รอตรวจ"),
+            ],
+        },
+    )
 
 
 @login_required

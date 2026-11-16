@@ -46,7 +46,7 @@ def twofa_setup(request):
             messages.success(request, "เปิดใช้การยืนยันตัวตน 2 ขั้นแล้ว")
             return redirect("core:home")
         form.add_error("token", "รหัสไม่ถูกต้อง ตรวจเวลาในโทรศัพท์แล้วลองใหม่")
-    qr_svg = segno.make(device.config_url, error="m").svg_inline(scale=4, dark="currentColor", light=None)
+    qr_svg = segno.make(device.config_url, error="m").svg_inline(scale=4, dark="#0E1A2E", light="#FFFFFF")
     return render(request, "accounts/2fa_setup.html", {"form": form, "qr_svg": qr_svg, "secret": device.key})
 
 

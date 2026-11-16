@@ -21,5 +21,17 @@ def audit_list(request):
         qs = qs.filter(object_id=obj)
     page = Paginator(qs, 50).get_page(request.GET.get("page"))
     ok, bad = verify_chain()
-    return render(request, "audit/list.html", {"page": page, "ok": ok, "bad": bad, "actions": ACTIONS,
-                                               "who": who, "action": action, "object": obj, "active": "settings"})
+    return render(
+        request,
+        "audit/list.html",
+        {
+            "page": page,
+            "ok": ok,
+            "bad": bad,
+            "actions": ACTIONS,
+            "who": who,
+            "action": action,
+            "object": obj,
+            "active": "settings",
+        },
+    )

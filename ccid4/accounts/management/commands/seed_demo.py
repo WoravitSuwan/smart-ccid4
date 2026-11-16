@@ -1,4 +1,5 @@
 """Fictional demo users for every role (Faker th_TH). Refuses to run on a production database."""
+
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from faker import Faker
@@ -6,9 +7,22 @@ from faker import Faker
 from accounts.models import Role, User
 
 DEMO_PASSWORD = "ccid4-demo-2569"
-RANKS = {"investigator": "พ.ต.ท.", "assistant": "ด.ต.", "supervisor": "พ.ต.อ.", "commander": "พล.ต.ต.", "clerk": "ส.ต.อ.", "admin": ""}
-POSITIONS = {"investigator": "สารวัตร (สอบสวน)", "assistant": "ผู้ช่วยพนักงานสอบสวน", "supervisor": "ผู้กำกับการ",
-             "commander": "ผู้บังคับการ", "clerk": "เจ้าหน้าที่ธุรการ", "admin": "ผู้ดูแลระบบ"}
+RANKS = {
+    "investigator": "พ.ต.ท.",
+    "assistant": "ด.ต.",
+    "supervisor": "พ.ต.อ.",
+    "commander": "พล.ต.ต.",
+    "clerk": "ส.ต.อ.",
+    "admin": "",
+}
+POSITIONS = {
+    "investigator": "สารวัตร (สอบสวน)",
+    "assistant": "ผู้ช่วยพนักงานสอบสวน",
+    "supervisor": "ผู้กำกับการ",
+    "commander": "ผู้บังคับการ",
+    "clerk": "เจ้าหน้าที่ธุรการ",
+    "admin": "ผู้ดูแลระบบ",
+}
 
 
 class Command(BaseCommand):
@@ -28,9 +42,16 @@ class Command(BaseCommand):
                 username = f"{role}{i + 1}"
                 if User.objects.filter(username=username).exists():
                     continue
-                u = User(username=username, role=role, rank=RANKS[role], position=POSITIONS[role],
-                         first_name=fake.first_name(), last_name=fake.last_name(), phone="00 0000 0000",
-                         unit_group="กก.1")
+                u = User(
+                    username=username,
+                    role=role,
+                    rank=RANKS[role],
+                    position=POSITIONS[role],
+                    first_name=fake.first_name(),
+                    last_name=fake.last_name(),
+                    phone="00 0000 0000",
+                    unit_group="กก.1",
+                )
                 u.set_password(DEMO_PASSWORD)
                 u.save()
                 created.append(username)

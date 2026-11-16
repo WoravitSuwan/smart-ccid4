@@ -15,3 +15,6 @@ STORAGES = {
 AI_BACKEND = "fake"
 ASR_BACKEND = "fake"
 DATABASES = {"default": env.db("DATABASE_URL", default="postgres://ccid4:ccid4@localhost:5432/ccid4")}
+
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = True

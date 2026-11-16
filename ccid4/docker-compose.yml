@@ -1,0 +1,54 @@
+# CCID4 on the unit's own server. Nothing here talks to the internet at run time.
+x-app: &app
+  build: .
+  env_file: .env
+  volumes:
+    - data:/data
+  depends_on: [db, redis]
+  restart: unless-stopped
+
+services:
+  web:
+    <<: *app
+    command: sh -c "python manage.py migrate --noinput && gunicorn config.wsgi --bind 0.0.0.0:8000 --workers 3 --timeout 120"
+  worker:
+    <<: *app
+    command: celery -A config worker -l info --concurrency 2
+  beat:
+    <<: *app
+    command: celery -A config beat -l info
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: ccid4
+      POSTGRES_USER: ccid4
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?ตั้ง POSTGRES_PASSWORD ใน .env}
+    volumes:
+      - pg:/var/lib/postgresql/data
+    restart: unless-stopped
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+  proxy:
+    image: caddy:2.8.4
+    ports: ["443:443", "80:80"]
+    environment:
+      CCID4_HOST: ${CCID4_HOST:-ccid4.local}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy:/data
+    depends_on: [web]
+    restart: unless-stopped
+  ollama:
+    image: ollama/ollama:0.5.4
+    profiles: ["ai"]
+    volumes:
+      - ollama:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  data:
+  pg:
+  redis:
+  caddy:
+  ollama:

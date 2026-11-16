@@ -1,4 +1,5 @@
 """Main menu (spec section 3). Items whose page is not built yet show as "เร็ว ๆ นี้"."""
+
 from dataclasses import dataclass
 
 from django.urls import NoReverseMatch, reverse
