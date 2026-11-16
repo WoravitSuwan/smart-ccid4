@@ -27,6 +27,8 @@ INSTALLED_APPS = [
     "core",
     "accounts",
     "audit",
+    "cases",
+    "parties",
 ]
 
 MIDDLEWARE = [

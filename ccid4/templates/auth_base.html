@@ -7,14 +7,15 @@
 <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body>
+<div class="aurora" aria-hidden="true"></div><div class="grid-overlay" aria-hidden="true"></div>
 <main class="min-h-screen flex items-center justify-center p-4">
   <div class="w-full max-w-md flex flex-col gap-4">
-    <div class="flex items-center gap-3 justify-center">
-      <img src="{% static 'brand/ccid4.svg' %}" alt="" width="56" height="56">
+    <div class="flex items-center gap-3 justify-center reveal">
+      <img class="float" src="{% static 'brand/ccid4.svg' %}" alt="" width="64" height="64">
       <span><b class="block text-2xl">CCID4</b><span class="text-muted text-sm">{{ UNIT_SHORT }}</span></span>
     </div>
-    <section class="card p-6 flex flex-col gap-4">{% block content %}{% endblock %}</section>
-    <p class="text-center text-sm text-muted">ระบบภายในของหน่วยงาน · AI ประมวลผลในเครื่อง · ทุกการใช้งานถูกบันทึก</p>
+    <section class="card glass glow-border p-6 flex flex-col gap-4 reveal" style="--i:1">{% block content %}{% endblock %}</section>
+    <p class="text-center text-sm text-muted reveal" style="--i:2">ระบบภายในของหน่วยงาน · AI ประมวลผลในเครื่อง · ทุกการใช้งานถูกบันทึก</p>
   </div>
 </main>
 </body>

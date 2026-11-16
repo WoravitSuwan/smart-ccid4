@@ -79,3 +79,49 @@ def set_theme(request):
 
         return HttpResponse(status=204)
     return redirect(nxt if url_has_allowed_host_and_scheme(nxt, {request.get_host()}) else "core:home")
+
+
+from .forms import ArrestTeamFormSet, CommanderFormSet, CourtFormSet, OfficerProfileForm, PersonalForm, UnitForm  # noqa: E402
+from .models import OfficerProfile, Unit  # noqa: E402
+from .services import SECTIONS, completeness  # noqa: E402
+
+
+@login_required
+def profile(request):
+    user = request.user
+    prof, _ = OfficerProfile.objects.get_or_create(user=user)
+    unit = Unit.objects.filter(user=user).first()
+    section = request.POST.get("section") if request.method == "POST" else None
+    data = request.POST if section else None
+    files = request.FILES if section else None
+    forms_ = {
+        "personal": (
+            PersonalForm(data if section == "personal" else None, instance=user),
+            OfficerProfileForm(data if section == "personal" else None, files if section == "personal" else None, instance=prof),
+        ),
+        "unit": UnitForm(data if section == "unit" else None, instance=unit),
+        "commanders": CommanderFormSet(data if section == "commanders" else None, instance=user, prefix="cmd"),
+        "arrest_team": ArrestTeamFormSet(data if section == "arrest_team" else None, instance=user, prefix="team"),
+        "courts": CourtFormSet(data if section == "courts" else None, instance=user, prefix="court"),
+    }
+    if section in forms_:
+        f = forms_[section]
+        parts = f if isinstance(f, tuple) else (f,)
+        if all(p.is_valid() for p in parts):
+            for p in parts:
+                obj = p.save(commit=False)
+                if section == "unit":
+                    obj.user = user
+                if hasattr(obj, "save"):
+                    obj.save()
+                else:
+                    p.save()
+                if hasattr(p, "save_m2m"):
+                    p.save_m2m()
+            log(user, "edit", "profile", user.pk, f"แก้ข้อมูลพื้นฐาน: {dict(SECTIONS)[section]}")
+            messages.success(request, f"บันทึก{dict(SECTIONS)[section]}แล้ว")
+            return redirect(f"{request.path}#{section}")
+        messages.error(request, "ยังบันทึกไม่ได้ ตรวจช่องที่มีข้อความสีแดง")
+    return render(
+        request, "accounts/profile.html", {"forms": forms_, "c": completeness(user), "sections": SECTIONS, "active": "profile"}
+    )

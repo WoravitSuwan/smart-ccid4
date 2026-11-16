@@ -36,3 +36,51 @@ class TokenForm(forms.Form):
             attrs={"inputmode": "numeric", "autocomplete": "one-time-code", "autofocus": True, "class": "input"}
         ),
     )
+
+
+from django.forms import inlineformset_factory  # noqa: E402
+
+from .models import ArrestTeamMember, Commander, CourtOrProsecutor, OfficerProfile, Unit  # noqa: E402
+
+
+class StyledMixin:
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        for f in self.fields.values():
+            if not isinstance(f.widget, forms.CheckboxInput | forms.ClearableFileInput):
+                f.widget.attrs.setdefault("class", "input")
+
+
+class PersonalForm(StyledMixin, forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ["rank", "first_name", "last_name", "position", "phone"]
+        labels = {"first_name": "ชื่อ", "last_name": "นามสกุล"}
+
+
+class OfficerProfileForm(StyledMixin, forms.ModelForm):
+    class Meta:
+        model = OfficerProfile
+        fields = ["birth_date", "signature"]
+        widgets = {"birth_date": forms.DateInput(attrs={"type": "date"})}
+
+
+class UnitForm(StyledMixin, forms.ModelForm):
+    class Meta:
+        model = Unit
+        fields = ["name", "address", "doc_prefix", "division", "bureau", "phone"]
+
+
+class _RowForm(StyledMixin, forms.ModelForm):
+    pass
+
+
+CommanderFormSet = inlineformset_factory(
+    User, Commander, form=_RowForm, fields=["rank", "name", "position", "is_default"], extra=1, can_delete=True
+)
+ArrestTeamFormSet = inlineformset_factory(
+    User, ArrestTeamMember, form=_RowForm, fields=["rank", "name", "position", "phone"], extra=1, can_delete=True
+)
+CourtFormSet = inlineformset_factory(
+    User, CourtOrProsecutor, form=_RowForm, fields=["kind", "name", "court_type"], extra=1, can_delete=True
+)

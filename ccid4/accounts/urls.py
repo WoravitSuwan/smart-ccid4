@@ -9,4 +9,5 @@ urlpatterns = [
     path("2fa/setup/", views.twofa_setup, name="2fa_setup"),
     path("2fa/verify/", views.twofa_verify, name="2fa_verify"),
     path("theme/", views.set_theme, name="theme"),
+    path("profile/", views.profile, name="profile"),
 ]

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}คดีของฉัน{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-end gap-3 reveal">
+  <div class="flex-1"><h1>คดีของฉัน</h1><p class="text-muted">คดีที่ท่านรับผิดชอบและคดีที่ถูกแชร์ให้</p></div>
+  <a class="btn btn-primary" href="{% url 'cases:create' %}">+ สร้างคดีใหม่</a>
+</div>
+<section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="สรุปคดี">
+  <a class="card card-hover glow-border p-4 flex items-center gap-4 no-underline text-text reveal {% if not status %}ring-1 ring-primary{% endif %}" href="?">
+    <span class="stat-icon"><svg class="w-5 h-5"><use href="#i-folder"/></svg></span>
+    <span><span class="text-sm text-muted block">คดีทั้งหมด</span><b class="stat-value" x-data="countUp" data-value="{{ counts.total }}">{{ counts.total }}</b></span></a>
+  <a class="card card-hover p-4 flex items-center gap-4 no-underline text-text reveal {% if status == 'received' %}ring-1 ring-primary{% endif %}" href="?status=received">
+    <span class="stat-icon"><svg class="w-5 h-5"><use href="#i-inbox"/></svg></span>
+    <span><span class="text-sm text-muted block">รับแจ้งใหม่</span><b class="stat-value" x-data="countUp" data-value="{{ counts.received }}">{{ counts.received }}</b></span></a>
+  <a class="card card-hover p-4 flex items-center gap-4 no-underline text-text reveal {% if status == 'investigating' %}ring-1 ring-primary{% endif %}" href="?status=investigating">
+    <span class="stat-icon"><svg class="w-5 h-5"><use href="#i-search"/></svg></span>
+    <span><span class="text-sm text-muted block">กำลังสอบสวน</span><b class="stat-value" x-data="countUp" data-value="{{ counts.investigating }}">{{ counts.investigating }}</b></span></a>
+  <a class="card card-hover p-4 flex items-center gap-4 no-underline text-text reveal {% if status == 'closed' %}ring-1 ring-primary{% endif %}" href="?status=closed">
+    <span class="stat-icon"><svg class="w-5 h-5"><use href="#i-lock"/></svg></span>
+    <span><span class="text-sm text-muted block">เสร็จสิ้น</span><b class="stat-value" x-data="countUp" data-value="{{ counts.closed }}">{{ counts.closed }}</b></span></a>
+</section>
+<form class="card glass p-4 flex flex-wrap gap-3 items-end reveal" hx-get="{% url 'cases:list' %}" hx-target="#case-table" hx-trigger="input changed delay:300ms from:input[name=q], change from:select" hx-push-url="true">
+  <input type="hidden" name="type" value="{{ ctype }}">
+  <label class="flex-1 min-w-[240px]"><span class="label">ค้นหา</span>
+    <span class="input flex items-center gap-2"><svg class="w-5 h-5 text-muted"><use href="#i-search"/></svg><input name="q" value="{{ q }}" type="search" class="flex-1 bg-transparent outline-none" placeholder="เลขคดี ชื่อผู้แจ้ง หรือฐานความผิด"></span></label>
+  <label><span class="label">สถานะ</span><select class="input" name="status"><option value="">ทุกสถานะ</option>{% for k, v in statuses %}<option value="{{ k }}" {% if k == status %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+  <noscript><button class="btn btn-secondary">ค้นหา</button></noscript>
+  <span class="htmx-indicator text-sm text-muted">กำลังค้นหา…</span>
+</form>
+<nav class="flex gap-1 border-b border-border reveal" aria-label="ประเภทคดี">
+  <a class="px-4 py-2 no-underline border-b-2 {% if not ctype %}border-primary text-primary font-semibold{% else %}border-transparent text-muted{% endif %}" href="?q={{ q|urlencode }}&status={{ status }}">ทั้งหมด</a>
+  {% for k, v in types %}<a class="px-4 py-2 no-underline border-b-2 {% if ctype == k %}border-primary text-primary font-semibold{% else %}border-transparent text-muted{% endif %}" href="?type={{ k }}&q={{ q|urlencode }}&status={{ status }}">{{ v }}</a>{% endfor %}
+</nav>
+<div id="case-table" class="reveal">{% include "cases/_table.html" %}</div>
+{% endblock %}

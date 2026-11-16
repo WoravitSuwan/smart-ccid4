@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}ข้อมูลพื้นฐานของฉัน{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-end gap-4 reveal">
+  <div class="flex-1"><h1>ข้อมูลพื้นฐานของฉัน</h1><p class="text-muted">กรอกครั้งเดียว ระบบเติมลงเอกสารทุกฉบับให้</p></div>
+  <div class="card px-4 py-3 flex items-center gap-4 min-w-[260px]">
+    <div class="progress-ring" style="--p: {{ c.percent }}" role="img" aria-label="ครบ {{ c.percent }} เปอร์เซ็นต์"><span>{{ c.percent }}%</span></div>
+    <div><b>{% if c.missing_count %}ยังขาด {{ c.missing_count }} ส่วน{% else %}ครบทุกส่วน{% endif %}</b><p class="text-sm text-muted">เอกสารที่ใช้ข้อมูลที่ขาดจะยังออกไม่ได้</p></div>
+  </div>
+</div>
+<nav class="flex flex-wrap gap-2 reveal" aria-label="ส่วนของข้อมูล">
+  {% for key, label in sections %}<a href="#{{ key }}" class="chip {% if c.done|get_item:key %}chip-success{% else %}chip-warning{% endif %}">{% if c.done|get_item:key %}✓{% else %}!{% endif %} {{ label }}</a>{% endfor %}
+</nav>
+{% with p=forms.personal %}
+<section id="personal" class="card p-5 reveal">
+  <form method="post" enctype="multipart/form-data" class="flex flex-col gap-4" x-data="dirtyForm">{% csrf_token %}<input type="hidden" name="section" value="personal">
+    <div class="flex items-center gap-2"><h2 class="flex-1">ข้อมูลส่วนตัว</h2>{% include "accounts/_missing.html" with items=c.missing_fields.personal %}</div>
+    <div class="grid gap-3 md:grid-cols-3">{% for f in p.0 %}{% include "partials/field.html" %}{% endfor %}{% for f in p.1 %}{% include "partials/field.html" %}{% endfor %}</div>
+    <div><button class="btn btn-primary">บันทึกข้อมูลส่วนตัว</button></div>
+  </form>
+</section>
+{% endwith %}
+<section id="unit" class="card p-5 reveal">
+  <form method="post" class="flex flex-col gap-4" x-data="dirtyForm">{% csrf_token %}<input type="hidden" name="section" value="unit">
+    <div class="flex items-center gap-2"><h2 class="flex-1">หน่วยงาน</h2>{% include "accounts/_missing.html" with items=c.missing_fields.unit %}</div>
+    <div class="grid gap-3 md:grid-cols-3">{% for f in forms.unit %}{% include "partials/field.html" %}{% endfor %}</div>
+    <div><button class="btn btn-primary">บันทึกหน่วยงาน</button></div>
+  </form>
+</section>
+{% include "accounts/_formset.html" with key="commanders" title="ผู้บังคับบัญชา" hint="เพิ่มได้หลายคน เลือกคนลงนามหลัก" fs=forms.commanders missing=c.missing_fields.commanders %}
+{% include "accounts/_formset.html" with key="arrest_team" title="ชุดจับกุม" hint="รายชื่อเจ้าหน้าที่ที่ใช้บ่อย (สกัดจากบันทึกจับกุมด้วย AI ได้ในเฟส 6)" fs=forms.arrest_team missing=c.missing_fields.arrest_team %}
+{% include "accounts/_formset.html" with key="courts" title="ศาล/อัยการ" hint="ศาลและสำนักงานอัยการที่ใช้บ่อย" fs=forms.courts missing=c.missing_fields.courts %}
+{% endblock %}

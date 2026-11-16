@@ -13,11 +13,12 @@
 {% block head %}{% endblock %}
 </head>
 <body x-data="shell">
+<div class="aurora" aria-hidden="true"></div><div class="grid-overlay" aria-hidden="true"></div>
 {% include "partials/icons.html" %}
 <a href="#main" class="sr-only-focusable btn btn-primary m-2 absolute z-50">ข้ามไปเนื้อหา</a>
 <div class="min-h-screen flex">
-  <nav aria-label="เมนูหลัก" class="shrink-0 bg-surface border-r border-border flex flex-col gap-1 p-3 transition-all hidden md:flex" :class="navClass">
-    <a href="{% url 'core:home' %}" class="flex items-center gap-2 px-2 pb-4 no-underline text-text">
+  <nav aria-label="เมนูหลัก" class="glass shrink-0 border-r border-border flex flex-col gap-1 p-3 transition-all duration-300 hidden md:flex sticky top-0 h-screen" :class="navClass">
+    <a href="{% url 'core:home' %}" class="logo-glow flex items-center gap-2 px-2 pb-4 no-underline text-text">
       <img src="{% static 'brand/ccid4.svg' %}" alt="" width="36" height="36">
       <span x-show="expanded" class="leading-tight"><b class="block text-lg">CCID4</b><span class="text-xs text-muted">{{ UNIT_SHORT }}</span></span>
     </a>
@@ -27,6 +28,7 @@
         <svg class="w-5 h-5 shrink-0"><use href="#i-{{ m.icon }}"/></svg>
         <span x-show="expanded" class="flex-1">{{ m.label }}</span>
         {% if m.new %}<span x-show="expanded" class="chip chip-primary text-xs">ใหม่</span>{% endif %}
+        {% if m.key == "profile" and PROFILE_MISSING %}<span class="dot-alert" title="ยังกรอกไม่ครบ {{ PROFILE_MISSING }} ส่วน"><span class="sr-only">ยังกรอกไม่ครบ {{ PROFILE_MISSING }} ส่วน</span></span>{% endif %}
       </a>
       {% else %}
       <span class="nav-item opacity-60 cursor-not-allowed" aria-disabled="true" title="{{ m.label }} (เร็ว ๆ นี้)">
@@ -41,7 +43,7 @@
     </button>
   </nav>
   <div class="flex-1 min-w-0 flex flex-col">
-    <header class="flex flex-wrap items-center gap-3 min-h-[60px] px-4 md:px-6 bg-surface border-b border-border">
+    <header class="glass sticky top-0 z-30 flex flex-wrap items-center gap-3 min-h-[60px] px-4 md:px-6 border-b border-border">
       <a href="{% url 'core:home' %}" class="md:hidden flex items-center gap-2 no-underline text-text"><img src="{% static 'brand/ccid4.svg' %}" alt="" width="28" height="28"><b>CCID4</b></a>
       <form role="search" action="{% url 'core:home' %}" method="get" class="flex-1 min-w-[200px] max-w-xl">
         <label class="flex items-center gap-2 input">
@@ -51,7 +53,7 @@
         </label>
       </form>
       {% if DEMO_MODE %}<span class="chip chip-warning">ข้อมูลจำลอง</span>{% endif %}
-      <span class="chip chip-primary" title="AI ทุกตัวรันบนเครื่องของหน่วยงาน"><svg class="w-4 h-4"><use href="#i-cpu"/></svg>AI ในเครื่อง</span>
+      <span class="chip chip-primary chip-live" title="AI ทุกตัวรันบนเครื่องของหน่วยงาน"><svg class="w-4 h-4"><use href="#i-cpu"/></svg>AI ในเครื่อง</span>
       <button type="button" class="btn btn-secondary btn-sm" aria-label="แจ้งเตือน"><svg class="w-5 h-5"><use href="#i-bell"/></svg></button>
       <button type="button" class="btn btn-secondary btn-sm" @click="toggleTheme" aria-label="สลับธีมมืดหรือสว่าง"><svg class="w-5 h-5"><use href="#i-sun"/></svg></button>
       <details class="relative">
@@ -64,7 +66,11 @@
       </details>
     </header>
     <main id="main" class="flex-1 p-4 md:p-6 flex flex-col gap-4 max-w-[1400px] w-full">
-      {% for m in messages %}<div class="card p-3 {% if m.tags == 'error' %}border-danger text-danger{% else %}border-primary{% endif %}" role="status">{{ m }}</div>{% endfor %}
+      <div class="toast-stack" aria-live="polite">{% for m in messages %}
+        <div x-data="toast" x-show="open" x-transition.opacity.duration.300ms class="toast card glass p-3 flex items-start gap-3 {% if m.tags == 'error' %}toast-error border-danger{% else %}border-primary{% endif %}" role="status">
+          <span class="flex-1 {% if m.tags == 'error' %}text-danger{% endif %}">{{ m }}</span>
+          <button type="button" class="text-muted" @click="close" aria-label="ปิดข้อความ">✕</button>
+        </div>{% endfor %}</div>
       {% block content %}{% endblock %}
     </main>
   </div>

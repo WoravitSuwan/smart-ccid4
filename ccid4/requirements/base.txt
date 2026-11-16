@@ -19,3 +19,4 @@ rapidfuzz==3.11.0
 pgvector==0.3.6
 pypdf==5.1.0
 reportlab==4.2.5
+Pillow==11.0.0

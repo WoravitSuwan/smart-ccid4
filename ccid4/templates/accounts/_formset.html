@@ -1,0 +1,15 @@
+<section id="{{ key }}" class="card p-5 reveal">
+  <form method="post" class="flex flex-col gap-4" x-data="dirtyForm">{% csrf_token %}<input type="hidden" name="section" value="{{ key }}">
+    <div class="flex items-center gap-2"><div class="flex-1"><h2>{{ title }}</h2><p class="text-sm text-muted">{{ hint }}</p></div>{% include "accounts/_missing.html" with items=missing %}</div>
+    {{ fs.management_form }}
+    <div class="flex flex-col gap-3">
+    {% for form in fs %}
+      <div class="grid gap-3 md:grid-cols-5 items-end p-3 rounded-btn bg-surface-2 border border-border">
+        {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+        {% for f in form.visible_fields %}{% if f.name == "DELETE" %}<label class="flex items-center gap-2 text-sm text-danger min-h-[44px]">{{ f }} ลบ</label>{% elif f.name == "is_default" %}<label class="flex items-center gap-2 text-sm min-h-[44px]">{{ f }} ผู้ลงนามหลัก</label>{% else %}{% include "partials/field.html" %}{% endif %}{% endfor %}
+      </div>
+    {% endfor %}
+    </div>
+    <div class="flex gap-2"><button class="btn btn-primary">บันทึก{{ title }}</button><span class="text-sm text-muted self-center">มีแถวว่างไว้เพิ่ม 1 แถวทุกครั้ง</span></div>
+  </form>
+</section>

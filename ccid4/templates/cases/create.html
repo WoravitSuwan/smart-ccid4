@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}สร้างคดีใหม่{% endblock %}
+{% block content %}
+<nav class="text-sm reveal" aria-label="เส้นทาง"><a href="{% url 'cases:list' %}">คดีของฉัน</a> › สร้างคดีใหม่</nav>
+<h1 class="reveal">สร้างคดีใหม่</h1>
+<p class="text-muted reveal">กรอกเองชั่วคราว ก่อนมีระบบรับแจ้งความ (เฟส 6)</p>
+<form method="post" class="card p-5 flex flex-col gap-4 max-w-4xl reveal" x-data="dirtyForm">{% csrf_token %}
+  <div class="grid gap-3 md:grid-cols-2">{% for f in form %}{% if f.name != "circumstances" %}{% include "partials/field.html" %}{% endif %}{% endfor %}</div>
+  {% with f=form.circumstances %}{% include "partials/field.html" %}{% endwith %}
+  <div class="flex gap-2"><button class="btn btn-primary">สร้างคดี</button><a class="btn btn-secondary" href="{% url 'cases:list' %}">ยกเลิก</a></div>
+</form>
+{% endblock %}

@@ -47,3 +47,8 @@ def baht(value):
         return f"{float(value):,.2f}"
     except (TypeError, ValueError):
         return ""
+
+
+@register.filter
+def get_item(d, key):
+    return d.get(key) if hasattr(d, "get") else None
