@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}ภาพรวม{% endblock %}
+{% block content %}
+<h1>ภาพรวม</h1>
+<p class="text-muted">สวัสดี {{ user.display_name }} · {{ user.get_role_display }}</p>
+<section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="สรุป">
+  <div class="card p-4"><span class="text-muted text-sm">คดีที่มีกำหนดเวลาใน 7 วัน</span><b class="block text-3xl">—</b></div>
+  <div class="card p-4"><span class="text-muted text-sm">เลยกำหนด</span><b class="block text-3xl">—</b></div>
+  <div class="card p-4"><span class="text-muted text-sm">สิ่งที่ต้องทำวันนี้</span><b class="block text-3xl">—</b></div>
+  <div class="card p-4"><span class="text-muted text-sm">ร่างจาก AI รอตรวจ</span><b class="block text-3xl">—</b></div>
+</section>
+<p class="text-sm text-muted">ข้อมูลในการ์ดจะแสดงเมื่อมีโมดูลคดีและกำหนดเวลา</p>
+{% endblock %}

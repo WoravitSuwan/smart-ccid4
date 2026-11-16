@@ -1,0 +1,17 @@
+{
+  "name": "ccid4-assets",
+  "private": true,
+  "description": "Build-time only: Tailwind and vendored browser libraries. Built files are committed so the server needs no internet.",
+  "scripts": {
+    "css": "tailwindcss -i static/src/input.css -o static/css/app.css --minify",
+    "vendor": "node scripts/vendor.mjs"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17",
+    "htmx.org": "2.0.4",
+    "@alpinejs/csp": "3.14.8",
+    "@fontsource/ibm-plex-sans-thai": "5.1.0",
+    "wavesurfer.js": "7.8.16",
+    "cytoscape": "3.30.4"
+  }
+}

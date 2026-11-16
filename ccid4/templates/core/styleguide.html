@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Styleguide{% endblock %}
+{% block content %}
+<h1>Styleguide</h1>
+<p class="text-muted">สี ปุ่ม การ์ด ตาราง และป้าย AI ในทั้งสองธีม (ใช้ token จาก tokens.css เท่านั้น)</p>
+<div class="grid gap-4 lg:grid-cols-2">
+{% include "core/_styleguide_panel.html" with theme="dark" label="ธีมมืด" %}
+{% include "core/_styleguide_panel.html" with theme="light" label="ธีมสว่าง" %}
+</div>
+{% endblock %}

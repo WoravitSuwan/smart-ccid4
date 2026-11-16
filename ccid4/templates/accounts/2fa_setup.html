@@ -1,0 +1,18 @@
+{% extends "auth_base.html" %}
+{% block title %}ตั้งค่ายืนยันตัวตน 2 ขั้น{% endblock %}
+{% block content %}
+<h1>ตั้งค่ายืนยันตัวตน 2 ขั้น</h1>
+<ol class="list-decimal pl-5 text-sm flex flex-col gap-1">
+  <li>เปิดแอปยืนยันตัวตน (TOTP) บนโทรศัพท์</li>
+  <li>สแกน QR หรือพิมพ์รหัสลับด้านล่าง</li>
+  <li>กรอกรหัส 6 หลักที่แอปแสดง</li>
+</ol>
+<div class="mx-auto text-text bg-surface p-2 rounded-btn" aria-label="QR สำหรับแอปยืนยันตัวตน">{{ qr_svg|safe }}</div>
+<p class="text-sm text-muted break-all">รหัสลับ (hex): <code>{{ secret }}</code></p>
+<form method="post" class="flex flex-col gap-3">
+  {% csrf_token %}
+  <div><label class="label" for="id_token">{{ form.token.label }}</label>{{ form.token.as_widget|safe }}
+    {% for e in form.token.errors %}<p class="text-danger text-sm">{{ e }}</p>{% endfor %}</div>
+  <button class="btn btn-primary">ยืนยันและเปิดใช้</button>
+</form>
+{% endblock %}

@@ -1,5 +1,13 @@
-data/
 .env
-__pycache__/
 *.pyc
+__pycache__/
+media/
+/data/
+real_data/
+node_modules/
+staticfiles/
 .pytest_cache/
+.ruff_cache/
+*.xlsx
+!sample_data/*.xlsx
+docs/reference/*.pdf

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}ตั้งค่าระบบ{% endblock %}
+{% block content %}
+<h1>ตั้งค่าระบบ</h1>
+<div class="grid gap-4 md:grid-cols-2">
+  <a class="card p-4 no-underline text-text" href="/django-admin/accounts/user/"><b>ผู้ใช้และสิทธิ์</b><p class="text-muted text-sm">เพิ่มผู้ใช้ กำหนดบทบาท วันหมดอายุ บังคับ 2FA</p></a>
+  <a class="card p-4 no-underline text-text" href="/django-admin/axes/accessattempt/"><b>ปลดล็อกบัญชี</b><p class="text-muted text-sm">ลบรายการพยายามเข้าสู่ระบบที่ล็อกบัญชีไว้</p></a>
+  <a class="card p-4 no-underline text-text" href="{% url 'audit:list' %}"><b>ประวัติการใช้งาน</b><p class="text-muted text-sm">ค้นหาและตรวจความต่อเนื่องของบันทึก</p></a>
+  <a class="card p-4 no-underline text-text" href="{% url 'core:styleguide' %}"><b>Styleguide</b><p class="text-muted text-sm">ตรวจสีและส่วนประกอบทั้งสองธีม</p></a>
+</div>
+{% endblock %}

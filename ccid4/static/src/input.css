@@ -1,0 +1,44 @@
+@import "../css/tokens.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face { font-family: "IBM Plex Sans Thai"; font-weight: 400; font-display: swap; src: url("../fonts/ibm-plex-sans-thai-thai-400-normal.woff2") format("woff2"); unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC; }
+@font-face { font-family: "IBM Plex Sans Thai"; font-weight: 400; font-display: swap; src: url("../fonts/ibm-plex-sans-thai-latin-400-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: "IBM Plex Sans Thai"; font-weight: 500; font-display: swap; src: url("../fonts/ibm-plex-sans-thai-thai-500-normal.woff2") format("woff2"); unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC; }
+@font-face { font-family: "IBM Plex Sans Thai"; font-weight: 500; font-display: swap; src: url("../fonts/ibm-plex-sans-thai-latin-500-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: "IBM Plex Sans Thai"; font-weight: 600; font-display: swap; src: url("../fonts/ibm-plex-sans-thai-thai-600-normal.woff2") format("woff2"); unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC; }
+@font-face { font-family: "IBM Plex Sans Thai"; font-weight: 600; font-display: swap; src: url("../fonts/ibm-plex-sans-thai-latin-600-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: "IBM Plex Sans Thai"; font-weight: 700; font-display: swap; src: url("../fonts/ibm-plex-sans-thai-thai-700-normal.woff2") format("woff2"); unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC; }
+@font-face { font-family: "IBM Plex Sans Thai"; font-weight: 700; font-display: swap; src: url("../fonts/ibm-plex-sans-thai-latin-700-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+2000-206F; }
+
+@layer base {
+  html { font-size: 15px; }
+  body { @apply bg-bg text-text font-sans antialiased; line-height: 1.6; }
+  a { @apply text-primary hover:text-primary-hover; }
+  :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  h1 { @apply text-2xl font-bold; } h2 { @apply text-lg font-semibold; }
+  table { font-variant-numeric: tabular-nums; }
+}
+@layer components {
+  .card { @apply bg-surface border border-border rounded-card; }
+  .btn { @apply inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-btn font-semibold border border-transparent whitespace-nowrap no-underline transition-colors; }
+  .btn-primary { @apply bg-primary text-on-primary hover:bg-primary-hover hover:text-on-primary; }
+  .btn-secondary { @apply bg-surface text-text border-border hover:bg-surface-2 hover:text-text; }
+  .btn-danger { @apply bg-surface text-danger border-danger hover:bg-surface-2; }
+  .btn-sm { @apply min-h-[36px] px-3 text-sm; }
+  .btn[disabled], .btn[aria-disabled="true"] { @apply opacity-50 cursor-not-allowed; }
+  .input { @apply w-full min-h-[44px] px-3 rounded-btn bg-surface border border-border text-text placeholder:text-muted; }
+  .label { @apply block text-sm font-semibold text-muted mb-1; }
+  .chip { @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-sm font-medium border; }
+  .chip-success { @apply text-success border-success; } .chip-warning { @apply text-warning-ink border-warning; }
+  .chip-danger { @apply text-danger border-danger; } .chip-primary { @apply text-primary border-primary bg-primary-soft; }
+  .chip-muted { @apply text-muted border-border; }
+  .ai-badge { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold text-ai border border-ai; }
+  .ai-pending { @apply border-l-4 border-ai pl-3; }
+  .tbl { @apply w-full text-sm; } .tbl th { @apply text-left font-semibold text-muted bg-surface-2 px-3 py-2 border-b border-border; }
+  .tbl td { @apply px-3 py-2 border-b border-border align-top; } .tbl tr:hover td { @apply bg-surface-2; }
+  .nav-item { @apply flex items-center gap-3 min-h-[44px] px-3 rounded-btn text-muted no-underline hover:bg-surface-2 hover:text-text; }
+  .nav-item[aria-current="page"] { @apply bg-primary-soft text-primary font-semibold; }
+  .sr-only-focusable:not(:focus) { @apply sr-only; }
+}

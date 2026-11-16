@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="CCID4">
+  <path d="M32 4 9 12v18c0 15 9.7 25.6 23 30 13.3-4.4 23-15 23-30V12z" fill="none" stroke="#2F7BFF" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M32 12v10m0 0h-9v8m9-8h9v6m-18 2v6h-5m14-10v14m9-12v8h6" fill="none" stroke="#22C7F0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="23" cy="36" r="1.8" fill="#22C7F0"/><circle cx="18" cy="36" r="1.8" fill="#22C7F0"/><circle cx="32" cy="36" r="1.8" fill="#22C7F0"/>
+  <circle cx="47" cy="36" r="1.8" fill="#22C7F0"/><circle cx="41" cy="28" r="1.8" fill="#22C7F0"/>
+  <text x="32" y="50" text-anchor="middle" font-family="IBM Plex Sans Thai, sans-serif" font-size="10" font-weight="700" fill="#2F7BFF">CCID4</text>
+</svg>

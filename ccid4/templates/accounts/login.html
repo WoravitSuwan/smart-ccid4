@@ -1,0 +1,15 @@
+{% extends "auth_base.html" %}
+{% block content %}
+<h1>เข้าสู่ระบบ</h1>
+{% if DEMO_MODE %}<span class="chip chip-warning self-start">ข้อมูลจำลอง</span>{% endif %}
+{% if expired %}<p class="text-danger" role="alert">บัญชีหมดอายุหรือถูกปิดใช้งาน ติดต่อผู้ดูแลระบบ</p>{% endif %}
+{% if form.non_field_errors %}<div class="text-danger" role="alert">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>{% endif %}
+<form method="post" class="flex flex-col gap-3">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}">
+  <div><label class="label" for="id_username">ชื่อผู้ใช้</label>{{ form.username.as_widget|safe }}</div>
+  <div><label class="label" for="id_password">รหัสผ่าน</label>{{ form.password.as_widget|safe }}</div>
+  <button class="btn btn-primary">เข้าสู่ระบบ</button>
+</form>
+<p class="text-sm text-muted">ใส่รหัสผิด 5 ครั้ง บัญชีจะถูกล็อก 30 นาที · บัญชีสร้างโดยผู้ดูแลระบบ</p>
+{% endblock %}
