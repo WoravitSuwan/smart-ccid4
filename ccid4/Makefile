@@ -11,7 +11,7 @@ logs:
 migrate:
 	$(DC) exec web python manage.py migrate
 seed:          ## ผู้ใช้ตัวอย่างทุกบทบาท (เฉพาะฐานข้อมูลทดลอง)
-	$(DC) exec web python manage.py seed_demo --force && $(DC) exec web python manage.py seed_cases --force && $(DC) exec web python manage.py seed_holidays
+	$(DC) exec web python manage.py seed_demo --force && $(DC) exec web python manage.py seed_cases --force && $(DC) exec web python manage.py seed_holidays && $(DC) exec web python manage.py import_dika sample_data/dika_sample.json --source ข้อมูลจำลอง
 createsuperuser:
 	$(DC) exec web python manage.py createsuperuser
 test:          ## ต้องมี PostgreSQL (DATABASE_URL) ในเครื่องที่รันเทสต์

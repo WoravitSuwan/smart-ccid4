@@ -39,12 +39,22 @@
       <h3 class="section-title flex-1">คำให้การ{% if role == "accuser" %}ผู้กล่าวหา{% elif role == "suspect" %}ผู้ต้องหา{% else %}พยาน{% endif %}</h3>
       {% with st=form.party.current_statement %}
         {% if st %}<span class="chip chip-muted">ฉบับที่ {{ st.version|thai_digits }} · {{ st.created_at|be_datetime }}</span>
-          {% if st.needs_review %}<span class="ai-badge">ร่างโดย AI – รอตรวจ</span>{% endif %}{% endif %}
+          {% if st.needs_review %}<span class="ai-badge">ร่างโดย AI – รอตรวจ</span>
+            {% if editable and can_confirm %}<button type="button" class="btn btn-primary btn-sm" :disabled="dirty" hx-post="{% url 'ai:confirm' case.pk st.pk %}" hx-params="none" title="ตรวจแล้วว่าถูกต้อง">ยืนยันคำให้การ</button>{% endif %}
+          {% elif st.confirmed_at %}<span class="chip chip-success text-xs" title="{{ st.confirmed_at|be_datetime }}">ยืนยันโดย {{ st.confirmed_by.display_name }}</span>{% endif %}
+        {% endif %}
       {% endwith %}
-      {% if role == "suspect" %}<button type="button" class="btn btn-secondary btn-sm" disabled title="เปิดใช้ในเฟส 5">แจ้งสิทธิและสอบคำให้การ</button>{% endif %}
-      <button type="button" class="btn btn-secondary btn-sm" disabled title="เปิดใช้ในเฟส 5"><span class="ai-badge">AI</span>ร่างคำให้การ</button>
+      {% if form.party and editable %}
+        {% if role == "suspect" %}<button type="button" class="btn btn-secondary btn-sm" :disabled="dirty" data-dialog-open="rights-{{ form.party.pk }}" title="บันทึกก่อนจึงใช้ได้">แจ้งสิทธิและสอบคำให้การ</button>{% endif %}
+        <button type="button" class="btn btn-secondary btn-sm" :disabled="dirty" title="บันทึกก่อนจึงใช้ AI ได้" hx-post="{% url 'ai:draft' case.pk form.party.pk %}" hx-params="none" hx-target="#ai-st-{{ form.party.pk }}" hx-indicator="#ai-st-wait-{{ form.party.pk }}"><span class="ai-badge">AI</span>{% if form.party.current_statement %}ร่างใหม่{% else %}ร่างคำให้การ{% endif %}</button>
+        {% if role == "witness" %}<button type="button" class="btn btn-secondary btn-sm" :disabled="dirty" hx-post="{% url 'ai:consistency' case.pk form.party.pk %}" hx-params="none" hx-target="#ai-st-{{ form.party.pk }}" hx-indicator="#ai-st-wait-{{ form.party.pk }}"><span class="ai-badge">AI</span>ตรวจความสอดคล้อง</button>{% endif %}
+        <span id="ai-st-wait-{{ form.party.pk }}" class="htmx-indicator spinner" aria-hidden="true"></span>
+      {% elif editable %}
+        <span class="text-xs text-muted">บันทึกบุคคลนี้ก่อน จึงให้ AI ร่างคำให้การได้</span>
+      {% endif %}
       <button type="button" class="btn btn-secondary btn-sm" disabled title="เปิดใช้ในเฟส 8"><svg class="w-4 h-4"><use href="#i-mic"/></svg>สอบด้วยเสียง</button>
     </div>
+    {% if form.party %}<div id="ai-st-{{ form.party.pk }}"></div>{% endif %}
     {% with f=form.statement %}{{ f }}{% for e in f.errors %}<p class="text-danger text-sm">{{ e }}</p>{% endfor %}{% endwith %}
     <p class="text-xs text-muted">ทุกครั้งที่บันทึกแล้วข้อความเปลี่ยน ระบบเก็บเป็นฉบับใหม่ ฉบับเดิมยังดูได้</p>
     {% if form.party %}{% with versions=form.party.statements.all %}{% if versions|length > 1 %}

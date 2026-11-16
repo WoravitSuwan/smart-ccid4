@@ -11,5 +11,7 @@ urlpatterns = [
     path("cases/", include("cases.urls")),
     path("cases/", include("deadlines.urls")),
     path("cases/", include("documents.urls")),
+    path("cases/", include("ai.urls")),
+    path("cases/", include("dika.urls")),
     path("django-admin/", admin.site.urls),
 ]

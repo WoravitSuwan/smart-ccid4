@@ -234,3 +234,30 @@
   .focus-flash { animation: glow-pulse 1.2s ease 2; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+@layer components {
+  /* ---------- AI (phase 5) ---------- */
+  .ai-panel { position: relative; display: flex; flex-direction: column; gap: .6rem; padding: .9rem 1rem; border-radius: 12px; overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--ai) 45%, var(--border)); background: color-mix(in srgb, var(--ai) 7%, var(--surface));
+    animation: fade-up .35s cubic-bezier(.2,.8,.2,1) both; }
+  .ai-panel::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 2px; background: linear-gradient(90deg, transparent, var(--ai), var(--accent), transparent);
+    background-size: 200% 100%; animation: shimmer 2.4s linear infinite; }
+  .ai-panel-error { border-color: color-mix(in srgb, var(--danger) 50%, var(--border)); background: color-mix(in srgb, var(--danger) 7%, var(--surface)); }
+  .ai-filled { border-color: var(--ai) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--ai) 22%, transparent); }
+  .doc-preview { padding: .6rem .8rem; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); line-height: 1.9; }
+  .flag-item { padding: .5rem .7rem; border-radius: 8px; background: var(--surface); border-left: 3px solid var(--warning); }
+  .match-ring { --size: 46px; position: relative; width: var(--size); height: var(--size); border-radius: 999px; display: grid; place-items: center; flex: none;
+    background: conic-gradient(var(--ai) calc(var(--p) * 1%), var(--surface-2) 0); }
+  .match-ring::before { content: ""; position: absolute; inset: 5px; border-radius: inherit; background: var(--surface); }
+  .match-ring span { position: relative; font-size: .72rem; font-weight: 700; }
+  .dika-hit { border-left: 3px solid color-mix(in srgb, var(--ai) 60%, var(--border)); }
+  .modal-wide { width: min(820px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); }
+  .rights-steps { counter-reset: step; display: flex; flex-direction: column; gap: .75rem; }
+  .rights-steps > li { position: relative; padding: .7rem .9rem .7rem 3rem; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); }
+  .rights-steps > li::before { counter-increment: step; content: counter(step); position: absolute; left: .8rem; top: .7rem; width: 1.6rem; height: 1.6rem;
+    border-radius: 999px; display: grid; place-items: center; font-weight: 700; font-size: .85rem; color: var(--on-primary);
+    background: linear-gradient(135deg, var(--primary), var(--accent)); }
+  .rights-steps h3 { font-weight: 700; margin-bottom: .2rem; }
+  .plea { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; padding: 0 1rem; border-radius: 999px; border: 1px solid var(--border); cursor: pointer; }
+  .plea:has(input:checked) { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+}

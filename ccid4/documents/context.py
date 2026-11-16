@@ -221,6 +221,11 @@ def build(case, party=None, letter=None, user=None) -> dict:
         "ของกลาง": [],  # evidence register arrives in phase 10
         "บันทึก": [{"วันที่": d(x.done_at), "รายการ": x.title, "อ้างอิง": x.reason} for x in done],
         "เอกสารในสำนวน": [{"ชื่อ": x.title, "วันที่": d(x.created_at), "แผ่น": ""} for x in issued],
+        "ฎีกาที่อ้าง": "\n".join(
+            f"- ฎีกาที่ {p.ruling.number} ({p.ruling.sections}) {p.ruling.summary[:300]}"
+            for p in case.pinned_rulings.select_related("ruling")
+        )
+        or "-",
         "ความคืบหน้า": {"ครั้งที่": "2" if case.tasks.filter(rule_key="progress_1", done_at__isnull=False).exists() else "1"},
     }
     if letter is not None:

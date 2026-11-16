@@ -24,7 +24,7 @@ TABS = [
     ("investigator", "พนักงานสอบสวน"),
     ("dika", "ค้นฎีกา"),
 ]
-SOON_TABS = {"dika": "เฟส 5"}
+SOON_TABS: dict[str, str] = {}
 
 
 def visible(user):
@@ -154,7 +154,9 @@ def case_detail(request, pk):
             raise PermissionDenied
         forms = build_forms(case, request.POST)
         if all(f.is_valid() for f in forms.values()):
-            changed = services.save_case(request.user, case, **forms)
+            circ_ai = request.POST.get("circ_ai", "").strip()
+            from_ai = bool(circ_ai) and circ_ai == (forms["case_form"].cleaned_data.get("circumstances") or "").strip()
+            changed = services.save_case(request.user, case, **forms, circumstances_source="ai" if from_ai else "manual")
             if changed:
                 messages.success(request, "บันทึกแล้ว: " + " · ".join(changed))
             else:
@@ -200,6 +202,7 @@ def case_detail(request, pk):
             "errors": errors,
             "first_error_tab": next((t for t, e in errors.items() if e), ""),
             "can_reveal": request.user.can("pii.reveal"),
+            "can_confirm": request.user.can("statement.confirm"),
             "active": "cases",
         }
     )

@@ -1,0 +1,27 @@
+<div class="flex flex-col gap-4" id="dika-results">
+  {% if pinned %}
+  <section class="flex flex-col gap-2">
+    <h3 class="section-title">ปักหมุดไว้ในคดีนี้ <span class="text-xs text-muted font-normal">(ใช้อ้างในรายงานการสอบสวน)</span></h3>
+    <ul class="flex flex-wrap gap-2">{% for p in pinned %}<li class="chip chip-primary">📌 ฎีกาที่ {{ p.ruling.number }}{% if editable %} <button type="button" class="ml-1" hx-post="{% url 'dika:pin' case.pk p.ruling.pk %}" hx-params="none" hx-target="#dika-results" hx-swap="outerHTML" aria-label="เลิกปักหมุด">✕</button>{% endif %}</li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+  <p class="text-sm text-muted">{% if auto %}ค้นอัตโนมัติจากฐานความผิดและพฤติการณ์{% else %}ผลการค้น "{{ q }}"{% endif %} · ฐานข้อมูล {{ total|thai_digits }} ฉบับ</p>
+  {% if error %}<p class="chip chip-danger">{{ error }}</p>{% endif %}
+  {% if not total %}<p class="empty-state text-sm">ยังไม่มีข้อมูลฎีกาในเครื่อง ผู้ดูแลนำเข้าด้วย <code>manage.py import_dika</code> จากชุดข้อมูลที่หน่วยงานมีสิทธิ์ใช้</p>{% endif %}
+  <ol class="flex flex-col gap-3">
+    {% for h in hits %}
+    <li class="card p-4 flex flex-col gap-2 dika-hit">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="match-ring" style="--p: {{ h.percent }}"><span>{{ h.percent }}%</span></span>
+        <b>ฎีกาที่ {{ h.ruling.number }}</b>
+        <span class="chip chip-muted text-xs">{{ h.ruling.sections }}</span>
+        {% if h.ruling.source %}<span class="text-xs text-muted">{{ h.ruling.source }}</span>{% endif %}
+        <span class="flex-1"></span>
+        {% if editable %}<button type="button" class="btn btn-sm {% if h.pinned %}btn-primary{% else %}btn-secondary{% endif %}" hx-post="{% url 'dika:pin' case.pk h.ruling.pk %}" hx-params="none" hx-target="#dika-results" hx-swap="outerHTML">{% if h.pinned %}ปักหมุดแล้ว{% else %}ปักหมุดเข้าคดี{% endif %}</button>{% endif %}
+      </div>
+      <p class="text-sm">{{ h.ruling.summary }}</p>
+      {% if h.ruling.full_text %}<details><summary class="text-sm text-primary cursor-pointer">อ่านฉบับเต็ม</summary><p class="text-sm whitespace-pre-line mt-2">{{ h.ruling.full_text }}</p></details>{% endif %}
+    </li>
+    {% empty %}{% if total %}<li class="empty-state text-sm">ไม่พบฎีกาที่ใกล้เคียง ลองค้นด้วยคำอื่นหรือเลขมาตรา</li>{% endif %}{% endfor %}
+  </ol>
+</div>

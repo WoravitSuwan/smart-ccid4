@@ -147,3 +147,18 @@ class OutgoingLetter(models.Model):
 
     def __str__(self):
         return f"{self.number or 'ร่าง'} {self.subject}"
+
+
+class CircumstanceVersion(models.Model):
+    """พฤติการณ์แห่งคดี เก็บทุกเวอร์ชัน (A4.2)."""
+
+    case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name="circumstance_versions")
+    version = models.PositiveIntegerField("ฉบับที่")
+    text = models.TextField("พฤติการณ์แห่งคดี")
+    source = models.CharField("ที่มา", max_length=10, default="manual")  # manual | ai
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-version"]
+        unique_together = [("case", "version")]

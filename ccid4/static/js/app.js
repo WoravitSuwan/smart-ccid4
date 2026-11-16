@@ -234,6 +234,29 @@ document.addEventListener('input', (e) => {
   document.querySelectorAll('[data-doc-group]').forEach((g) => { g.hidden = ![...g.querySelectorAll('.doc-card')].some((c) => !c.hidden); });
 });
 
+// AI suggestions: fill the form fields named in data-apply-ai (the officer still reviews and saves).
+document.addEventListener('click', (e) => {
+  const apply = e.target.closest('[data-apply-ai]');
+  if (apply) {
+    let values = {};
+    try { values = JSON.parse(apply.dataset.applyAi); } catch (err) { return; }
+    let first = null;
+    Object.entries(values).forEach(([name, value]) => {
+      const el = document.querySelector(`[name="${CSS.escape(name)}"]`);
+      if (!el) return;
+      el.value = value === null ? '' : String(value);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      if (el.type !== 'hidden') { el.classList.add('focus-flash', 'ai-filled'); first = first || el; }
+    });
+    const panel = apply.closest('.ai-panel');
+    if (panel) panel.remove();
+    if (first) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    return;
+  }
+  const dismiss = e.target.closest('[data-dismiss-ai]');
+  if (dismiss) { const panel = dismiss.closest('.ai-panel'); if (panel) panel.remove(); }
+});
+
 // Buttons that navigate (so they can be disabled while the form is dirty).
 document.addEventListener('click', (e) => {
   const b = e.target.closest('button[data-href]');

@@ -31,6 +31,8 @@ INSTALLED_APPS = [
     "parties",
     "deadlines",
     "documents",
+    "ai",
+    "dika",
 ]
 
 MIDDLEWARE = [
@@ -136,6 +138,9 @@ OLLAMA_URL = env("OLLAMA_URL", default="http://ollama:11434")
 OLLAMA_MODEL = env("OLLAMA_MODEL", default="")
 ASR_BACKEND = env("ASR_BACKEND", default="fake")  # fake | whisper
 ASR_MODEL = env("ASR_MODEL", default="")
+OLLAMA_TIMEOUT = env.int("OLLAMA_TIMEOUT", default=90)
+OLLAMA_EMBED_MODEL = env("OLLAMA_EMBED_MODEL", default="")  # e.g. bge-m3
+AI_EMBED_DIM = 1024  # bge-m3
 
 LOGGING = {
     "version": 1,

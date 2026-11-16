@@ -1,0 +1,11 @@
+{"type": "object",
+ "required": ["offense", "law_sections", "penalty_text", "max_penalty_months", "max_fine", "court_type", "jurisdiction", "reasoning"],
+ "properties": {
+  "offense": {"type": "string", "maxLength": 400},
+  "law_sections": {"type": "string", "maxLength": 400},
+  "penalty_text": {"type": "string", "maxLength": 400},
+  "max_penalty_months": {"type": "integer", "minimum": 0},
+  "max_fine": {"type": "integer", "minimum": 0},
+  "court_type": {"type": "string", "enum": ["magistrate", "provincial", "criminal", "juvenile", "corruption"]},
+  "jurisdiction": {"type": "string", "maxLength": 200},
+  "reasoning": {"type": "string"}}}

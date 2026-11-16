@@ -56,13 +56,24 @@ def changed_labels(form) -> list[str]:
 
 
 @transaction.atomic
-def save_case(user, case: Case, case_form, accuser_form, property_fs, suspect_fs, witness_fs) -> list[str]:
+def save_case(
+    user, case: Case, case_form, accuser_form, property_fs, suspect_fs, witness_fs, circumstances_source="manual"
+) -> list[str]:
     """Save every tab of the case page in one transaction (A4.1). Returns a short list of what changed."""
     from parties import services as party_services
 
     summary = []
     if case_form.has_changed():
         case_form.save()
+        if "circumstances" in case_form.changed_data and case.circumstances.strip():
+            from django.db.models import Max
+
+            from .models import CircumstanceVersion
+
+            last = case.circumstance_versions.aggregate(m=Max("version"))["m"] or 0
+            CircumstanceVersion.objects.create(
+                case=case, version=last + 1, text=case.circumstances, source=circumstances_source, created_by=user
+            )
         log(user, "edit", "case", case.pk, f"แก้ไขข้อมูลคดี {case}: {', '.join(changed_labels(case_form))}")
         summary.append("ข้อมูลคดี")
     if accuser_form.has_changed():

@@ -52,16 +52,25 @@
           <section class="flex flex-col gap-3">
             <div class="flex flex-wrap items-center gap-2">
               <h3 class="section-title flex-1">{{ name }}</h3>
-              {% if forloop.first %}<button type="button" class="btn btn-secondary btn-sm" disabled title="เปิดใช้ในเฟส 5"><span class="ai-badge">AI</span>ให้ AI วิเคราะห์ใหม่</button>{% endif %}
+              {% if forloop.first and editable %}<button type="button" class="btn btn-secondary btn-sm" :disabled="dirty" title="บันทึกก่อนจึงใช้ AI ได้" hx-post="{% url 'ai:charges' case.pk %}" hx-params="none" hx-target="#ai-charges" hx-indicator="#ai-charges-wait"><span class="ai-badge">AI</span>ให้ AI วิเคราะห์ใหม่</button><span id="ai-charges-wait" class="htmx-indicator spinner" aria-hidden="true"></span>{% endif %}
               {% if forloop.counter == 2 %}<span class="chip chip-warning text-xs">ต้องกรอกก่อน</span>{% elif forloop.counter == 3 %}<span class="chip chip-muted text-xs">กรอกเมื่อมี</span>{% endif %}
             </div>
+            {% if forloop.first %}<div id="ai-charges"></div>{% endif %}
             <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{% for f in fields %}{% include "partials/field.html" %}{% endfor %}</div>
           </section>
           {% endfor %}
           <section class="flex flex-col gap-3">
             <div class="flex flex-wrap items-center gap-2"><h3 class="section-title flex-1">พฤติการณ์แห่งคดี</h3>
-              <button type="button" class="btn btn-secondary btn-sm" disabled title="เปิดใช้ในเฟส 5"><span class="ai-badge">AI</span>สรุปพฤติการณ์</button></div>
+              {% if editable %}<button type="button" class="btn btn-secondary btn-sm" :disabled="dirty" title="บันทึกก่อนจึงใช้ AI ได้" hx-post="{% url 'ai:summary' case.pk %}" hx-params="none" hx-target="#ai-summary" hx-indicator="#ai-summary-wait"><span class="ai-badge">AI</span>สรุปพฤติการณ์</button><span id="ai-summary-wait" class="htmx-indicator spinner" aria-hidden="true"></span>{% endif %}</div>
+            <div id="ai-summary"></div>
+            <input type="hidden" name="circ_ai" value="">
             {% with f=case_form.circumstances %}{{ f }}{% for e in f.errors %}<p class="text-danger text-sm">{{ e }}</p>{% endfor %}{% endwith %}
+            {% with versions=case.circumstance_versions.all %}{% if versions %}
+            <details><summary class="text-sm cursor-pointer text-primary">ประวัติพฤติการณ์ ({{ versions|length|thai_digits }} ฉบับ)</summary>
+              <ol class="version-list flex flex-col gap-3 mt-3">{% for v in versions %}
+                <li><p class="text-sm text-muted">ฉบับที่ {{ v.version|thai_digits }} · {{ v.created_at|be_datetime }} · {{ v.created_by.display_name }}{% if v.source == "ai" %} · <span class="ai-badge">ใช้ร่างจาก AI</span>{% endif %}</p>
+                  <p class="whitespace-pre-line text-sm">{{ v.text|truncatechars:600 }}</p></li>{% endfor %}</ol>
+            </details>{% endif %}{% endwith %}
           </section>
         </div>
 
@@ -95,6 +104,21 @@
         </div>
         <div role="tabpanel" id="panel-witnesses" data-panel="witnesses" hidden>
           {% include "cases/_people.html" with fs=witness_fs prefix="wit" role="witness" noun="พยาน" %}
+        </div>
+
+        {# ---------- ค้นฎีกา (A4.7) ---------- #}
+        <div role="tabpanel" id="panel-dika" data-panel="dika" class="flex flex-col gap-4" hidden>
+          <div class="grid gap-2 sm:grid-cols-[2fr_1fr_auto] items-end">
+            <label><span class="label">ค้นด้วยคำ</span><input class="input" type="search" name="dika_q" form="dika-form" placeholder="เช่น บัญชีม้า ตัวการร่วม"
+              hx-get="{% url 'dika:search' case.pk %}" hx-trigger="input changed delay:500ms, search" hx-include="[form=dika-form]" hx-target="#dika-results" hx-swap="outerHTML"></label>
+            <label><span class="label">มาตรา</span><input class="input" name="dika_sec" form="dika-form" placeholder="เช่น ม.343"
+              hx-get="{% url 'dika:search' case.pk %}" hx-trigger="input changed delay:500ms" hx-include="[form=dika-form]" hx-target="#dika-results" hx-swap="outerHTML"></label>
+            <label class="flex items-center gap-2 min-h-[44px] text-sm"><input type="checkbox" name="dika_only" form="dika-form"
+              hx-get="{% url 'dika:search' case.pk %}" hx-trigger="change" hx-include="[form=dika-form]" hx-target="#dika-results" hx-swap="outerHTML"> เฉพาะมาตรานี้</label>
+          </div>
+          <div id="dika-results" hx-get="{% url 'dika:search' case.pk %}" hx-trigger="intersect once" hx-swap="outerHTML">
+            <div class="skeleton h-24"></div><div class="skeleton h-24 mt-3"></div>
+          </div>
         </div>
 
         {# ---------- พนักงานสอบสวน (A4.6) ---------- #}
@@ -147,8 +171,43 @@
   {% include "cases/_side_panel.html" %}
 </div>
 
+<form id="dika-form" hidden></form>
 {% if editable %}
 <form id="task-add-form" method="post" action="{% url 'deadlines:task_add' case.pk %}" hidden>{% csrf_token %}<input type="hidden" name="back" value="investigator"></form>
+{% for f in suspect_fs.forms %}{% if f.party %}
+<dialog id="rights-{{ f.party.pk }}" class="modal modal-wide" aria-labelledby="rights-title-{{ f.party.pk }}">
+  <form method="post" action="{% url 'ai:rights' case.pk f.party.pk %}" class="flex flex-col gap-4">{% csrf_token %}
+    <div class="flex items-start gap-3">
+      <span class="stat-icon"><svg class="w-5 h-5"><use href="#i-scale"/></svg></span>
+      <div class="flex-1"><h2 id="rights-title-{{ f.party.pk }}">แจ้งข้อกล่าวหา สิทธิ และสอบคำให้การ</h2><p class="text-sm text-muted">ผู้ต้องหา {{ f.party.person.full_name }}</p></div>
+      <button type="button" class="btn btn-secondary btn-sm" data-dialog-close aria-label="ปิด">✕</button>
+    </div>
+    <ol class="rights-steps">
+      <li><h3>พฤติการณ์ที่ถูกกล่าวหา</h3><p class="text-sm whitespace-pre-line">{{ case.circumstances|default:"(ยังไม่ได้กรอกพฤติการณ์แห่งคดี)" }}</p></li>
+      <li><h3>ข้อกล่าวหา</h3><p class="text-sm">{{ case.offense|default:"(ยังไม่ระบุฐานความผิด)" }}{% if case.law_sections %} ตาม {{ case.law_sections }}{% endif %}</p></li>
+      <li><h3>สิทธิตามกฎหมาย</h3>
+        <ul class="text-sm list-disc pl-5 flex flex-col gap-1">
+          <li>มีสิทธิให้การหรือไม่ให้การก็ได้ ถ้อยคำที่ให้การอาจใช้เป็นพยานหลักฐานในการพิจารณาคดีได้ (ป.วิ.อาญา ม.134/4)</li>
+          <li>มีสิทธิพบและปรึกษาทนายความเป็นการเฉพาะตัว และให้ทนายความหรือผู้ซึ่งตนไว้วางใจเข้าฟังการสอบปากคำ (ม.7/1, ม.134/4)</li>
+          <li>คดีที่มีอัตราโทษประหารชีวิต หรือผู้ต้องหาอายุไม่เกิน 18 ปี หรือคดีมีโทษจำคุกและผู้ต้องหาไม่มีทนาย รัฐจัดหาทนายความให้ (ม.134/1)</li>
+          <li>ได้รับการเยี่ยมหรือติดต่อญาติ ได้รับการรักษาพยาบาลเมื่อเจ็บป่วย และสิทธิอื่นตามกฎหมาย (ม.7/1)</li>
+          <li>การสอบปากคำต้องไม่ทำหรือจัดให้ทำการใด ๆ ซึ่งเป็นการให้คำมั่นสัญญา ขู่เข็ญ หลอกลวง หรือทรมาน (ม.135)</li>
+        </ul></li>
+    </ol>
+    <div class="grid gap-3 sm:grid-cols-2">
+      <label class="flex items-center gap-2 min-h-[44px] font-semibold"><input type="checkbox" name="informed" required> แจ้งสิทธิแล้ว</label>
+      <label><span class="label">เวลาแจ้งสิทธิ</span><input class="input" type="datetime-local" name="informed_at" value="{% now 'Y-m-d\TH:i' %}" required></label>
+    </div>
+    <fieldset class="flex flex-wrap gap-3"><legend class="label">แนวคำให้การ</legend>
+      <label class="plea"><input type="radio" name="plea" value="confess" required> รับสารภาพ</label>
+      <label class="plea"><input type="radio" name="plea" value="deny"> ปฏิเสธ</label>
+      <label class="plea"><input type="radio" name="plea" value="later"> ให้การภายหลังในชั้นศาล</label>
+    </fieldset>
+    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="draft" checked> ให้ AI ร่างคำให้การตามแนวที่เลือก (มีป้าย "ร่างโดย AI – รอตรวจ" จนกว่าจะยืนยัน)</label>
+    <div class="flex gap-2 justify-end"><button type="button" class="btn btn-secondary" data-dialog-close>ยกเลิก</button><button class="btn btn-primary">ยืนยันการแจ้งสิทธิ</button></div>
+  </form>
+</dialog>
+{% endif %}{% endfor %}
 {% for party, c, df in detention_forms %}
 <dialog id="det-{{ party.pk }}" class="modal" aria-labelledby="det-title-{{ party.pk }}">
   <form method="post" action="{% url 'deadlines:detention_add' case.pk party.pk %}" class="flex flex-col gap-4">{% csrf_token %}
