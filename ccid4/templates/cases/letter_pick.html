@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}ร่างหนังสือ · {{ case.label }}{% endblock %}
+{% block content %}
+<nav class="text-sm reveal" aria-label="เส้นทาง"><a href="{% url 'cases:list' %}">คดีของฉัน</a> › <a href="{% url 'cases:detail' case.pk %}#investigator">{{ case.label }}</a> › ร่างหนังสือ</nav>
+<h1 class="reveal">เลือกแบบหนังสือ</h1>
+<div class="grid gap-4 sm:grid-cols-2">
+  {% for key, t in templates.items %}
+  <a class="card card-hover glow-border p-5 flex items-start gap-4 no-underline text-text reveal" href="?t={{ key }}">
+    <span class="stat-icon"><svg class="w-5 h-5"><use href="#i-mail"/></svg></span>
+    <span><b class="block text-lg">{{ t.label }}</b><span class="text-sm text-muted">เรื่อง: {{ t.subject }} · เรียน {{ t.recipient }}</span></span>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

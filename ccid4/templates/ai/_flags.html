@@ -1,0 +1,10 @@
+<div class="ai-panel" role="status">
+  <div class="flex items-center gap-2"><span class="ai-badge">AI</span><b class="text-sm">ตรวจความสอดคล้องกับพฤติการณ์แห่งคดี</b></div>
+  {% if not has_statement %}<p class="text-sm text-muted">ยังไม่มีคำให้การที่บันทึกไว้</p>
+  {% elif flags %}
+  <ul class="flex flex-col gap-2">{% for f in flags %}
+    <li class="flag-item"><span class="chip chip-warning text-xs">ไม่ตรงกัน</span> <q class="text-sm">{{ f.quote }}</q><span class="block text-xs text-muted">{{ f.issue }}</span></li>
+  {% endfor %}</ul>
+  {% else %}<p class="text-sm"><svg class="w-4 h-4 inline text-success"><use href="#i-check"/></svg> ไม่พบจุดที่ขัดกับพฤติการณ์แห่งคดี</p>{% endif %}
+  <button type="button" class="btn btn-secondary btn-sm self-start" data-dismiss-ai>ปิด</button>
+</div>

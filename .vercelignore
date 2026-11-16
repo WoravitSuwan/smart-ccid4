@@ -1,0 +1,8 @@
+.venv
+legacy
+design
+ccid4/node_modules
+ccid4/data
+ccid4/.pytest_cache
+ccid4/.ruff_cache
+**/__pycache__

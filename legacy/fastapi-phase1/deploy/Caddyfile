@@ -1,0 +1,9 @@
+# Internal HTTPS with Caddy's own CA (install its root certificate on the unit's computers),
+# or replace "tls internal" with the unit's certificate files.
+ccid4.local {
+	tls internal
+	request_body {
+		max_size 2GB
+	}
+	reverse_proxy app:8000
+}

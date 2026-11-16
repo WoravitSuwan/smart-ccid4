@@ -1,0 +1,18 @@
+{% with f=form.citizen_id %}
+<div class="flex flex-col gap-1">
+  <label class="label" for="{{ f.id_for_label }}">{{ f.label }}</label>
+  <div id="cid-{{ form.prefix }}" class="flex flex-col gap-1">
+    <div class="flex gap-2">
+      {{ f }}
+      {% if form.party and can_reveal and form.party.person.citizen_id %}
+      <button type="button" class="btn btn-secondary btn-sm shrink-0" title="แสดงเลขเต็ม (บันทึกในประวัติการใช้งาน)"
+              hx-post="{% url 'cases:reveal_id' case.pk form.party.pk %}" hx-vals='{"field": "{{ f.html_name }}"}'
+              hx-target="#cid-{{ form.prefix }}" hx-swap="innerHTML">
+        <svg class="w-4 h-4"><use href="#i-eye"/></svg>แสดง</button>
+      {% endif %}
+    </div>
+    {% if form.party and form.party.person.citizen_id %}<p class="text-xs text-muted">แสดงแบบปิดบัง{% if not can_reveal %} · ท่านไม่มีสิทธิ์ดูเลขเต็ม{% endif %}</p>{% endif %}
+  </div>
+  {% for e in f.errors %}<p class="text-danger text-sm">{{ e }}</p>{% endfor %}
+</div>
+{% endwith %}

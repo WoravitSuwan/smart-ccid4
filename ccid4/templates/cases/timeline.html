@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Timeline · {{ case.label }}{% endblock %}
+{% block content %}
+<nav class="text-sm reveal" aria-label="เส้นทาง"><a href="{% url 'cases:list' %}">คดีของฉัน</a> › <a href="{% url 'cases:detail' case.pk %}">{{ case.label }}</a> › Timeline</nav>
+<div class="flex flex-wrap items-end gap-3 reveal">
+  <div class="flex-1"><h1>Timeline · {{ case.label }}</h1><p class="text-muted">{{ case.offense|default:"ยังไม่ระบุฐานความผิด" }} · {{ items|length|thai_digits }} เหตุการณ์</p></div>
+  <a class="btn btn-primary" href="?format=pdf"><svg class="w-5 h-5"><use href="#i-file"/></svg>ส่งออก PDF</a>
+  <a class="btn btn-secondary" href="?format=docx">Word</a>
+</div>
+<ol class="tl max-w-3xl">
+  {% for e in items %}
+  <li class="tl-item k-{{ e.kind }} reveal">
+    <div class="card card-hover p-4 flex flex-col gap-1">
+      <div class="flex flex-wrap items-center gap-2"><span class="chip chip-muted text-xs">{{ kinds|get_item:e.kind }}</span><span class="text-sm text-muted">{{ e.label }}</span></div>
+      <p class="font-semibold">{{ e.title }}</p>
+      {% if e.detail %}<p class="text-sm text-muted">{{ e.detail }}</p>{% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ol>
+{% endblock %}

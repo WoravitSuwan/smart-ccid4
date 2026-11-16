@@ -1,0 +1,80 @@
+{% load static %}<!doctype html>
+<html lang="th" data-theme="{{ THEME }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<title>{% block title %}CCID4{% endblock %} · {{ UNIT_SHORT }}</title>
+<link rel="icon" href="{% static 'brand/ccid4.svg' %}">
+<link rel="stylesheet" href="{% static 'css/app.css' %}">
+<script src="{% static 'js/app.js' %}" defer></script>
+<script src="{% static 'vendor/htmx.min.js' %}" defer></script>
+<script src="{% static 'vendor/alpine-csp.min.js' %}" defer></script>
+{% block head %}{% endblock %}
+</head>
+<body x-data="shell">
+<div class="aurora" aria-hidden="true"></div><div class="grid-overlay" aria-hidden="true"></div>
+{% include "partials/icons.html" %}
+<a href="#main" class="sr-only-focusable btn btn-primary m-2 absolute z-50">ข้ามไปเนื้อหา</a>
+<div class="min-h-screen flex">
+  <nav aria-label="เมนูหลัก" class="glass shrink-0 border-r border-border flex flex-col gap-1 p-3 transition-all duration-300 hidden md:flex sticky top-0 h-screen" :class="navClass">
+    <a href="{% url 'core:home' %}" class="logo-glow flex items-center gap-2 px-2 pb-4 no-underline text-text">
+      <img src="{% static 'brand/ccid4.svg' %}" alt="" width="36" height="36">
+      <span x-show="expanded" class="leading-tight"><b class="block text-lg">CCID4</b><span class="text-xs text-muted">{{ UNIT_SHORT }}</span></span>
+    </a>
+    {% for m in MENU %}
+      {% if m.url %}
+      <a class="nav-item" href="{{ m.url }}" {% if active == m.key %}aria-current="page"{% endif %} title="{{ m.label }}">
+        <svg class="w-5 h-5 shrink-0"><use href="#i-{{ m.icon }}"/></svg>
+        <span x-show="expanded" class="flex-1">{{ m.label }}</span>
+        {% if m.new %}<span x-show="expanded" class="chip chip-primary text-xs">ใหม่</span>{% endif %}
+        {% if m.key == "profile" and PROFILE_MISSING %}<span class="dot-alert" title="ยังกรอกไม่ครบ {{ PROFILE_MISSING }} ส่วน"><span class="sr-only">ยังกรอกไม่ครบ {{ PROFILE_MISSING }} ส่วน</span></span>{% endif %}
+      </a>
+      {% else %}
+      <span class="nav-item opacity-60 cursor-not-allowed" aria-disabled="true" title="{{ m.label }} (เร็ว ๆ นี้)">
+        <svg class="w-5 h-5 shrink-0"><use href="#i-{{ m.icon }}"/></svg>
+        <span x-show="expanded" class="flex-1">{{ m.label }}</span>
+        <span x-show="expanded" class="text-xs">เร็ว ๆ นี้</span>
+      </span>
+      {% endif %}
+    {% endfor %}
+    <button type="button" class="nav-item mt-auto" @click="toggleNav" :aria-label="navLabel">
+      <svg class="w-5 h-5"><use href="#i-menu"/></svg><span x-show="expanded" x-text="navLabel"></span>
+    </button>
+  </nav>
+  <div class="flex-1 min-w-0 flex flex-col">
+    <header class="glass sticky top-0 z-30 flex flex-wrap items-center gap-3 min-h-[60px] px-4 md:px-6 border-b border-border">
+      <a href="{% url 'core:home' %}" class="md:hidden flex items-center gap-2 no-underline text-text"><img src="{% static 'brand/ccid4.svg' %}" alt="" width="28" height="28"><b>CCID4</b></a>
+      <form role="search" action="{% url 'core:home' %}" method="get" class="flex-1 min-w-[200px] max-w-xl">
+        <label class="flex items-center gap-2 input">
+          <svg class="w-5 h-5 text-muted"><use href="#i-search"/></svg>
+          <span class="sr-only">ค้นหาทั้งระบบ</span>
+          <input name="q" type="search" class="flex-1 bg-transparent outline-none" placeholder="ค้นหาเลขคดี ชื่อ เลขบัญชี เบอร์โทร">
+        </label>
+      </form>
+      {% if DEMO_MODE %}<span class="chip chip-warning">ข้อมูลจำลอง</span>{% endif %}
+      <span class="chip chip-primary chip-live" title="AI ทุกตัวรันบนเครื่องของหน่วยงาน"><svg class="w-4 h-4"><use href="#i-cpu"/></svg>AI ในเครื่อง</span>
+      <button type="button" class="btn btn-secondary btn-sm" aria-label="แจ้งเตือน"><svg class="w-5 h-5"><use href="#i-bell"/></svg></button>
+      <button type="button" class="btn btn-secondary btn-sm" @click="toggleTheme" aria-label="สลับธีมมืดหรือสว่าง"><svg class="w-5 h-5"><use href="#i-sun"/></svg></button>
+      <details class="relative">
+        <summary class="btn btn-secondary btn-sm list-none cursor-pointer">{{ user.display_name }}</summary>
+        <div class="card absolute right-0 mt-2 p-3 w-60 z-20 flex flex-col gap-2">
+          <span class="text-sm text-muted">{{ user.get_role_display }}</span>
+          <a href="{% url 'accounts:2fa_setup' %}">ตั้งค่ายืนยันตัวตน 2 ขั้น</a>
+          <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="btn btn-secondary btn-sm w-full">ออกจากระบบ</button></form>
+        </div>
+      </details>
+    </header>
+    <main id="main" class="flex-1 p-4 md:p-6 flex flex-col gap-4 max-w-[1400px] w-full">
+      <div class="toast-stack" aria-live="polite">{% for m in messages %}
+        <div x-data="toast" x-show="open" x-transition.opacity.duration.300ms class="toast card glass p-3 flex items-start gap-3 {% if m.tags == 'error' %}toast-error border-danger{% else %}border-primary{% endif %}" role="status">
+          <span class="flex-1 {% if m.tags == 'error' %}text-danger{% endif %}">{{ m }}</span>
+          <button type="button" class="text-muted" @click="close" aria-label="ปิดข้อความ">✕</button>
+        </div>{% endfor %}</div>
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

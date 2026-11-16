@@ -1,0 +1,88 @@
+# เอกสารในสำนวน (A6.2) — เครื่องสร้างเอกสารอ่านไฟล์นี้
+#   num       ลำดับตาม A6.2
+#   key       ชื่อไฟล์ <key>.docx ในโฟลเดอร์นี้
+#   per       null = ฉบับเดียวต่อคดี · accuser | suspect | witness | people (ผู้กล่าวหา+พยาน) | letter = ออกรายบุคคล/รายหนังสือ
+#   digits    thai | arabic (ตัวเลขในค่าที่เติม)
+#   fields    (ไม่บังคับ) ชื่อ placeholder ในไฟล์ → path ในข้อมูลระบบ ใช้เมื่อชื่อในไฟล์ไม่ตรงกับชื่อมาตรฐาน
+#   requires  ข้อมูลที่ต้องมีก่อนออกเอกสาร: path, label และ goto (tab:<แท็บ>:<ช่อง> หรือ profile:<ส่วน>)
+#             path ที่ขึ้นต้นด้วย "บุคคล." ตรวจรายบุคคล
+
+common:
+  officer: &officer {path: พงส.ยศชื่อ, label: "ยศ ชื่อ ของพนักงานสอบสวน", goto: "profile:personal"}
+  position: &position {path: พงส.ตำแหน่ง, label: "ตำแหน่งพนักงานสอบสวน", goto: "profile:personal"}
+  unit: &unit {path: หน่วย.ชื่อ, label: "ชื่อหน่วย", goto: "profile:unit"}
+  unit_address: &unit_address {path: หน่วย.ที่อยู่, label: "ที่อยู่หน่วย", goto: "profile:unit"}
+  doc_prefix: &doc_prefix {path: หน่วย.เลขหนังสือ, label: "เลขที่หนังสือ (ส่วนหน้า)", goto: "profile:unit"}
+  commander: &commander {path: ผบ.ยศชื่อ, label: "ผู้บังคับบัญชา", goto: "profile:commanders"}
+  court: &court {path: ศาล.ชื่อ, label: "ชื่อศาล", goto: "profile:courts"}
+  prosecutor: &prosecutor {path: อัยการ.ชื่อ, label: "สำนักงานอัยการ", goto: "profile:courts"}
+  case_no: &case_no {path: คดี.เลขคดี, label: "เลขคดีอาญา", goto: "tab:info:c-case_no"}
+  offense: &offense {path: คดี.ฐานความผิด, label: "ฐานความผิด", goto: "tab:info:c-offense"}
+  sections: &sections {path: คดี.มาตรา, label: "กฎหมายและมาตรา", goto: "tab:info:c-law_sections"}
+  penalty: &penalty {path: คดี.อัตราโทษ, label: "อัตราโทษ", goto: "tab:info:c-penalty_text"}
+  circumstances: &circumstances {path: คดี.พฤติการณ์, label: "พฤติการณ์แห่งคดี", goto: "tab:info:c-circumstances"}
+  dr_no: &dr_no {path: ปจว.เลขที่, label: "เลขที่บันทึกประจำวันรับคำร้องทุกข์", goto: "tab:info:c-dr_complaint_no"}
+  dr_at: &dr_at {path: ปจว.วันที่, label: "วันเวลาบันทึกประจำวันรับคำร้องทุกข์", goto: "tab:info:c-dr_complaint_at"}
+  accuser: &accuser {path: ผู้กล่าวหา.ชื่อเต็ม, label: "ผู้กล่าวหา", goto: "tab:accuser:acc-first_name"}
+  accuser_address: &accuser_address {path: ผู้กล่าวหา.ที่อยู่, label: "ที่อยู่ผู้กล่าวหา", goto: "tab:accuser:acc-house_no"}
+  person_address: &person_address {path: บุคคล.ที่อยู่, label: "ที่อยู่", goto: "person"}
+  person_statement: &person_statement {path: บุคคล.คำให้การ, label: "คำให้การ", goto: "person"}
+
+groups: [รับแจ้ง, สอบปากคำ, ผู้ต้องหา, ทรัพย์และของกลาง, สรุปสำนวน]
+
+documents:
+  - {num: 1, key: daily_record, title: บันทึกประจำวัน, group: รับแจ้ง, per: null, digits: thai,
+     requires: [*dr_no, *dr_at, *accuser, *offense, *circumstances, *unit, *officer]}
+  - {num: 2, key: statement_accuser, title: คำให้การผู้กล่าวหา, group: สอบปากคำ, per: null, digits: thai,
+     requires: [*accuser, *offense, {path: ผู้กล่าวหา.คำให้การ, label: "คำให้การผู้กล่าวหา", goto: "tab:accuser:acc-statement"}, *unit, *officer]}
+  - {num: 3, key: statement_witness, title: คำให้การพยาน, group: สอบปากคำ, per: witness, digits: thai,
+     requires: [*offense, *person_statement, *unit, *officer]}
+  - {num: 4, key: summons_suspect, title: หมายเรียกผู้ต้องหา, group: ผู้ต้องหา, per: suspect, digits: thai,
+     requires: [*accuser, *offense, *sections, *person_address, *unit, *unit_address, *officer]}
+  - {num: 5, key: arrest_warrant_request, title: คำร้องขอหมายจับ, group: ผู้ต้องหา, per: suspect, digits: thai,
+     requires: [*offense, *sections, *penalty, *circumstances, *court, *officer, *position]}
+  - {num: 6, key: arrest_warrant_description, title: หมายจับและตำหนิรูปพรรณ, group: ผู้ต้องหา, per: suspect, digits: thai,
+     requires: [*offense, {path: บุคคล.ตำหนิ, label: "ตำหนิรูปพรรณ", goto: "person"}, *officer]}
+  - {num: 7, key: charge_notice, title: บันทึกแจ้งข้อกล่าวหา, group: ผู้ต้องหา, per: suspect, digits: thai,
+     requires: [*offense, *sections, *circumstances, *officer]}
+  - {num: 8, key: rights_notice, title: บันทึกแจ้งสิทธิผู้ต้องหา, group: ผู้ต้องหา, per: suspect, digits: thai,
+     requires: [{path: บุคคล.วันแจ้งสิทธิ, label: "วันเวลาแจ้งสิทธิ (บันทึกได้ในเฟส 5 หรือเติมเองในไฟล์)", goto: "person"}, *officer]}
+  - {num: 9, key: statement_suspect, title: คำให้การผู้ต้องหา, group: ผู้ต้องหา, per: suspect, digits: thai,
+     requires: [*offense, *sections, *person_statement, *unit, *officer]}
+  - {num: 10, key: statement_suspect_oral, title: คำให้การผู้ต้องหา (ฟ้องวาจา), group: ผู้ต้องหา, per: suspect, digits: thai,
+     requires: [*offense, *sections, *person_statement, *court, *officer]}
+  - {num: 11, key: custody_record, title: บันทึกการควบคุมผู้ต้องหา, group: ผู้ต้องหา, per: suspect, digits: thai,
+     requires: [{path: บุคคล.วันจับ, label: "วันเวลาถูกจับ/มอบตัว", goto: "person"}, {path: บุคคล.วันถึง, label: "วันเวลาถึงที่ทำการ พงส.", goto: "person"},
+                {path: บุคคล.สถานที่ควบคุม, label: "สถานที่ควบคุม", goto: "person"}, *unit, *officer]}
+  - {num: 12, key: remand_request, title: คำร้องขอฝากขัง (ครั้งแรกและครั้งต่อไป), group: ผู้ต้องหา, per: suspect, digits: thai,
+     requires: [*case_no, *offense, *sections, *penalty, *court, *officer,
+                {path: บุคคล.วันถึง, label: "วันเวลาถึงที่ทำการ พงส.", goto: "person"},
+                {path: บุคคล.ฝากขัง.ตั้งแต่, label: "โทษสูงสุด (ใช้คำนวณผัดฝากขัง) หรือยังมีสิทธิ์ผัดเหลือ", goto: "tab:info:c-max_penalty_months"}]}
+  - {num: 13, key: bail_contract, title: สัญญาประกัน, group: ผู้ต้องหา, per: suspect, digits: thai,
+     requires: [*offense, {path: บุคคล.ประกัน, label: "การประกันตัว", goto: "person"}, *unit, *officer]}
+  - {num: 14, key: withdraw_complaint, title: บันทึกถอนคำร้องทุกข์, group: รับแจ้ง, per: null, digits: thai,
+     requires: [*accuser, *offense, *dr_no, *dr_at, *officer]}
+  - {num: 15, key: property_harmed, title: บัญชีทรัพย์ถูกประทุษร้าย, group: ทรัพย์และของกลาง, per: null, digits: thai,
+     requires: [*accuser, {path: ทรัพย์, label: "รายการทรัพย์ถูกประทุษร้าย", goto: "tab:accuser:prop-TOTAL_FORMS"}, *officer]}
+  - {num: 16, key: property_returned, title: บัญชีทรัพย์ได้คืน, group: ทรัพย์และของกลาง, per: null, digits: thai,
+     requires: [*accuser, {path: ทรัพย์ได้คืน, label: "ทรัพย์ที่สถานะ 'ได้คืน'", goto: "tab:accuser:prop-TOTAL_FORMS"}, *officer]}
+  - {num: 17, key: property_lost, title: บัญชีทรัพย์ไม่ได้คืน, group: ทรัพย์และของกลาง, per: null, digits: thai,
+     requires: [*accuser, {path: ทรัพย์ไม่ได้คืน, label: "ทรัพย์ที่สถานะ 'ไม่ได้คืน'", goto: "tab:accuser:prop-TOTAL_FORMS"}, *officer]}
+  - {num: 18, key: exhibits, title: บัญชีของกลาง, group: ทรัพย์และของกลาง, per: null, digits: thai,
+     requires: [{path: ของกลาง, label: "รายการของกลาง (ทะเบียนของกลางเปิดในเฟส 10)", goto: ""}, *officer]}
+  - {num: 19, key: progress_notice, title: หนังสือแจ้งความคืบหน้า, group: รับแจ้ง, per: null, digits: thai,
+     requires: [*accuser, *offense, *unit, *unit_address, *doc_prefix, *officer]}
+  - {num: 20, key: investigator_log, title: บันทึกพนักงานสอบสวน, group: สรุปสำนวน, per: null, digits: thai,
+     requires: [{path: บันทึก, label: "รายการใน 'ทำแล้ว' อย่างน้อย 1 รายการ", goto: "tab:investigator:"}, *officer]}
+  - {num: 21, key: investigation_report, title: รายงานการสอบสวน, group: สรุปสำนวน, per: null, digits: thai,
+     requires: [*case_no, *offense, *sections, *accuser, *circumstances, *officer, *commander]}
+  - {num: 22, key: case_file_index, title: บัญชีสำนวนการสอบสวน, group: สรุปสำนวน, per: null, digits: thai,
+     requires: [*case_no, {path: เอกสารในสำนวน, label: "เอกสารที่ออกแล้วในคดีนี้", goto: ""}, *officer]}
+  - {num: 23, key: case_transmittal, title: หนังสือส่งสำนวน, group: สรุปสำนวน, per: null, digits: thai,
+     requires: [*case_no, *offense, *accuser, *prosecutor, *commander, *unit, *doc_prefix]}
+  - {num: 24, key: summons_witness, title: หมายเรียกผู้กล่าวหา/พยาน, group: รับแจ้ง, per: people, digits: thai, new: true,
+     requires: [*case_no, *offense, *person_address, *unit, *unit_address, *officer]}
+  - {num: 25, key: data_request_letter, title: หนังสือขอข้อมูล (ธนาคาร/โทรศัพท์/แพลตฟอร์ม/CCTV), group: รับแจ้ง, per: letter, digits: thai, new: true,
+     requires: [*offense, *unit, *unit_address, *officer]}
+  - {num: 26, key: digital_seizure, title: บันทึกตรวจยึดพยานหลักฐานดิจิทัล, group: ทรัพย์และของกลาง, per: null, digits: arabic, new: true,
+     requires: [{path: ของกลาง, label: "รายการพยานหลักฐานดิจิทัล (เปิดในเฟส 10)", goto: ""}, *officer]}

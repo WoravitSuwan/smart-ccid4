@@ -1,0 +1,12 @@
+{% extends "auth_base.html" %}
+{% block title %}ยืนยันตัวตนขั้นที่ 2{% endblock %}
+{% block content %}
+<h1>ยืนยันตัวตนขั้นที่ 2</h1>
+<form method="post" class="flex flex-col gap-3">
+  {% csrf_token %}
+  <div><label class="label" for="id_token">{{ form.token.label }}</label>{{ form.token.as_widget|safe }}
+    {% for e in form.token.errors %}<p class="text-danger text-sm">{{ e }}</p>{% endfor %}</div>
+  <button class="btn btn-primary">ยืนยัน</button>
+</form>
+<form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="btn btn-secondary w-full">ออกจากระบบ</button></form>
+{% endblock %}

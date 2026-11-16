@@ -1,0 +1,33 @@
+<section data-theme="{{ theme }}" class="card p-4 flex flex-col gap-4 bg-bg text-text" aria-label="{{ label }}">
+  <h2>{{ label }}</h2>
+  <div class="grid grid-cols-3 gap-2 text-xs">
+    <div class="p-2 rounded-btn bg-bg border border-border">--bg</div>
+    <div class="p-2 rounded-btn bg-surface border border-border">--surface</div>
+    <div class="p-2 rounded-btn bg-surface-2 border border-border">--surface-2</div>
+    <div class="p-2 rounded-btn bg-primary text-on-primary">--primary</div>
+    <div class="p-2 rounded-btn bg-primary-soft text-primary">--primary-soft</div>
+    <div class="p-2 rounded-btn border border-accent text-accent-ink">--accent</div>
+    <div class="p-2 rounded-btn border border-success text-success">--success</div>
+    <div class="p-2 rounded-btn border border-warning text-warning-ink">--warning</div>
+    <div class="p-2 rounded-btn border border-danger text-danger">--danger</div>
+    <div class="p-2 rounded-btn border border-ai text-ai">--ai</div>
+    <div class="p-2 rounded-btn border border-border text-muted">--text-muted</div>
+    <div class="p-2 rounded-btn border border-border">--text</div>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <button class="btn btn-primary" type="button">ปุ่มหลัก</button>
+    <button class="btn btn-secondary" type="button">ปุ่มรอง</button>
+    <button class="btn btn-danger" type="button">ลบ</button>
+    <button class="btn btn-primary" type="button" disabled>ปิดใช้</button>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <span class="chip chip-success">เสร็จแล้ว</span><span class="chip chip-warning">เหลือ 3 วัน</span>
+    <span class="chip chip-danger">เลยกำหนด</span><span class="chip chip-primary">กำลังสอบสวน</span>
+    <span class="ai-badge">ร่างโดย AI – รอตรวจ</span>
+  </div>
+  <div class="card p-3 ai-pending"><span class="ai-badge">ร่างโดย AI – รอตรวจ</span><p class="mt-2">ตัวอย่างเนื้อหาที่ AI ร่าง ขอบซ้ายสี --ai จนกว่าจะกดยืนยัน</p></div>
+  <table class="tbl"><thead><tr><th scope="col">เลขคดี</th><th scope="col">สถานะ</th><th scope="col">กำหนดถัดไป</th></tr></thead>
+    <tbody><tr><td>0112/2569</td><td><span class="chip chip-primary">กำลังสอบสวน</span></td><td><span class="chip chip-warning">ฝากขังผัด 2 เหลือ 3 วัน</span></td></tr>
+    <tr><td>0098/2569</td><td><span class="chip chip-success">เสร็จสิ้น</span></td><td class="text-muted">—</td></tr></tbody></table>
+  <label class="block"><span class="label">ช่องกรอก</span><input class="input" placeholder="พิมพ์ข้อความ"></label>
+</section>

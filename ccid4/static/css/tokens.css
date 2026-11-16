@@ -1,0 +1,18 @@
+/* CCID4 design tokens (docs/SPEC_CCID4.md §2.1). Dark is the default theme.
+   Added for WCAG AA (see docs/PROGRESS.md): --on-primary, --warning-ink, --accent-ink. */
+:root, [data-theme="dark"] {
+  --bg: #060A12; --surface: #0B1322; --surface-2: #111D33; --border: #1C2C4A;
+  --primary: #2F7BFF; --primary-hover: #5A97FF; --primary-soft: #2F7BFF1F; --on-primary: #060A12;
+  --accent: #22C7F0; --accent-ink: #22C7F0;
+  --text: #E7EEFC; --text-muted: #8EA3C8;
+  --success: #22C55E; --warning: #F5B544; --warning-ink: #F5B544; --danger: #F05252; --ai: #8B7CFF;
+  color-scheme: dark;
+}
+[data-theme="light"] {
+  --bg: #F4F7FC; --surface: #FFFFFF; --surface-2: #EEF3FB; --border: #D5DEEC;
+  --primary: #1F5FD6; --primary-hover: #174BB0; --primary-soft: #1F5FD614; --on-primary: #FFFFFF;
+  --accent: #0E9BC4; --accent-ink: #0A7090;
+  --text: #0E1A2E; --text-muted: #5A6B88;
+  --success: #15803D; --warning: #B7791F; --warning-ink: #8F5E13; --danger: #C81E1E; --ai: #5B4BDB;
+  color-scheme: light;
+}

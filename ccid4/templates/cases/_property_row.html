@@ -1,0 +1,8 @@
+<tr>
+  <td>{% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}{{ form.name }}{% for e in form.name.errors %}<p class="text-danger text-sm">{{ e }}</p>{% endfor %}</td>
+  <td>{{ form.quantity }}</td>
+  <td>{{ form.value }}{% for e in form.value.errors %}<p class="text-danger text-sm">{{ e }}</p>{% endfor %}</td>
+  <td>{{ form.status }}</td>
+  <td>{{ form.note }}</td>
+  {% if editable %}<td class="text-center">{{ form.DELETE }}<span class="sr-only">ลบแถวนี้</span></td>{% endif %}
+</tr>

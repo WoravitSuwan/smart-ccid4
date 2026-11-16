@@ -1,0 +1,12 @@
+<div class="ai-panel" role="status">
+  <div class="flex flex-wrap items-center gap-2"><span class="ai-badge">ร่างโดย AI – รอตรวจ</span><b class="text-sm">ข้อเสนอฐานความผิดและเขตอำนาจ</b></div>
+  <dl class="grid gap-x-4 gap-y-1 sm:grid-cols-[10rem_1fr] text-sm">
+    {% for k, v in rows %}<dt class="text-muted">{{ k }}</dt><dd>{{ v }}</dd>{% endfor %}
+  </dl>
+  <p class="text-xs text-muted">เหตุผล: {{ reasoning }}</p>
+  <div class="flex flex-wrap gap-2">
+    <button type="button" class="btn btn-primary btn-sm" data-apply-ai="{{ apply }}">ใช้ค่าที่เสนอ (แก้ต่อได้ แล้วกดบันทึก)</button>
+    <button type="button" class="btn btn-secondary btn-sm" data-dismiss-ai>ไม่ใช้</button>
+  </div>
+  <p class="text-xs text-muted">ค่าที่ท่านกรอกหรือเลือกเองมีผลเหนือค่าที่ AI เสนอเสมอ</p>
+</div>

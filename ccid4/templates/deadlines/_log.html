@@ -1,0 +1,3 @@
+<ol class="flex flex-col gap-1">
+  {% for t in all_tasks %}{% include "deadlines/_task_row.html" %}{% empty %}<li class="empty-state text-sm">ยังไม่มีบันทึก</li>{% endfor %}
+</ol>

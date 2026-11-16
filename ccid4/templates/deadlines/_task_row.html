@@ -1,0 +1,13 @@
+<li class="task-row{% if t.done_at %} is-done{% endif %}">
+  {% if editable and t.source != "auto" %}
+  <button type="button" class="task-check" role="checkbox" aria-checked="{% if t.done_at %}true{% else %}false{% endif %}"
+          hx-post="{% url 'deadlines:task_toggle' case.pk t.pk %}" hx-target="#side-panel" hx-swap="outerHTML" hx-params="none"
+          title="{% if t.done_at %}ย้ายกลับไปสิ่งที่ต้องทำ{% else %}ทำแล้ว{% endif %}"><svg class="w-3.5 h-3.5"><use href="#i-check"/></svg><span class="sr-only">{{ t.title }}</span></button>
+  {% else %}
+  <span class="task-check" aria-hidden="true">{% if t.done_at %}<svg class="w-3.5 h-3.5"><use href="#i-check"/></svg>{% endif %}</span>
+  {% endif %}
+  <span class="flex-1 min-w-0">
+    <span class="block text-sm leading-snug task-title">{{ t.title }}</span>
+    <span class="block text-xs text-muted">{% if t.reason %}{{ t.reason }} · {% endif %}{% if t.done_at %}{{ t.done_at|be_datetime }}{% if t.done_by %} · {{ t.done_by.display_name }}{% else %} · ระบบตรวจพบ{% endif %}{% else %}{{ t.get_source_display }}{% endif %}</span>
+  </span>
+</li>

@@ -1,0 +1,2 @@
+{"type": "object", "required": ["flags"], "properties": {"flags": {"type": "array", "items": {"type": "object", "required": ["quote", "issue"],
+ "properties": {"quote": {"type": "string"}, "issue": {"type": "string"}}}}}}

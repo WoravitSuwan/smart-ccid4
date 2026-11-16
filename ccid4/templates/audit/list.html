@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}ประวัติการใช้งาน{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-center gap-3"><h1 class="flex-1">ประวัติการใช้งาน</h1>
+{% if ok %}<span class="chip chip-success">ตรวจความต่อเนื่องแล้ว ไม่พบการแก้ไข</span>{% else %}<span class="chip chip-danger">พบบันทึกถูกแก้ไขที่รายการ #{{ bad }}</span>{% endif %}</div>
+<form method="get" class="card p-4 flex flex-wrap gap-3 items-end">
+  <label><span class="label">ผู้ใช้</span><input class="input" name="who" value="{{ who }}"></label>
+  <label><span class="label">การกระทำ</span><select class="input" name="action"><option value="">ทั้งหมด</option>{% for k, v in actions.items %}<option value="{{ k }}" {% if k == action %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+  <label><span class="label">รหัสข้อมูล</span><input class="input" name="object" value="{{ object }}"></label>
+  <button class="btn btn-secondary">กรอง</button>
+</form>
+<div class="card overflow-x-auto"><table class="tbl min-w-[860px]">
+  <thead><tr><th scope="col">#</th><th scope="col">เวลา</th><th scope="col">ผู้ใช้</th><th scope="col">การกระทำ</th><th scope="col">ข้อมูล</th><th scope="col">รายละเอียด</th><th scope="col">IP</th></tr></thead>
+  <tbody>{% for e in page %}<tr><td class="text-muted">{{ e.id }}</td><td>{{ e.at|be_datetime }}</td><td>{{ e.user_label|default:"ระบบ" }}</td><td><span class="chip chip-muted">{{ e.action_label }}</span></td><td>{{ e.object_type }} {{ e.object_id }}</td><td>{{ e.detail }}</td><td class="text-muted">{{ e.ip|default:"" }}</td></tr>{% endfor %}</tbody>
+</table></div>
+<nav class="flex gap-2" aria-label="หน้า">{% if page.has_previous %}<a class="btn btn-secondary btn-sm" href="?page={{ page.previous_page_number }}&who={{ who }}&action={{ action }}">ก่อนหน้า</a>{% endif %}{% if page.has_next %}<a class="btn btn-secondary btn-sm" href="?page={{ page.next_page_number }}&who={{ who }}&action={{ action }}">ถัดไป</a>{% endif %}</nav>
+{% endblock %}

@@ -1,0 +1,33 @@
+<div class="card overflow-x-auto">
+  <table class="tbl min-w-[900px]">
+    <caption class="sr-only">รายการคดี</caption>
+    <thead><tr><th scope="col">เลขคดี</th><th scope="col">ผู้แจ้งความ</th><th scope="col">ฐานความผิด</th><th scope="col">วันที่รับแจ้ง</th><th scope="col">สถานะ</th><th scope="col">อัปเดตล่าสุด</th><th scope="col">กำหนดเวลาที่ใกล้ที่สุด</th><th scope="col"><span class="sr-only">การทำงาน</span></th></tr></thead>
+    <tbody>
+    {% for c in page %}
+      <tr>
+        <td><a href="{% url 'cases:detail' c.pk %}" class="font-semibold">{{ c.label }}</a><br><span class="text-xs text-muted">{{ c.get_case_type_display }}</span></td>
+        <td>{{ c.accuser|default:"—" }}</td>
+        <td>{{ c.offense|default:"—" }}</td>
+        <td class="whitespace-nowrap">{{ c.reported_at|be_date }}</td>
+        <td><span class="chip {% if c.status == 'closed' %}chip-success{% elif c.status == 'investigating' %}chip-primary{% else %}chip-warning{% endif %}">{{ c.get_status_display }}</span></td>
+        <td class="whitespace-nowrap">{{ c.updated_at|be_datetime }}</td>
+        <td>{% with d=c.nearest_deadline %}{% if d %}{% include "deadlines/_chip.html" %}{% else %}<span class="text-muted">—</span>{% endif %}{% endwith %}</td>
+        <td>
+          <details class="relative">
+            <summary class="btn btn-secondary btn-sm list-none cursor-pointer" aria-label="ลบคดี {{ c.label }}">ลบ</summary>
+            <form method="post" action="{% url 'cases:delete' c.pk %}" class="card glass absolute right-0 z-20 mt-2 p-3 w-72 flex flex-col gap-2">{% csrf_token %}
+              <p class="text-sm">ลบคดีนี้ออกจากรายการ (กู้คืนได้โดยผู้ดูแลระบบ) พิมพ์ <b>{{ c.label }}</b> เพื่อยืนยัน</p>
+              <input class="input" name="confirm" required aria-label="พิมพ์เลขคดีเพื่อยืนยัน">
+              <input class="input" name="reason" required placeholder="เหตุผล" aria-label="เหตุผลที่ลบ">
+              <button class="btn btn-danger btn-sm">ยืนยันลบ</button>
+            </form>
+          </details>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8" class="text-center text-muted py-10">ไม่พบคดีตามเงื่อนไข</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if page.has_other_pages %}<nav class="flex gap-2 mt-3" aria-label="หน้า">{% if page.has_previous %}<a class="btn btn-secondary btn-sm" href="?page={{ page.previous_page_number }}&q={{ q|urlencode }}&status={{ status }}&type={{ ctype }}">ก่อนหน้า</a>{% endif %}<span class="self-center text-sm text-muted">หน้า {{ page.number }} จาก {{ page.paginator.num_pages }}</span>{% if page.has_next %}<a class="btn btn-secondary btn-sm" href="?page={{ page.next_page_number }}&q={{ q|urlencode }}&status={{ status }}&type={{ ctype }}">ถัดไป</a>{% endif %}</nav>{% endif %}

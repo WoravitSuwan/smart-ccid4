@@ -1,0 +1,22 @@
+{% load static %}<!doctype html>
+<html lang="th" data-theme="{{ THEME }}">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}เข้าสู่ระบบ{% endblock %} · CCID4</title>
+<link rel="icon" href="{% static 'brand/ccid4.svg' %}">
+<link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+<div class="aurora" aria-hidden="true"></div><div class="grid-overlay" aria-hidden="true"></div>
+<main class="min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md flex flex-col gap-4">
+    <div class="flex items-center gap-3 justify-center reveal">
+      <img class="float" src="{% static 'brand/ccid4.svg' %}" alt="" width="64" height="64">
+      <span><b class="block text-2xl">CCID4</b><span class="text-muted text-sm">{{ UNIT_SHORT }}</span></span>
+    </div>
+    <section class="card glass glow-border p-6 flex flex-col gap-4 reveal" style="--i:1">{% block content %}{% endblock %}</section>
+    <p class="text-center text-sm text-muted reveal" style="--i:2">ระบบภายในของหน่วยงาน · AI ประมวลผลในเครื่อง · ทุกการใช้งานถูกบันทึก</p>
+  </div>
+</main>
+</body>
+</html>

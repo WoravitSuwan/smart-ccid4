@@ -1,0 +1,7 @@
+{% extends "auth_base.html" %}
+{% block title %}บัญชีถูกล็อก{% endblock %}
+{% block content %}
+<h1>บัญชีถูกล็อกชั่วคราว</h1>
+<p>ใส่รหัสผ่านผิดครบ 5 ครั้ง ลองใหม่ได้หลัง 30 นาที หรือติดต่อผู้ดูแลระบบให้ปลดล็อก</p>
+<a class="btn btn-secondary" href="{% url 'accounts:login' %}">กลับหน้าเข้าสู่ระบบ</a>
+{% endblock %}
