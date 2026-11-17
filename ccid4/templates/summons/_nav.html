@@ -1,0 +1,6 @@
+<nav class="tabbar reveal" aria-label="เมนูหมายเรียก">
+  <a class="tab no-underline" href="{% url 'summons:index' %}" {% if sub == 'home' %}aria-selected="true"{% endif %}>ภาพรวม</a>
+  <a class="tab no-underline" href="{% url 'summons:register' %}" {% if sub == 'register' %}aria-selected="true"{% endif %}>ทะเบียนคดี</a>
+  {% if user.role in "clerk supervisor admin" %}<a class="tab no-underline" href="{% url 'summons:import' %}" {% if sub == 'import' %}aria-selected="true"{% endif %}>นำเข้าข้อมูล</a>{% endif %}
+  {% if user.role in "clerk supervisor admin" %}<a class="tab no-underline" href="{% url 'summons:settings' %}" {% if sub == 'settings' %}aria-selected="true"{% endif %}>ตั้งค่า</a>{% endif %}
+</nav>

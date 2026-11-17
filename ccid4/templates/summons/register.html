@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}ทะเบียนคดีของกอง{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-end gap-3 reveal"><div class="flex-1"><h1>ทะเบียนคดีของกอง</h1><p class="text-muted">เลือกหลายคดีแล้วกด "ออกหมายเรียก" · ระบบจัดกลุ่มตามพนักงานสอบสวนผู้ลงนามให้</p></div>
+  <a class="btn btn-secondary" href="{% url 'summons:register_xlsx' %}?{{ query }}">ส่งออก Excel</a></div>
+{% include "summons/_nav.html" with sub="register" %}
+<form class="card glass p-4 flex flex-wrap gap-3 items-end reveal" hx-get="{% url 'summons:register' %}" hx-target="#register-table" hx-trigger="change, input delay:400ms from:input[name=q]" hx-push-url="true">
+  <label class="flex-1 min-w-[200px]"><span class="label">ค้นหา</span><input class="input" type="search" name="q" value="{{ params.q }}" placeholder="เลขรับแจ้ง เลขคดี ชื่อ เบอร์โทร"></label>
+  <label><span class="label">สถานะ</span><select class="input" name="status"><option value="">ทั้งหมด</option>{% for s in statuses %}<option value="{{ s.pk }}" {% if params.status == s.pk|stringformat:"d" %}selected{% endif %}>{{ s.name }}{% if s.is_final %} (สิ้นสุด){% endif %}</option>{% endfor %}</select></label>
+  <label><span class="label">ปี พ.ศ.</span><select class="input" name="year"><option value="">ทุกปี</option>{% for y in years %}<option {% if params.year == y|stringformat:"d" %}selected{% endif %}>{{ y }}</option>{% endfor %}</select></label>
+  <label><span class="label">หน่วย</span><select class="input" name="unit"><option value="">ทุกหน่วย</option>{% for u in units %}<option value="{{ u.pk }}" {% if params.unit == u.pk|stringformat:"d" %}selected{% endif %}>{{ u.name }}</option>{% endfor %}</select></label>
+  <label><span class="label">พนักงานสอบสวน</span><select class="input" name="investigator"><option value="">ทุกคน</option>{% for i in investigators %}<option value="{{ i.pk }}" {% if params.investigator == i.pk|stringformat:"d" %}selected{% endif %}>{{ i.name }}</option>{% endfor %}</select></label>
+  <label class="max-w-xs"><span class="label">ประเภทคดี</span><select class="input" name="type"><option value="">ทุกประเภท</option>{% for t in types %}<option {% if params.type == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></label>
+  <label class="plea"><input type="checkbox" name="open" value="1" {% if params.open %}checked{% endif %}> ยังไม่สิ้นสุด</label>
+  <label class="plea"><input type="checkbox" name="never" value="1" {% if params.never %}checked{% endif %}> ยังไม่เคยออกหมาย</label>
+  <label class="plea"><input type="checkbox" name="bad_address" value="1" {% if params.bad_address %}checked{% endif %}> ที่อยู่ไม่ครบ</label>
+</form>
+<div id="register-table" class="reveal">{% include "summons/_register_table.html" %}</div>
+{% endblock %}

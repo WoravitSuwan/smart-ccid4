@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}ตรวจคำให้การจากเสียง{% endblock %}
+{% block head %}<script src="{% static 'vendor/wavesurfer.min.js' %}" defer></script><script src="{% static 'js/review.js' %}" defer></script>{% endblock %}
+{% block content %}
+<nav class="text-sm reveal"><a href="{% url 'cases:detail' s.case.pk %}">{{ s.case.label }}</a> › ตรวจคำให้การจากเสียง</nav>
+<div class="flex flex-wrap items-end gap-3 reveal"><div class="flex-1"><h1>{{ s.party.get_role_display }} {{ s.party.person.full_name }}</h1>
+  <p class="text-muted">{{ rec.duration|floatformat:0 }} วินาที · SHA-256 <code class="text-xs">{{ rec.sha256|truncatechars:20 }}</code> · ร่างฉบับที่ {{ draft.version }} ({% if draft.source == 'ai' %}AI เรียบเรียง{% else %}จับคู่ตามคำพูด{% endif %} · {{ draft.get_mode_display }})</p></div>
+  <span class="chip {% if s.status == 'confirmed' %}chip-success{% else %}chip-warning{% endif %}">{{ s.get_status_display }}</span>
+  {% if s.status != "confirmed" %}<span class="ai-badge">ร่างโดย AI – รอตรวจ</span>{% endif %}</div>
+
+<section class="card glass p-4 flex flex-col gap-2 sticky top-[64px] z-20 reveal" data-player data-audio-url="{% url 'interviews:audio' s.pk %}">
+  <div data-waveform class="waveform"></div>
+  <div class="flex flex-wrap items-center gap-2"><button type="button" class="btn btn-primary btn-sm" data-play>▶ เล่น/หยุด</button>
+    <span class="text-sm tabular-nums" data-clock>00:00</span>
+    {% for m in markers %}<button type="button" class="chip chip-muted text-xs" data-seek="{{ m.at }}">⚑ {{ m.note|default:"เครื่องหมาย" }}</button>{% endfor %}
+    <span class="text-xs text-muted ml-auto">กดคำหรือป้ายเวลาเพื่อเล่นช่วงนั้น · ทุกการฟังบันทึกในประวัติการใช้งาน</span></div>
+</section>
+
+<div class="grid gap-4 xl:grid-cols-2 items-start">
+  <section class="card p-5 flex flex-col gap-3 reveal">
+    <h2>ข้อความถอดเสียง</h2>
+    {% if can_edit %}<form method="post" action="{% url 'interviews:speakers' s.pk %}" class="flex flex-wrap items-end gap-2 p-3 rounded-btn bg-surface-2 border border-border">{% csrf_token %}
+      {% for m in maps %}<label class="text-sm"><span class="label">{{ m.label }} คือ</span><select class="input min-h-[36px]" name="role-{{ m.label }}"><option value="">ไม่ระบุ</option>{% for k, v in role_choices %}<option value="{{ k }}" {% if m.role == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>{% endfor %}
+      <button class="btn btn-secondary btn-sm">ใช้และร่างใหม่</button></form>{% endif %}
+    <p class="text-xs text-muted">ไฮไลต์: <span class="word low">ความมั่นใจต่ำ</span> <span class="word figure">ตัวเลข</span> · แก้ข้อความแล้วต้นฉบับจาก AI ยังเก็บไว้พร้อมประวัติ</p>
+    <ol class="flex flex-col gap-2 max-h-[70vh] overflow-y-auto" data-transcript>{% for seg in segments %}{% include "interviews/_segment.html" %}{% endfor %}</ol>
+  </section>
+
+  <section class="flex flex-col gap-4">
+    <div class="card p-5 flex flex-col gap-3 reveal">
+      <h2>การแจ้งสิทธิที่ตรวจพบในเสียง</h2>
+      <ul class="flex flex-col gap-1">{% for r in rights %}<li class="flex items-center gap-2 text-sm">
+        {% if r.found_at is not None %}<span class="chip chip-success text-xs">พบ</span><button type="button" class="text-primary" data-seek="{{ r.found_at }}">{{ r.found_at|floatformat:0 }} วิ</button>{% else %}<span class="chip chip-danger text-xs">ไม่พบ</span>{% endif %} {{ r.label }}</li>{% endfor %}</ul>
+      {% if not rights_ok and s.is_suspect %}<p class="text-sm text-danger">ตรวจไม่พบการแจ้งสิทธิครบ ต้องฟังเองและระบุเหตุผลก่อนยืนยัน</p>{% endif %}
+    </div>
+    <div class="card p-5 flex flex-col gap-3 reveal">
+      <div class="flex flex-wrap items-center gap-2"><h2 class="flex-1">คำให้การแบบถาม–ตอบ</h2><span class="text-sm text-muted">ตรวจแล้ว {{ reviewed }}/{{ pairs|length }}</span>
+        {% if can_edit %}<form method="post" action="{% url 'interviews:redraft' s.pk %}" class="flex gap-1">{% csrf_token %}<select class="input min-h-[36px] text-sm" name="mode"><option value="close" {% if s.mode == 'close' %}selected{% endif %}>ใกล้คำพูด</option><option value="written" {% if s.mode == 'written' %}selected{% endif %}>ภาษาเขียน</option></select><button class="btn btn-secondary btn-sm">ร่างใหม่</button></form>{% endif %}</div>
+      <ol class="flex flex-col gap-3">{% for p in pairs %}{% include "interviews/_pair.html" %}{% empty %}<li class="empty-state text-sm">ยังไม่มีคู่ถาม–ตอบ ตรวจว่ากำหนดผู้พูดถูกหรือไม่</li>{% endfor %}</ol>
+      {% if uncovered %}<p class="text-sm text-warning-ink">มี {{ uncovered|length }} ช่วงที่ผู้ให้การพูดแต่ไม่อยู่ในคำตอบใด (กรอบส้มในข้อความถอดเสียง)</p>{% endif %}
+    </div>
+    {% if s.status == "confirmed" %}
+    <div class="card glass glow-border p-5 flex flex-col gap-3 reveal"><h2>ยืนยันแล้ว</h2>
+      <p class="text-sm">โดย {{ s.confirmed_by.display_name }} · {{ s.confirmed_at|be_datetime }} · คำให้การของบุคคลนี้ในคดีถูกแทนที่แล้ว</p>
+      {% for d in documents %}<div class="flex flex-wrap gap-2"><span class="text-xs text-muted w-full">{{ d.code }}</span>
+        <a class="btn btn-primary btn-sm" href="{% url 'interviews:download' s.pk d.pk 'docx' %}">คำให้การ Word</a>{% if d.pdf %}<a class="btn btn-primary btn-sm" href="{% url 'interviews:download' s.pk d.pk 'pdf' %}">PDF</a>{% endif %}
+        <a class="btn btn-secondary btn-sm" href="{% url 'interviews:download' s.pk d.pk 'zip' %}">ชุดหลักฐาน ZIP</a></div>
+      {% empty %}<p class="text-sm text-muted">กำลังสร้างเอกสาร… รีเฟรชหน้านี้</p>{% endfor %}
+    </div>
+    {% elif can_edit %}
+    <form method="post" action="{% url 'interviews:confirm' s.pk %}" class="card p-5 flex flex-col gap-3 reveal">{% csrf_token %}
+      <h2>ยืนยันคำให้การ</h2>
+      {% for b in blockers %}<p class="chip chip-warning self-start">{{ b }}</p>{% endfor %}
+      {% if s.is_suspect and not rights_ok %}<label><span class="label">เหตุผลที่ยืนยัน แม้ระบบตรวจไม่พบการแจ้งสิทธิครบ (ฟังแล้วพบว่า…)</span><textarea class="input py-2" name="override" rows="2"></textarea></label>{% endif %}
+      <button class="btn btn-primary self-start" data-confirm="ยืนยันแล้วร่างนี้จะถูกล็อกและแทนที่คำให้การของบุคคลนี้ในคดี ดำเนินการต่อ?">ยืนยันและสร้าง Word/PDF</button>
+    </form>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

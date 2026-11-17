@@ -11,3 +11,4 @@ staticfiles/
 *.xlsx
 !sample_data/*.xlsx
 docs/reference/*.pdf
+/models/

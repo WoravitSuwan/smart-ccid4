@@ -14,6 +14,23 @@ services:
   worker:
     <<: *app
     command: celery -A config worker -l info --concurrency 2
+  worker-gpu:  # speech to text + speaker separation (Typhoon Whisper / pyannote); needs NVIDIA Container Toolkit
+    <<: *app
+    profiles: ["gpu"]
+    build:
+      context: .
+      args: {WITH_AI: "true"}
+    command: celery -A config worker -l info --concurrency 1 -Q asr
+    environment:
+      ASR_BACKEND: whisper
+      ASR_DEVICE: cuda
+    volumes:
+      - data:/data
+      - ./models:/models:ro  # Whisper (CTranslate2) and pyannote models, downloaded once at install time
+    deploy:
+      resources:
+        reservations:
+          devices: [{driver: nvidia, count: 1, capabilities: [gpu]}]
   beat:
     <<: *app
     command: celery -A config beat -l info

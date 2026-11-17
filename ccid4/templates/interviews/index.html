@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}ห้องสอบปากคำ{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-end gap-3 reveal"><div class="flex-1"><h1>ห้องสอบปากคำด้วยเสียง</h1>
+  <p class="text-muted">เริ่มจากหน้าคดี → แท็บผู้กล่าวหา/ผู้ต้องหา/พยาน → ปุ่ม "สอบด้วยเสียง"</p></div>
+  {% if user.role in "supervisor admin" %}<a class="btn btn-secondary" href="{% url 'interviews:settings' %}">ตั้งค่า</a>{% endif %}</div>
+<section class="card p-5 reveal">
+  {% if sessions %}<table class="tbl"><thead><tr><th>เมื่อ</th><th>คดี</th><th>ผู้ให้การ</th><th>สถานะ</th><th></th></tr></thead>
+  <tbody>{% for s in sessions %}<tr><td class="whitespace-nowrap">{{ s.created_at|be_datetime }}</td><td><a href="{% url 'cases:detail' s.case.pk %}">{{ s.case.label }}</a></td>
+    <td>{{ s.party.get_role_display }} {{ s.party.person.full_name }}</td><td><span class="chip {% if s.status == 'confirmed' %}chip-success{% elif s.status == 'review' %}chip-warning{% else %}chip-muted{% endif %} text-xs">{{ s.get_status_display }}</span></td>
+    <td><a class="btn btn-secondary btn-sm" href="{% if s.status == 'draft' or s.status == 'recording' %}{% url 'interviews:record' s.pk %}{% else %}{% url 'interviews:review' s.pk %}{% endif %}">เปิด</a></td></tr>{% endfor %}</tbody></table>
+  {% else %}<p class="empty-state text-sm">ยังไม่มีการสอบปากคำด้วยเสียง</p>{% endif %}
+</section>
+{% endblock %}

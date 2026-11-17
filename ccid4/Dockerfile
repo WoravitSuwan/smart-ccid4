@@ -2,7 +2,7 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 TZ=Asia/Bangkok DJANGO_SETTINGS_MODULE=config.settings.prod \
     CCID4_DATA_DIR=/data HF_HUB_OFFLINE=1
 RUN apt-get update \
- && apt-get install -y --no-install-recommends libreoffice-writer-nogui ffmpeg fonts-thai-tlwg fontconfig tzdata \
+ && apt-get install -y --no-install-recommends poppler-utils libreoffice-writer-nogui ffmpeg fonts-thai-tlwg fontconfig tzdata \
  && rm -rf /var/lib/apt/lists/*
 COPY fonts/ /usr/share/fonts/truetype/ccid4/
 COPY deploy/fonts.conf /etc/fonts/conf.d/99-ccid4.conf

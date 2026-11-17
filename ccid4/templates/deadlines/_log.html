@@ -1,3 +1,11 @@
 <ol class="flex flex-col gap-1">
-  {% for t in all_tasks %}{% include "deadlines/_task_row.html" %}{% empty %}<li class="empty-state text-sm">ยังไม่มีบันทึก</li>{% endfor %}
+  {% for t in all_tasks %}
+  <li class="flex items-start gap-2">
+    <div class="flex-1 min-w-0">{% include "deadlines/_task_row.html" %}</div>
+    {% if t.done_at and editable and case.intake %}
+    <button type="button" class="chip {% if t.show_to_complainant %}chip-primary{% else %}chip-muted{% endif %} text-xs mt-1" hx-post="{% url 'deadlines:task_share' case.pk t.pk %}" hx-target="#side-panel" hx-swap="outerHTML" hx-params="none"
+      title="แสดงในหน้าติดตามสถานะของผู้แจ้ง">{% if t.show_to_complainant %}ผู้แจ้งเห็นแล้ว{% else %}ให้ผู้แจ้งเห็น{% endif %}</button>
+    {% endif %}
+  </li>
+  {% empty %}<li class="empty-state text-sm">ยังไม่มีบันทึก</li>{% endfor %}
 </ol>

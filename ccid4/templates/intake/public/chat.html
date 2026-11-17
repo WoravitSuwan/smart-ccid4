@@ -1,0 +1,22 @@
+{% extends "intake/public/base.html" %}
+{% block title %}คุยกับผู้ช่วยรับแจ้งความ{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-center gap-2 reveal">
+  <a href="{% url 'intake_public:start' link.token %}" class="text-sm">‹ เลือกเรื่องใหม่</a>
+  <span class="chip chip-primary">{{ kind_label }}</span>
+  <span class="flex-1"></span>
+  <form method="post" action="{% url 'intake_public:chat_reset' link.token kind %}">{% csrf_token %}<button class="btn btn-secondary btn-sm">เริ่มใหม่</button></form>
+</div>
+<ol class="chat-topics reveal" aria-label="หัวข้อที่ผู้ช่วยจะถาม">{% for t in topics %}<li>{{ t.title }}</li>{% endfor %}</ol>
+<section class="card p-4 flex flex-col gap-4 reveal" aria-label="บทสนทนา">
+  <ol id="chat-log" class="chat-log" aria-live="polite">{% for m in messages_ %}{% include "intake/public/_bubble.html" %}{% endfor %}</ol>
+  {% if finished %}{% include "intake/public/_finish.html" %}
+  {% else %}
+  <form id="chat-composer" class="chat-composer" hx-post="{% url 'intake_public:chat_send' link.token kind %}" hx-target="#chat-log" hx-swap="beforeend" data-chat-form>{% csrf_token %}
+    <label class="sr-only" for="chat-text">พิมพ์คำตอบ</label>
+    <textarea id="chat-text" name="text" rows="2" maxlength="2000" class="input" placeholder="พิมพ์คำตอบ แล้วกด Enter หรือปุ่มส่ง (Shift+Enter ขึ้นบรรทัดใหม่)" required></textarea>
+    <button class="btn btn-primary" aria-label="ส่งข้อความ"><svg class="w-5 h-5"><use href="#i-mail"/></svg></button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}ตั้งค่าหมายเรียก{% endblock %}
+{% block content %}
+<div class="reveal"><h1>ตั้งค่าหมายเรียก</h1><p class="text-muted">ผู้ลงนาม สถานที่นัด สถานะ และแบบฟอร์ม</p></div>
+{% include "summons/_nav.html" with sub="settings" %}
+<section id="inv" class="card p-5 flex flex-col gap-3 reveal">
+  <h2>พนักงานสอบสวน (ผู้ลงนามในหมาย)</h2>
+  <p class="text-sm text-muted">ชื่อตามที่ปรากฏในทะเบียนใช้จับคู่ · ผูกกับบัญชีผู้ใช้เพื่อให้คดีเข้าบัญชีของคนนั้น</p>
+  <form method="post" class="flex flex-col gap-2">{% csrf_token %}<input type="hidden" name="section" value="inv">{{ inv_fs.management_form }}
+    <div class="overflow-x-auto"><table class="tbl"><thead><tr><th>ชื่อตามทะเบียน</th><th>ยศเต็ม</th><th>ชื่อ-สกุลที่ลงนาม</th><th>ตำแหน่ง</th><th>โทรศัพท์</th><th>หน่วย</th><th>บัญชีผู้ใช้</th></tr></thead>
+      <tbody>{% for f in inv_fs %}<tr><td class="whitespace-nowrap">{{ f.instance.name }}{{ f.id }}{% if not f.instance.ready %} <span class="chip chip-warning text-xs">ยังไม่ครบ</span>{% endif %}</td>
+        <td>{{ f.rank_full }}</td><td>{{ f.sign_name }}</td><td>{{ f.position }}</td><td>{{ f.phone }}</td><td>{{ f.unit }}</td><td>{{ f.user }}</td></tr>
+      {% empty %}<tr><td colspan="7" class="text-muted">นำเข้าทะเบียนคดีก่อน รายชื่อจะขึ้นเอง</td></tr>{% endfor %}</tbody></table></div>
+    {% if inv_fs.forms %}<button class="btn btn-primary self-start">บันทึกผู้ลงนาม</button>{% endif %}</form>
+</section>
+<section id="unit" class="card p-5 flex flex-col gap-3 reveal">
+  <h2>หน่วย (สถานที่ออกหมาย สถานที่นัด ที่อยู่ผู้ส่งบนซอง)</h2>
+  <form method="post" class="flex flex-col gap-3">{% csrf_token %}<input type="hidden" name="section" value="unit">{{ unit_fs.management_form }}
+    {% for f in unit_fs %}<div class="grid gap-3 md:grid-cols-[10rem_1fr_1fr_1fr] items-start p-3 rounded-btn bg-surface-2 border border-border">{{ f.id }}<b>{{ f.instance.name }}</b>
+      <label><span class="label">สถานที่ออกหมาย</span>{{ f.issue_place }}</label><label><span class="label">ไป ณ ที่</span>{{ f.appointment_place }}</label><label><span class="label">ที่อยู่ผู้ส่ง</span>{{ f.sender_address }}</label></div>
+    {% empty %}<p class="text-sm text-muted">ยังไม่มีหน่วย</p>{% endfor %}
+    {% if unit_fs.forms %}<button class="btn btn-primary self-start">บันทึกหน่วย</button>{% endif %}</form>
+</section>
+<section id="status" class="card p-5 flex flex-col gap-3 reveal">
+  <h2>สถานะ</h2><p class="text-sm text-muted">ติ๊ก = ถือว่าสิ้นสุด ไม่ต้องออกหมาย · สถานะใหม่ที่พบตอนนำเข้าจะเป็น "ยังไม่สิ้นสุด" และมีป้าย "ใหม่"</p>
+  <form method="post" class="flex flex-col gap-2">{% csrf_token %}<input type="hidden" name="section" value="status">{{ status_fs.management_form }}
+    <div class="flex flex-wrap gap-2">{% for f in status_fs %}{{ f.id }}<label class="plea">{{ f.is_final }} {{ f.instance.name }}{% if f.instance.auto_created %} <span class="chip chip-warning text-xs">ใหม่</span>{% endif %}</label>{% endfor %}</div>
+    {% if can_configure %}<button class="btn btn-primary self-start">บันทึกสถานะ</button>{% endif %}</form>
+</section>
+<section id="template" class="card p-5 flex flex-col gap-3 reveal">
+  <h2>แบบฟอร์ม</h2>
+  <table class="tbl"><thead><tr><th>ชนิด</th><th>ชื่อ</th><th>ฉบับที่</th><th>ตัวแทนในแบบฟอร์ม</th><th></th></tr></thead>
+    <tbody>{% for t in templates %}<tr><td>{{ t.get_kind_display }}</td><td>{{ t.name }}</td><td>{{ t.version|thai_digits }}</td><td class="text-xs">{% for p in t.placeholders %}<code>{{ "{" }}{{ p }}{{ "}" }}</code> {% endfor %}</td>
+      <td>{% if t.active %}<span class="chip chip-success text-xs">ใช้อยู่</span>{% elif can_configure %}<form method="post" action="{% url 'summons:activate_template' t.pk %}">{% csrf_token %}<button class="btn btn-secondary btn-sm">ใช้ฉบับนี้</button></form>{% endif %}</td></tr>{% endfor %}</tbody></table>
+  {% if can_configure %}
+  <form method="post" enctype="multipart/form-data" class="flex flex-wrap items-end gap-3">{% csrf_token %}<input type="hidden" name="section" value="template">
+    <label><span class="label">ชนิด</span><select class="input" name="kind"><option value="summons">หมายเรียก</option><option value="envelope">ใบจ่าหน้าซอง</option></select></label>
+    <label><span class="label">ชื่อ</span><input class="input" name="name"></label>
+    <label class="flex-1 min-w-[220px]"><span class="label">ไฟล์ .docx</span><input class="input py-2" type="file" name="file" accept=".docx" required></label>
+    <label class="flex items-center gap-2 min-h-[44px] text-sm"><input type="checkbox" name="activate" checked> ใช้ฉบับนี้ทันที</label>
+    <button class="btn btn-primary">อัปโหลดแบบฟอร์ม</button>
+  </form>{% endif %}
+</section>
+{% endblock %}

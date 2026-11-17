@@ -1,0 +1,24 @@
+{% extends "intake/public/base.html" %}
+{% block content %}
+<section class="card glass glow-border p-6 flex flex-col gap-3 reveal">
+  <h1>แจ้งความกับ {{ link.owner.display_name }}</h1>
+  <p class="text-muted">ใช้เวลาประมาณ 5–10 นาที เมื่อส่งแล้วจะได้เลขอ้างอิงและลิงก์ติดตามความคืบหน้า พนักงานสอบสวนจะติดต่อกลับเพื่อนัดสอบปากคำ</p>
+</section>
+<section class="flex flex-col gap-3 reveal">
+  <h2>1. เรื่องที่จะแจ้ง</h2>
+  <div class="grid gap-3 sm:grid-cols-2" data-tabs="kind">
+    {% for k, label in kinds %}
+    <div class="card p-5 flex flex-col gap-3 {% if kind == k %}ring-2 ring-primary{% endif %}">
+      <span class="stat-icon"><svg class="w-5 h-5"><use href="#i-{% if k == 'online' %}cpu{% else %}folder{% endif %}"/></svg></span>
+      <b class="text-lg">{{ label }}</b>
+      <p class="text-sm text-muted">{% if k == 'online' %}ถูกหลอกโอนเงิน ซื้อขายออนไลน์ ลงทุน แอปกู้เงิน ข่มขู่ทางออนไลน์ บัญชีถูกแฮ็ก{% else %}ลักทรัพย์ ทำร้ายร่างกาย อุบัติเหตุ ทรัพย์สินเสียหาย และคดีอาญาอื่น{% endif %}</p>
+      <div class="flex flex-wrap gap-2 mt-auto">
+        <a class="btn btn-primary" href="{% url 'intake_public:chat' link.token k %}"><svg class="w-5 h-5"><use href="#i-inbox"/></svg>คุยกับผู้ช่วย</a>
+        <a class="btn btn-secondary" href="{% url 'intake_public:form' link.token k %}">กรอกแบบฟอร์ม</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+<details class="card p-4 text-sm reveal"><summary class="cursor-pointer font-semibold">การคุ้มครองข้อมูลส่วนบุคคล (อ่านก่อนเริ่ม)</summary><p class="mt-2 text-muted">{{ pdpa }}</p></details>
+{% endblock %}

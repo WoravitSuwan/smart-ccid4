@@ -14,3 +14,5 @@ PyYAML==6.0.2
 pgvector==0.3.6
 Pillow==11.0.0
 Faker==33.1.0
+pypdf==5.1.0
+docxcompose==2.0.2

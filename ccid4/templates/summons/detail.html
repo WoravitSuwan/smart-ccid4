@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ rc.receipt_no }}{% endblock %}
+{% block content %}
+<nav class="text-sm reveal"><a href="{% url 'summons:register' %}">ทะเบียนคดีของกอง</a> › {{ rc.receipt_no }}</nav>
+<header class="card glass glow-border case-head p-5 flex flex-wrap items-start gap-4 reveal">
+  <div class="flex-1 relative z-10"><h1>{{ rc.receipt_no }}{% if rc.case_no %} · คดี {{ rc.case_no }}{% endif %}</h1>
+    <p class="text-muted">{{ rc.case_type }} · รับแจ้ง {{ rc.report_date|be_date }} · ความเสียหาย {{ rc.damage|floatformat:2 }} บาท</p>
+    <p class="text-sm text-muted">{{ rc.unit.name }} · พนักงานสอบสวน {{ rc.investigator.name|default:"—" }} · ชีต {{ rc.sheet }}</p></div>
+  <div class="relative z-10 flex flex-col items-end gap-2"><span class="chip {% if rc.status.is_final %}chip-success{% else %}chip-primary{% endif %}">{{ rc.status.name }}</span>
+    {% if rc.case %}<a class="btn btn-secondary btn-sm" href="{% url 'cases:detail' rc.case.pk %}">เปิดคดีใน CCID4</a>{% endif %}</div>
+</header>
+<div class="grid gap-4 lg:grid-cols-2 items-start">
+  <section class="card p-5 flex flex-col gap-3 reveal">
+    <h2>ผู้กล่าวหา</h2>
+    {% if c %}
+      <p><b>{{ c.full_name }}</b>{% if not c.title %} <span class="text-xs text-muted">(ไม่มีคำนำหน้าในไฟล์)</span>{% endif %} · โทร {{ c.phone|default:"—" }}</p>
+      <p class="text-sm">เลขประจำตัวประชาชน <span id="cid">{{ c.masked_id|default:"—" }}</span>
+        {% if can_reveal and c.citizen_id %}<button type="button" class="btn btn-secondary btn-sm" hx-post="{% url 'summons:reveal_id' rc.pk %}" hx-target="#cid" hx-params="none"><svg class="w-4 h-4"><use href="#i-eye"/></svg>แสดง</button>{% endif %}</p>
+      <p class="text-sm">ที่อยู่: {{ c.address|default:"—" }} {% if c.postcode_filled and not c.postcode %}<span class="chip chip-muted text-xs" title="เติมจากตำบล อำเภอ จังหวัด">รหัสไปรษณีย์ระบบเติม</span>{% endif %}</p>
+      {% for p in c.issues %}<span class="chip chip-warning text-xs self-start">{{ p }}</span>{% endfor %}
+      {% if form %}<details {% if c.address_incomplete %}open{% endif %}><summary class="cursor-pointer text-primary text-sm">แก้ไขชื่อและที่อยู่</summary>
+        <form method="post" class="grid gap-3 sm:grid-cols-3 mt-3" x-data="dirtyForm">{% csrf_token %}{% for f in form %}{% include "partials/field.html" %}{% endfor %}
+          <div class="sm:col-span-3"><button class="btn btn-primary">บันทึกที่อยู่</button></div></form></details>{% endif %}
+    {% else %}<p class="chip chip-warning self-start">ไม่พบเลขรับแจ้งนี้ในไฟล์ผู้แจ้ง นำเข้าไฟล์ผู้แจ้งก่อนจึงออกหมายได้</p>{% endif %}
+  </section>
+  <section class="card p-5 flex flex-col gap-3 reveal">
+    <div class="flex items-center gap-2"><h2 class="flex-1">ประวัติหมายเรียก</h2>
+      {% if can_issue and c %}<form method="post" action="{% url 'summons:issue' %}">{% csrf_token %}<input type="hidden" name="ids" value="{{ rc.pk }}"><button class="btn btn-primary btn-sm">ออกหมายครั้งถัดไป</button></form>{% endif %}</div>
+    {% for s in summons %}
+    <div class="deadline-card {% if s.result == 'absent' %}tone-danger{% elif s.result == 'issued' %}tone-warning{% endif %}">
+      <p class="font-semibold">ครั้งที่ {{ s.number|thai_digits }} · นัด {{ s.appointment_at|be_datetime }}</p>
+      <p class="text-xs text-muted">ออก {{ s.issued_on|be_date }} โดย {{ s.created_by.display_name }} · ผู้ลงนาม {{ s.issuer_snapshot|get_item:"ยศผู้ออกหมาย" }}{{ s.issuer_snapshot|get_item:"ชื่อผู้ออกหมาย" }}</p>
+      <div class="flex flex-wrap items-center gap-2">
+        {% if s.docx %}<a class="btn btn-secondary btn-sm" href="{% url 'summons:download' 'docx' s.pk %}">Word</a>{% endif %}
+        {% if s.pdf %}<a class="btn btn-secondary btn-sm" href="{% url 'summons:download' 'pdf' s.pk %}">PDF</a>{% endif %}
+        {% if s.envelope %}<a class="btn btn-secondary btn-sm" href="{% url 'summons:download' 'envelope' s.pk %}">ซอง</a>{% endif %}
+        {% if can_issue %}<form method="post" action="{% url 'summons:result' s.pk %}" class="flex gap-1">{% csrf_token %}
+          <select class="input min-h-[36px] text-sm" name="result">{% for k, v in results %}<option value="{{ k }}" {% if s.result == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+          <button class="btn btn-secondary btn-sm">บันทึกผล</button></form>
+        {% else %}<span class="chip chip-muted text-xs">{{ s.get_result_display }}</span>{% endif %}
+      </div>
+    </div>
+    {% empty %}<p class="empty-state text-sm">ยังไม่เคยออกหมาย</p>{% endfor %}
+  </section>
+</div>
+<section class="card p-5 flex flex-col gap-2 reveal"><h2>รายละเอียดในทะเบียน</h2><p class="text-sm whitespace-pre-line">{{ rc.detail|default:"—" }}</p>
+  <p class="text-xs text-muted">{{ rc.type_l1 }} › {{ rc.type_l2 }} › {{ rc.type_l3 }} · พนักงานสืบสวน {{ rc.detective|default:"—" }} · เลขอ้างอิงธนาคาร {{ rc.bank_ref|default:"—" }}</p></section>
+{% endblock %}

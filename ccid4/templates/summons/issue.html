@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}ออกหมายเรียก{% endblock %}
+{% block content %}
+<nav class="text-sm reveal"><a href="{% url 'summons:register' %}">ทะเบียนคดีของกอง</a> › ออกหมายเรียก</nav>
+<div class="flex flex-wrap items-end gap-3 reveal"><div class="flex-1"><h1>ออกหมายเรียก {{ count|thai_digits }} รายการ</h1>
+  <p class="text-muted">ออกได้ {{ ready|thai_digits }} · ติดปัญหา {{ blocked|length|thai_digits }} · แบบฟอร์ม: {{ template.name }} (ฉบับที่ {{ template.version|thai_digits }})</p></div></div>
+<form method="post" class="grid gap-4 xl:grid-cols-[22rem_1fr] items-start">{% csrf_token %}
+  <section class="card p-5 flex flex-col gap-3 xl:sticky xl:top-[76px] reveal">
+    <h2>ตั้งค่าหมาย</h2>
+    {% for f in form %}{% if f.field.widget.input_type == "checkbox" %}<label class="flex items-start gap-2 text-sm">{{ f }} <span>{{ f.label }}</span></label>{% else %}{% include "partials/field.html" %}{% endif %}{% endfor %}
+    <div class="flex flex-wrap gap-2">
+      <button class="btn btn-secondary" name="action" value="refresh">คำนวณใหม่</button>
+      <button class="btn btn-secondary" formaction="{% url 'summons:issue_preview' %}" formmethod="get" formtarget="_blank">ดูตัวอย่าง PDF</button>
+    </div>
+    <button class="btn btn-primary" name="action" value="confirm" data-busy="กำลังออกหมาย…" {% if not ready %}disabled{% endif %}><svg class="w-5 h-5"><use href="#i-check"/></svg>ยืนยันออกหมาย {{ ready|thai_digits }} ฉบับ</button>
+    <p class="text-xs text-muted">ระบบตรวจข้อความที่ต้องมีตาม ป.วิ.อ. ม.53 ทุกฉบับ ฉบับที่ไม่ครบจะไม่ถูกออก · เกิน ๒๐ ฉบับระบบทำในคิวและแสดงความคืบหน้า</p>
+  </section>
+  <div class="flex flex-col gap-4">
+    {% for inv, items in groups %}
+    <section class="card p-5 flex flex-col gap-3 reveal">
+      <div class="flex flex-wrap items-center gap-2"><h2 class="flex-1">{{ inv.name|default:"ไม่ระบุพนักงานสอบสวน" }}</h2>
+        {% if inv and not inv.ready %}<a class="chip chip-warning" href="{% url 'summons:settings' %}#inv">ยังไม่ได้ตั้งยศ ชื่อลงนาม หรือตำแหน่ง</a>{% elif inv %}<span class="chip chip-muted text-xs">ผู้ลงนาม {{ inv.rank_full }}{{ inv.sign_name }} · {{ inv.position }}</span>{% endif %}</div>
+      <table class="tbl"><thead><tr><th>เลขรับแจ้ง</th><th>ผู้ถูกเรียก</th><th>ครั้งที่</th><th>นัด</th><th>ตรวจ</th></tr></thead>
+        <tbody>{% for i in items %}
+          <tr><td class="whitespace-nowrap">{{ i.rc.receipt_no }}</td><td>{{ i.values|get_item:"ชื่อผู้แจ้ง" }}<span class="block text-xs text-muted">{{ i.values|get_item:"ที่อยู่"|default:"(ไม่มีที่อยู่)" }}</span></td>
+            <td>{{ i.number|thai_digits }}</td><td class="whitespace-nowrap">{{ i.appointment|be_datetime }}</td>
+            <td>{% if i.problems %}{% for p in i.problems %}<span class="chip chip-danger text-xs block mb-1">{{ p }}</span>{% endfor %}<a class="text-xs" href="{% url 'summons:detail' i.rc.pk %}">แก้ข้อมูล</a>{% else %}<span class="chip chip-success text-xs">พร้อม</span>{% endif %}</td></tr>
+        {% endfor %}</tbody></table>
+    </section>
+    {% endfor %}
+  </div>
+</form>
+{% endblock %}

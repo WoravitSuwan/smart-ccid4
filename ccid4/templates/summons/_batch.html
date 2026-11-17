@@ -1,0 +1,17 @@
+<div id="batch" class="card glass glow-border p-5 flex flex-col gap-4" {% if batch.status == "pending" or batch.status == "running" %}hx-get="{% url 'summons:batch' batch.pk %}" hx-trigger="every 1s" hx-swap="outerHTML"{% endif %} aria-live="polite">
+  <div class="flex items-center gap-3">
+    {% if batch.status == "pending" or batch.status == "running" %}<span class="spinner"></span>{% elif batch.status == "done" %}<span class="done-check" aria-hidden="true"><svg class="w-7 h-7"><use href="#i-check"/></svg></span>{% endif %}
+    <div class="flex-1"><b class="text-lg">{% if batch.status == "done" %}ออกหมายแล้ว {{ batch.done_count|thai_digits }} ฉบับ{% else %}{{ batch.get_status_display }}…{% endif %}</b>
+      <p class="text-sm text-muted">{{ batch.done_count|thai_digits }} / {{ batch.total|thai_digits }} ฉบับ</p></div>
+  </div>
+  <div class="progress-bar" role="progressbar" aria-valuenow="{{ batch.percent }}" aria-valuemin="0" aria-valuemax="100"><span style="--p: {{ batch.percent }}%"></span></div>
+  {% if batch.error %}<p class="text-sm text-warning-ink whitespace-pre-line">{{ batch.error }}</p>{% endif %}
+  {% if batch.status == "done" %}
+  <div class="flex flex-wrap gap-2">
+    {% if batch.combined_pdf %}<a class="btn btn-primary" href="{% url 'summons:download' 'combined_pdf' batch.pk %}">PDF รวมไฟล์เดียว</a>{% endif %}
+    {% if batch.combined_docx %}<a class="btn btn-secondary" href="{% url 'summons:download' 'combined_docx' batch.pk %}">Word รวมไฟล์เดียว</a>{% endif %}
+    {% if batch.bundle %}<a class="btn btn-primary" href="{% url 'summons:download' 'bundle' batch.pk %}">ZIP แยกรายคน</a>{% endif %}
+    {% if batch.envelopes %}<a class="btn btn-secondary" href="{% url 'summons:download' 'envelopes' batch.pk %}">ใบจ่าหน้าซอง (รวม)</a>{% endif %}
+  </div>
+  {% endif %}
+</div>

@@ -1,0 +1,27 @@
+{# Topics as steps. Context: steps, pdpa, staff, max_files #}
+<div data-tabs="steps" class="flex flex-col gap-4">
+  <div class="steps-bar" role="tablist" aria-label="ขั้นตอน">
+    {% for t, fields in steps %}<button type="button" class="step-tab" role="tab" data-tab="step-{{ forloop.counter }}" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"><span class="step-no">{{ forloop.counter }}</span><span class="step-name">{{ t.title }}</span></button>{% endfor %}
+    <button type="button" class="step-tab" role="tab" data-tab="step-send" aria-selected="false"><span class="step-no">✓</span><span class="step-name">ส่งเรื่อง</span></button>
+  </div>
+  {% for t, fields in steps %}
+  <section class="card p-5 flex flex-col gap-4" role="tabpanel" data-panel="step-{{ forloop.counter }}" {% if not forloop.first %}hidden{% endif %}>
+    <div><h2>{{ forloop.counter }}. {{ t.title }}</h2>{% if t.optional %}<p class="text-sm text-muted">ถ้าไม่มี ข้ามได้</p>{% endif %}</div>
+    {% for f, name, value in fields %}
+    <label class="flex flex-col gap-1"><span class="label">{{ f.label }}{% if f.required %} <span class="text-danger" aria-hidden="true">*</span>{% endif %}</span>
+      {% if f.kind == "textarea" %}<textarea class="input py-2" name="{{ name }}" rows="4" maxlength="2000" placeholder="{{ f.placeholder }}">{{ value }}</textarea>
+      {% else %}<input class="input" type="{{ f.kind }}" name="{{ name }}" value="{{ value }}" maxlength="2000" placeholder="{{ f.placeholder }}"{% if f.kind == "number" %} min="0" step="0.01"{% endif %}>{% endif %}
+    </label>
+    {% endfor %}
+    <div class="flex gap-2">{% if not forloop.first %}<button type="button" class="btn btn-secondary" data-step="prev">ย้อนกลับ</button>{% endif %}<button type="button" class="btn btn-primary" data-step="next">ถัดไป</button></div>
+  </section>
+  {% endfor %}
+  <section class="card p-5 flex flex-col gap-4" role="tabpanel" data-panel="step-send" hidden>
+    <h2>ส่งเรื่อง</h2>
+    <label class="flex flex-col gap-1"><span class="label">แนบภาพแชท สลิปโอนเงิน หรือภาพเอกสาร (ไม่เกิน {{ max_files }} ไฟล์ · JPG PNG WEBP HEIC PDF)</span>
+      <input class="input py-2" type="file" name="files" multiple accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"></label>
+    {% if staff %}<p class="text-sm chip chip-muted self-start">กรอกแทนผู้แจ้งโดย {{ staff.display_name }} · ผู้แจ้งยินยอมด้วยวาจา</p>
+    {% else %}<label class="flex items-start gap-2 text-sm"><input type="checkbox" name="consent" class="mt-1"> <span>{{ pdpa }}</span></label>{% endif %}
+    <div class="flex gap-2"><button type="button" class="btn btn-secondary" data-step="prev">ย้อนกลับ</button><button class="btn btn-primary"><svg class="w-5 h-5"><use href="#i-check"/></svg>ส่งเรื่อง</button></div>
+  </section>
+</div>

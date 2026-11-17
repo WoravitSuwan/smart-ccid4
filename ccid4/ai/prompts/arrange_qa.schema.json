@@ -1,0 +1,3 @@
+{"type": "object", "required": ["pairs"], "properties": {"pairs": {"type": "array", "items": {"type": "object",
+  "required": ["question", "answer", "segment_ids"],
+  "properties": {"question": {"type": "string"}, "answer": {"type": "string"}, "segment_ids": {"type": "array", "items": {"type": "integer"}}}}}}}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}ผลการออกหมาย{% endblock %}
+{% block content %}
+<nav class="text-sm reveal"><a href="{% url 'summons:index' %}">หมายเรียก</a> › ผลการออกหมาย</nav>
+<h1 class="reveal">ผลการออกหมายเรียก</h1>
+<div class="reveal">{% include "summons/_batch.html" %}</div>
+<section class="card p-5 flex flex-col gap-3 reveal"><h2>หมายในชุดนี้</h2>
+  {% if summons %}<table class="tbl"><thead><tr><th>เลขรับแจ้ง</th><th>ครั้งที่</th><th>นัด</th><th>ไฟล์</th></tr></thead>
+  <tbody>{% for s in summons %}<tr><td><a href="{% url 'summons:detail' s.register_case.pk %}">{{ s.register_case.receipt_no }}</a></td><td>{{ s.number|thai_digits }}</td><td>{{ s.appointment_at|be_datetime }}</td>
+    <td>{% if s.docx %}<a href="{% url 'summons:download' 'docx' s.pk %}">Word</a>{% endif %}{% if s.pdf %} · <a href="{% url 'summons:download' 'pdf' s.pk %}">PDF</a>{% endif %}</td></tr>{% endfor %}</tbody></table>
+  {% else %}<p class="text-sm text-muted">กำลังสร้าง…</p>{% endif %}
+</section>
+{% endblock %}

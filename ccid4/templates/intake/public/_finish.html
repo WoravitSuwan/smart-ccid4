@@ -1,0 +1,7 @@
+<form id="chat-composer" method="post" action="{% url 'intake_public:chat_submit' link.token kind %}" enctype="multipart/form-data" class="card glass p-4 flex flex-col gap-3">{% csrf_token %}
+  <h2>ส่งเรื่อง</h2>
+  <label class="flex flex-col gap-1"><span class="label">แนบภาพแชท สลิปโอนเงิน หรือภาพเอกสาร (ไม่เกิน {{ max_files|default:5 }} ไฟล์ · JPG PNG WEBP HEIC PDF)</span>
+    <input class="input py-2" type="file" name="files" multiple accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"></label>
+  <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="consent" class="mt-1" required> <span>{{ pdpa }}</span></label>
+  <div class="flex flex-wrap gap-2"><button class="btn btn-primary"><svg class="w-5 h-5"><use href="#i-check"/></svg>ส่งเรื่อง</button></div>
+</form>

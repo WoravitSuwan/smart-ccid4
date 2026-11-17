@@ -1,0 +1,32 @@
+{% load static %}<!doctype html>
+<html lang="th" data-theme="{{ THEME|default:'dark' }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<meta name="robots" content="noindex">
+<title>{% block title %}แจ้งความออนไลน์{% endblock %} · {{ UNIT_SHORT }}</title>
+<link rel="icon" href="{% static 'brand/ccid4.svg' %}">
+<link rel="stylesheet" href="{% static 'css/app.css' %}">
+<script src="{% static 'js/app.js' %}" defer></script>
+<script src="{% static 'vendor/htmx.min.js' %}" defer></script>
+<script src="{% static 'vendor/alpine-csp.min.js' %}" defer></script>
+</head>
+<body class="public" x-data="shell">
+<div class="aurora" aria-hidden="true"></div><div class="grid-overlay" aria-hidden="true"></div>
+{% include "partials/icons.html" %}
+<header class="glass sticky top-0 z-30 border-b border-border">
+  <div class="max-w-3xl mx-auto flex items-center gap-3 px-4 min-h-[60px]">
+    <img src="{% static 'brand/ccid4.svg' %}" alt="" width="32" height="32" class="float">
+    <div class="flex-1 leading-tight"><b>แจ้งความออนไลน์</b><span class="block text-xs text-muted sm:hidden">{{ UNIT_SHORT }}</span><span class="hidden sm:block text-xs text-muted">{{ UNIT_NAME }}</span></div>
+    {% if DEMO_MODE %}<span class="chip chip-warning">ข้อมูลจำลอง</span>{% endif %}
+    <button type="button" class="btn btn-secondary btn-sm" @click="toggleTheme" aria-label="สลับธีมมืดหรือสว่าง"><svg class="w-5 h-5"><use href="#i-sun"/></svg></button>
+  </div>
+</header>
+<main id="main" class="max-w-3xl mx-auto px-4 py-6 flex flex-col gap-5">
+  {% for m in messages %}<div class="toast card p-3 {% if m.tags == 'error' %}border-danger text-danger{% elif m.tags == 'warning' %}text-warning-ink{% endif %}" role="alert">{{ m }}</div>{% endfor %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="max-w-3xl mx-auto px-4 pb-8 text-xs text-muted">ข้อมูลของท่านเก็บและประมวลผลบนระบบของหน่วยงานเท่านั้น · กรณีเร่งด่วนโทร 191 หรือสายด่วนตำรวจไซเบอร์ 1441</footer>
+</body>
+</html>

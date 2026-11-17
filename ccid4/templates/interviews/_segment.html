@@ -1,0 +1,13 @@
+<li id="seg-{{ seg.pk }}" class="seg seg-{{ seg.role|default:'unknown' }}{% if seg.pk in uncovered %} seg-uncovered{% endif %}">
+  <div class="flex flex-wrap items-center gap-2 text-xs">
+    <button type="button" class="chip chip-muted" data-seek="{{ seg.start }}" data-until="{{ seg.end }}" title="เล่นช่วงนี้">▶ {{ seg.start|floatformat:1 }}–{{ seg.end|floatformat:1 }} วิ</button>
+    <b>{{ seg.role_name }}</b><span class="text-muted">({{ seg.speaker }})</span>
+    {% if seg.confidence is not None and seg.confidence < 0.7 %}<span class="chip chip-warning">ความมั่นใจต่ำ</span>{% endif %}
+    {% if seg.text != seg.text_ai %}<span class="chip chip-primary" title="ต้นฉบับ AI: {{ seg.text_ai }}">แก้แล้ว {{ seg.edits.count }} ครั้ง</span>{% endif %}
+    {% if seg.pk in uncovered %}<span class="chip chip-warning">ไม่อยู่ในคำตอบใด</span>{% endif %}
+  </div>
+  <p class="seg-text">{% for w in seg.word_list %}<span class="word{% if w.p < 0.7 %} low{% endif %}{% if w.w|stringformat:'s'|slice:':1' in '0123456789๐๑๒๓๔๕๖๗๘๙' %} figure{% endif %}"{% if w.s is not None %} data-s="{{ w.s }}" data-e="{{ w.e }}"{% endif %}>{{ w.w }}</span> {% endfor %}</p>
+  {% if can_edit %}<details><summary class="text-xs text-primary cursor-pointer">แก้ข้อความ</summary>
+    <form hx-post="{% url 'interviews:edit_segment' s.pk seg.pk %}" hx-target="#seg-{{ seg.pk }}" hx-swap="outerHTML" class="flex gap-2 mt-2">
+      <textarea class="input py-2 flex-1" name="text" rows="2">{{ seg.text }}</textarea><button class="btn btn-secondary btn-sm">บันทึก</button></form></details>{% endif %}
+</li>

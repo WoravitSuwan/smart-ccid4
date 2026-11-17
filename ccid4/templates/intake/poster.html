@@ -1,0 +1,16 @@
+{% load static %}<!doctype html>
+<html lang="th" data-theme="light">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ป้ายแจ้งความออนไลน์ · {{ kind_label }}</title>
+<link rel="stylesheet" href="{% static 'css/app.css' %}"><script src="{% static 'js/app.js' %}" defer></script></head>
+<body class="poster-page">
+<div class="no-print poster-tools"><button type="button" class="btn btn-primary" data-print>พิมพ์ (กระดาษ A5)</button></div>
+<article class="poster">
+  <header class="poster-head"><img src="{% static 'brand/ccid4.svg' %}" alt="CCID4" width="64" height="64"><div><b>{{ UNIT_SHORT }}</b><span>{{ UNIT_NAME }}</span></div></header>
+  <h1>แจ้งความออนไลน์</h1>
+  <p class="poster-kind">{{ kind_label }}</p>
+  <div class="poster-qr">{{ qr|safe }}</div>
+  <ol class="poster-steps"><li>สแกน QR ด้วยกล้องโทรศัพท์</li><li>คุยกับผู้ช่วยหรือกรอกแบบฟอร์ม</li><li>รับเลขอ้างอิงและลิงก์ติดตามเรื่อง</li></ol>
+  <p class="poster-officer">พนักงานสอบสวน {{ officer.display_name }}{% if officer.phone %} · โทร {{ officer.phone }}{% endif %}</p>
+  <p class="poster-url">{{ url }}</p>
+</article>
+</body></html>
