@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}กรอกแทนผู้แจ้ง{% endblock %}
+{% block content %}
+<nav class="text-sm reveal" aria-label="เส้นทาง"><a href="{% url 'intake:index' %}">รับแจ้งความ</a> › กรอกแทนผู้แจ้ง</nav>
+<div class="flex flex-wrap items-end gap-3 reveal"><div class="flex-1"><h1>กรอกแทนผู้แจ้ง · {{ kind_label }}</h1>
+  <p class="text-muted">สำหรับผู้สูงอายุหรือผู้ไม่ถนัดเทคโนโลยี อ่านข้อความยินยอมให้ผู้แจ้งฟังก่อนเริ่ม เมื่อส่งแล้วระบบตั้งเป็นคดีในบัญชีของท่าน</p></div></div>
+<details class="card p-4 text-sm reveal"><summary class="cursor-pointer font-semibold">ข้อความยินยอมที่ต้องอ่านให้ผู้แจ้งฟัง</summary><p class="mt-2">{{ pdpa }}</p></details>
+<form method="post" enctype="multipart/form-data" class="max-w-3xl reveal" x-data="dirtyForm">{% csrf_token %}{% include "intake/_steps.html" %}</form>
+{% endblock %}

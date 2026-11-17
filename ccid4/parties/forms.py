@@ -29,6 +29,7 @@ PERSON_FIELDS = [
     "amphoe",
     "province",
     "postcode",
+    "address_text",
     "contact_name",
     "contact_relation",
     "contact_phone",
@@ -61,6 +62,7 @@ class PartyForm(StyledMixin, forms.Form):
     amphoe = forms.CharField(label="อำเภอ/เขต", required=False, max_length=120)
     province = forms.CharField(label="จังหวัด", required=False, max_length=120)
     postcode = forms.CharField(label="รหัสไปรษณีย์", required=False, max_length=10)
+    address_text = forms.CharField(label="ที่อยู่ตามที่แจ้ง (ยังไม่แยกช่อง)", required=False, max_length=400)
     contact_name = forms.CharField(label="บุคคลที่ติดต่อได้", required=False, max_length=200)
     contact_relation = forms.CharField(label="ความเกี่ยวข้อง", required=False, max_length=60)
     contact_phone = forms.CharField(label="โทรศัพท์ผู้ติดต่อ", required=False, max_length=40)
@@ -113,7 +115,9 @@ class PartyForm(StyledMixin, forms.Form):
 
     @property
     def address_fields(self):
-        return self.section(["house_no", "moo", "building", "soi", "road", "tambon", "amphoe", "province", "postcode"])
+        return self.section(
+            ["house_no", "moo", "building", "soi", "road", "tambon", "amphoe", "province", "postcode", "address_text"]
+        )
 
     @property
     def extra_fields(self):

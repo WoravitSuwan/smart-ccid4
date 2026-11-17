@@ -1,0 +1,13 @@
+{% extends "intake/public/base.html" %}
+{% block title %}ส่งเรื่องแล้ว{% endblock %}
+{% block content %}
+<section class="card glass glow-border p-6 flex flex-col items-center gap-3 text-center reveal">
+  <span class="done-check" aria-hidden="true"><svg class="w-8 h-8"><use href="#i-check"/></svg></span>
+  <h1>ส่งเรื่องเรียบร้อยแล้ว</h1>
+  <p>เลขอ้างอิงของท่าน</p>
+  <p class="reference">{{ sub.reference }}</p>
+  <p class="text-sm text-muted">จดเลขนี้ไว้ หรือบันทึกลิงก์ด้านล่างเพื่อติดตามความคืบหน้า พนักงานสอบสวนจะติดต่อกลับทางโทรศัพท์</p>
+  <a class="btn btn-primary" href="{% url 'intake_public:track' sub.track_token %}">ติดตามความคืบหน้า</a>
+</section>
+<p class="text-sm text-muted reveal">อย่าส่งลิงก์ติดตามให้ผู้อื่น ลิงก์นี้แสดงสถานะเรื่องของท่าน</p>
+{% endblock %}

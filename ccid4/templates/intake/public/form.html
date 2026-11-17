@@ -1,0 +1,6 @@
+{% extends "intake/public/base.html" %}
+{% block title %}แบบฟอร์มแจ้งความ{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-center gap-2 reveal"><a href="{% url 'intake_public:start' link.token %}" class="text-sm">‹ เลือกเรื่องใหม่</a><span class="chip chip-primary">{{ kind_label }}</span></div>
+<form method="post" enctype="multipart/form-data" class="reveal">{% csrf_token %}{% include "intake/_steps.html" %}</form>
+{% endblock %}

@@ -1,0 +1,1 @@
+<li class="bubble {% if m.role == 'user' %}bubble-user{% else %}bubble-bot{% endif %}">{% if m.role != 'user' %}<span class="bubble-avatar" aria-hidden="true"><svg class="w-4 h-4"><use href="#i-cpu"/></svg></span>{% endif %}<p class="whitespace-pre-line">{{ m.text }}</p></li>

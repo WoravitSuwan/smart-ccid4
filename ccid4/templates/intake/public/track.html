@@ -1,0 +1,9 @@
+{% extends "intake/public/base.html" %}
+{% block title %}ติดตามความคืบหน้า {{ sub.reference }}{% endblock %}
+{% block content %}
+<section class="card p-6 flex flex-col gap-4 reveal">
+  <div><p class="text-sm text-muted">เลขอ้างอิง</p><p class="reference text-left">{{ sub.reference }}</p></div>
+  <ol class="tl">{% for title, when in steps %}<li class="tl-item k-task"><div class="card p-3"><b>{{ title }}</b>{% if when %}<span class="block text-sm text-muted">{{ when }}</span>{% endif %}</div></li>{% endfor %}</ol>
+  <p class="text-xs text-muted">หน้านี้แสดงเฉพาะสถานะและข้อความที่พนักงานสอบสวนเปิดให้ผู้แจ้งเห็น</p>
+</section>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}ตรวจทานการนำเข้า{% endblock %}
+{% block content %}
+<nav class="text-sm reveal" aria-label="เส้นทาง"><a href="{% url 'intake:index' %}">รับแจ้งความ & นำเข้าคดี</a> › ตรวจทาน</nav>
+<div class="flex flex-wrap items-end gap-3 reveal">
+  <div class="flex-1"><h1>ตรวจทานข้อมูลจาก{{ imp.get_source_display }}</h1>
+    <p class="text-muted">เทียบช่องด้านขวากับต้นฉบับด้านซ้าย แก้ให้ถูกต้องแล้วกด "สร้างคดี" · {{ imp.original_name }}</p></div>
+  <span class="ai-badge">ร่างโดย AI – รอตรวจ</span>
+</div>
+{% if imp.error %}<p class="chip chip-warning self-start reveal">{{ imp.error }}</p>{% endif %}
+<div class="grid gap-4 xl:grid-cols-2 items-start">
+  <section class="card p-3 flex flex-col gap-2 xl:sticky xl:top-[76px] reveal" aria-label="ต้นฉบับ">
+    {% if imp.content_type == "application/pdf" %}<iframe class="source-frame" src="{% url 'intake:import_file' imp.pk %}" title="ต้นฉบับ"></iframe>
+    {% elif imp.content_type == "image/heic" or imp.content_type == "image/heif" %}<p class="empty-state text-sm">เบราว์เซอร์แสดงไฟล์ HEIC ไม่ได้ <a href="{% url 'intake:import_file' imp.pk %}" target="_blank" rel="noopener">เปิดไฟล์</a></p>
+    {% else %}<img class="source-img" src="{% url 'intake:import_file' imp.pk %}" alt="ต้นฉบับที่อัปโหลด">{% endif %}
+    {% if imp.ocr_text %}<details><summary class="text-sm cursor-pointer text-primary">ข้อความที่อ่านได้ (OCR)</summary><pre class="text-xs whitespace-pre-wrap mt-2">{{ imp.ocr_text }}</pre></details>{% endif %}
+    <p class="text-xs text-muted">SHA-256 {{ imp.sha256 }}</p>
+  </section>
+  <form method="post" class="card p-5 flex flex-col gap-4 reveal" x-data="dirtyForm">{% csrf_token %}
+    <div class="grid gap-3 sm:grid-cols-2">{% for f in form %}{% if f.name == "circumstances" %}<div class="sm:col-span-2">{% include "partials/field.html" %}</div>{% else %}{% include "partials/field.html" %}{% endif %}{% endfor %}</div>
+    <h2 class="section-title">ผู้ต้องหา</h2>
+    {{ fs.management_form }}
+    <div class="flex flex-col gap-3" data-formset-rows="s">
+      {% for sf in fs %}<div class="grid gap-3 sm:grid-cols-2 p-3 rounded-btn bg-surface-2 border border-border">{% for f in sf.visible_fields %}{% if f.name == "DELETE" %}<label class="flex items-center gap-2 text-sm text-danger">{{ f }} ไม่ใช่ผู้ต้องหา/ลบ</label>{% else %}{% include "partials/field.html" %}{% endif %}{% endfor %}</div>{% endfor %}
+    </div>
+    <template id="tpl-s"><div class="grid gap-3 sm:grid-cols-2 p-3 rounded-btn bg-surface-2 border border-border">{% for f in fs.empty_form.visible_fields %}{% if f.name == "DELETE" %}<label class="flex items-center gap-2 text-sm text-danger">{{ f }} ลบ</label>{% else %}{% include "partials/field.html" %}{% endif %}{% endfor %}</div></template>
+    <button type="button" class="btn btn-secondary btn-sm self-start" data-formset-add="s"><svg class="w-4 h-4"><use href="#i-plus"/></svg>เพิ่มผู้ต้องหา</button>
+    <div class="flex gap-2"><button class="btn btn-primary">สร้างคดี</button><a class="btn btn-secondary" href="{% url 'intake:index' %}">ไว้ก่อน</a></div>
+  </form>
+</div>
+{% endblock %}

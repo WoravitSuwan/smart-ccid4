@@ -1,0 +1,23 @@
+{"type": "object",
+ "required": ["title", "offense", "circumstances", "incident_at", "location", "damage_amount", "accuser", "suspects", "witnesses", "properties", "accounts"],
+ "properties": {
+  "title": {"type": "string", "maxLength": 300},
+  "offense": {"type": "string", "maxLength": 400},
+  "law_sections": {"type": "string", "maxLength": 400},
+  "circumstances": {"type": "string"},
+  "incident_at": {"type": "string", "description": "ISO 8601 เวลาไทย หรือว่าง"},
+  "location": {"type": "string", "maxLength": 400},
+  "damage_amount": {"type": "number", "minimum": 0},
+  "accuser": {"type": ["object", "null"], "properties": {
+     "title": {"type": "string"}, "first_name": {"type": "string"}, "last_name": {"type": "string"},
+     "phone": {"type": "string"}, "address": {"type": "string"}, "occupation": {"type": "string"}, "citizen_id": {"type": "string"}}},
+  "suspects": {"type": "array", "items": {"type": "object", "required": ["first_name"], "properties": {
+     "title": {"type": "string"}, "first_name": {"type": "string"}, "last_name": {"type": "string"}, "phone": {"type": "string"},
+     "citizen_id": {"type": "string"}, "address": {"type": "string"}, "marks": {"type": "string"}, "arrested_at": {"type": "string"}, "detail": {"type": "string"}}}},
+  "witnesses": {"type": "array", "items": {"type": "object", "required": ["first_name"], "properties": {
+     "title": {"type": "string"}, "first_name": {"type": "string"}, "last_name": {"type": "string"}, "phone": {"type": "string"}}}},
+  "properties": {"type": "array", "items": {"type": "object", "required": ["name"], "properties": {"name": {"type": "string"}, "value": {"type": "number", "minimum": 0}}}},
+  "accounts": {"type": "array", "items": {"type": "object", "properties": {
+     "bank": {"type": "string"}, "account_no": {"type": "string"}, "account_name": {"type": "string"}, "amount": {"type": "number"}, "at": {"type": "string"}}}},
+  "arrest_place": {"type": "string"},
+  "arrest_team": {"type": "array", "items": {"type": "string"}}}}

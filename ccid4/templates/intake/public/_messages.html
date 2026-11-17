@@ -1,0 +1,2 @@
+{% for m in new %}{% include "intake/public/_bubble.html" %}{% endfor %}
+{% if finished %}<div id="chat-composer" hx-swap-oob="outerHTML"><p class="text-sm text-muted text-center">ได้ข้อมูลครบแล้ว กำลังเปิดหน้าส่งเรื่อง…</p><a class="btn btn-primary self-center" href="" data-reload>ไปหน้าส่งเรื่อง</a></div>{% endif %}

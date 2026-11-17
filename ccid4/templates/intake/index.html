@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}รับแจ้งความ & นำเข้าคดี{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-end gap-3 reveal">
+  <div class="flex-1"><h1>รับแจ้งความ & นำเข้าคดี</h1><p class="text-muted">เรื่องที่ประชาชนแจ้งผ่านลิงก์หรือ QR ของท่าน ระบบตั้งเป็นคดีในบัญชีของท่านให้อัตโนมัติ</p></div>
+</div>
+
+<section class="grid gap-4 lg:grid-cols-2">
+  {% for kind, label, url, svg in cards %}
+  <div class="card glass glow-border p-5 flex flex-col sm:flex-row gap-5 reveal">
+    <div class="qr-box" aria-label="QR {{ label }}">{{ svg|safe }}</div>
+    <div class="flex-1 flex flex-col gap-2 min-w-0">
+      <span class="chip chip-primary self-start">{{ label }}</span>
+      <code class="text-xs break-all text-muted" data-copy-source="link-{{ kind }}">{{ url }}</code>
+      <div class="flex flex-wrap gap-2 mt-auto">
+        <button type="button" class="btn btn-secondary btn-sm" data-copy="link-{{ kind }}">คัดลอกลิงก์</button>
+        <a class="btn btn-secondary btn-sm" href="{% url 'intake:qr_png' kind %}">ดาวน์โหลด QR</a>
+        <a class="btn btn-secondary btn-sm" href="{% url 'intake:poster' kind %}" target="_blank" rel="noopener">พิมพ์ป้าย A5</a>
+        <a class="btn btn-primary btn-sm" href="{% url 'intake:staff_form' kind %}">กรอกแทนผู้แจ้ง</a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</section>
+<form method="post" action="{% url 'intake:regenerate' %}" class="reveal">{% csrf_token %}
+  <p class="text-sm text-muted">ลิงก์หลุดหรือป้ายหาย? <button class="text-primary underline" data-confirm="ลิงก์และ QR เดิมทั้งหมดจะใช้ไม่ได้ ป้ายที่พิมพ์ไว้ต้องพิมพ์ใหม่ ยืนยัน?">สร้างลิงก์ใหม่</button></p>
+</form>
+
+<section class="card p-5 flex flex-col gap-3 reveal">
+  <h2>เรื่องที่เข้ามา</h2>
+  {% if subs %}
+  <div class="overflow-x-auto"><table class="tbl">
+    <thead><tr><th>เลขอ้างอิง</th><th>ประเภท</th><th>ผู้แจ้ง</th><th>วิธีแจ้ง</th><th>ไฟล์แนบ</th><th>เมื่อ</th><th>สถานะ</th></tr></thead>
+    <tbody>{% for s in subs %}
+      <tr>
+        <td class="whitespace-nowrap font-semibold">{{ s.reference }}</td>
+        <td>{{ s.get_kind_display }}</td>
+        <td>{% if s.case %}{{ s.case.accuser.full_name|default:"—" }}{% else %}—{% endif %}</td>
+        <td>{% if s.staff_id %}เจ้าหน้าที่กรอกแทน{% else %}{{ s.get_mode_display }}{% endif %}</td>
+        <td>{% for f in s.files.all %}<a class="block text-sm" href="{% url 'intake:file' f.pk %}" target="_blank" rel="noopener">{{ f.original_name|truncatechars:24 }}</a>{% empty %}—{% endfor %}</td>
+        <td class="whitespace-nowrap">{{ s.created_at|be_datetime }}</td>
+        <td>{% if s.case %}<a class="chip chip-success" href="{% url 'cases:detail' s.case.pk %}">เปิดคดี</a>
+            {% elif s.status == "failed" %}<span class="chip chip-danger" title="{{ s.error }}">ไม่สำเร็จ</span>
+              <form method="post" action="{% url 'intake:retry' s.pk %}" class="inline">{% csrf_token %}<button class="btn btn-secondary btn-sm">ลองใหม่</button></form>
+            {% else %}<span class="chip chip-muted chip-live">{{ s.get_status_display }}</span>{% endif %}</td>
+      </tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="empty-state text-sm">ยังไม่มีเรื่องเข้ามา ลองสแกน QR ด้านบนด้วยโทรศัพท์</p>{% endif %}
+</section>
+
+<section class="card p-5 flex flex-col gap-3 reveal">
+  <h2>นำเข้าคดีจากเอกสาร</h2>
+  <p class="text-sm text-muted">อัปโหลดบันทึกจับกุม หรือบันทึกประจำวันคดีจราจร (JPG PNG HEIC WEBP PDF) → ระบบอ่านข้อความ (OCR) และ AI แยกข้อมูล → ท่านตรวจทานเทียบกับต้นฉบับ → สร้างคดี</p>
+  <form method="post" action="{% url 'intake:import_upload' %}" enctype="multipart/form-data" class="flex flex-wrap items-end gap-3">{% csrf_token %}
+    <label><span class="label">ชนิดเอกสาร</span><select class="input" name="source">{% for k, v in sources %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+    <label class="flex-1 min-w-[240px]"><span class="label">ไฟล์</span><input class="input py-2" type="file" name="file" accept="image/jpeg,image/png,image/webp,image/heic,application/pdf" required></label>
+    <button class="btn btn-primary" data-busy="กำลังอ่านเอกสาร…"><span class="ai-badge">AI</span>อ่านและแยกข้อมูล</button>
+  </form>
+  {% if imports %}
+  <ul class="flex flex-col gap-1 text-sm">{% for i in imports %}
+    <li class="flex flex-wrap items-center gap-2"><span class="text-muted">{{ i.created_at|be_datetime }}</span> {{ i.original_name }} <span class="chip {% if i.status == 'done' %}chip-success{% elif i.status == 'failed' %}chip-warning{% else %}chip-muted{% endif %} text-xs">{{ i.get_status_display }}</span>
+      {% if i.case %}<a href="{% url 'cases:detail' i.case.pk %}">เปิดคดี</a>{% else %}<a href="{% url 'intake:import_review' i.pk %}">ตรวจทาน</a>{% endif %}</li>
+  {% endfor %}</ul>{% endif %}
+</section>
+{% endblock %}

@@ -18,6 +18,7 @@ document.addEventListener('alpine:init', () => {
       const root = document.documentElement;
       const next = root.dataset.theme === 'light' ? 'dark' : 'light';
       root.dataset.theme = next;
+      document.cookie = `theme=${next}; path=/; max-age=31536000; samesite=lax`;
       const body = new URLSearchParams({ theme: next });
       fetch('/accounts/theme/', { method: 'POST', body, headers: { 'X-CSRFToken': csrf(), 'HX-Request': 'true' } });
     },
@@ -281,6 +282,52 @@ function focusFromQuery() {
   el.scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
 
+// ---------- Intake (A2): chat, copy, print, confirm, steps ----------
+function scrollChat() { const log = document.getElementById('chat-log'); if (log) log.scrollTop = log.scrollHeight; }
+document.addEventListener('htmx:afterRequest', (e) => {
+  const form = e.detail.elt && e.detail.elt.closest && e.detail.elt.closest('[data-chat-form]');
+  if (form) { const t = form.querySelector('textarea'); if (t) { t.value = ''; t.focus(); } }
+});
+document.addEventListener('htmx:afterSwap', () => {
+  scrollChat();
+  if (document.querySelector('#chat-composer [data-reload]')) setTimeout(() => window.location.reload(), 900);
+});
+document.addEventListener('keydown', (e) => {
+  const t = e.target;
+  if (e.key === 'Enter' && !e.shiftKey && t.matches && t.matches('[data-chat-form] textarea') && !e.isComposing) {
+    e.preventDefault();
+    if (t.value.trim()) t.form.requestSubmit();
+  }
+});
+document.addEventListener('click', (e) => {
+  const copy = e.target.closest('[data-copy]');
+  if (copy) {
+    const src = document.querySelector(`[data-copy-source="${copy.dataset.copy}"]`);
+    if (src && navigator.clipboard) {
+      navigator.clipboard.writeText(src.textContent.trim()).then(() => {
+        const old = copy.textContent; copy.textContent = 'คัดลอกแล้ว ✓'; setTimeout(() => { copy.textContent = old; }, 1600);
+      });
+    }
+    return;
+  }
+  if (e.target.closest('[data-print]')) { window.print(); return; }
+  const confirmBtn = e.target.closest('[data-confirm]');
+  if (confirmBtn && !window.confirm(confirmBtn.dataset.confirm)) { e.preventDefault(); return; }
+  const step = e.target.closest('[data-step]');
+  if (step) {
+    const root = tabRoot(step);
+    const tabs = ownTabs(root, '[role="tab"]');
+    const i = tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true');
+    const j = Math.max(0, Math.min(tabs.length - 1, i + (step.dataset.step === 'next' ? 1 : -1)));
+    selectTab(root, tabs[j].dataset.tab, true);
+    root.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
+});
+document.addEventListener('submit', (e) => {
+  const busy = e.target.querySelector('[data-busy]');
+  if (busy) { busy.disabled = true; busy.textContent = busy.dataset.busy; }
+});
+
 // HTMX sends the CSRF token on every request.
 document.addEventListener('htmx:configRequest', (e) => {
   e.detail.headers['X-CSRFToken'] = document.querySelector('meta[name="csrf-token"]').content;
@@ -290,6 +337,7 @@ document.addEventListener('htmx:configRequest', (e) => {
 document.addEventListener('DOMContentLoaded', () => {
   initTabs(document);
   focusFromQuery();
+  scrollChat();
   updateDocSelection();
   const groups = new Map();
   document.querySelectorAll('.reveal').forEach((el) => {

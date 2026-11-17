@@ -38,12 +38,11 @@ def prompt_files(task: str) -> tuple[str, dict, str]:
     return text, sch, version
 
 
-def render(task: str, context: dict, extra: dict | None = None) -> tuple[str, str]:
+def render(task: str, context: dict | str, extra: dict | None = None) -> tuple[str, str]:
     text, _, _ = prompt_files(task)
     system = (PROMPTS / "_system.txt").read_text(encoding="utf-8")
-    body = Template(text).safe_substitute(
-        {"context": json.dumps(context, ensure_ascii=False, indent=1, default=str)} | (extra or {})
-    )
+    ctx = context if isinstance(context, str) else json.dumps(context, ensure_ascii=False, indent=1, default=str)
+    body = Template(text).safe_substitute({"context": ctx} | (extra or {}))
     return system, body
 
 
@@ -95,7 +94,7 @@ def backend():
 
 
 # ---------------------------------------------------------------- entry point
-def complete_json(task: str, context: dict, *, user=None, case=None, extra: dict | None = None) -> dict:
+def complete_json(task: str, context: dict | str, *, user=None, case=None, extra: dict | None = None) -> dict:
     from .models import AICall
 
     _, sch, version = prompt_files(task)

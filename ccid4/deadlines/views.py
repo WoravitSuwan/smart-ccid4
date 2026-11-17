@@ -54,6 +54,22 @@ def task_toggle(request, pk, task_id):
 
 @login_required
 @require_POST
+def task_share(request, pk, task_id):
+    """Show/hide a done item on the reporter's tracking page (B8)."""
+    case = editable_case(request, pk)
+    task = get_object_or_404(Task, pk=task_id, case=case, done_at__isnull=False)
+    task.show_to_complainant = not task.show_to_complainant
+    task.save(update_fields=["show_to_complainant"])
+    from audit.services import log
+
+    log(request.user, "edit", "task", task.pk, f"{'เปิด' if task.show_to_complainant else 'ปิด'}ให้ผู้แจ้งเห็น: {task.title} คดี {case}")
+    if request.headers.get("HX-Request"):
+        return panel_response(request, case)
+    return redirect(case.get_absolute_url())
+
+
+@login_required
+@require_POST
 def task_delete(request, pk, task_id):
     case = editable_case(request, pk)
     task = get_object_or_404(Task, pk=task_id, case=case, source=Task.Source.MANUAL)

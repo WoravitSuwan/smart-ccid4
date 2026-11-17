@@ -12,7 +12,7 @@
 
   <section class="flex flex-col gap-3">
     <h3 class="section-title">ที่อยู่</h3>
-    <div class="grid gap-3 sm:grid-cols-3 xl:grid-cols-5">{% for f in form.address_fields %}{% include "partials/field.html" %}{% endfor %}</div>
+    <div class="grid gap-3 sm:grid-cols-3 xl:grid-cols-5">{% for f in form.address_fields %}{% if f.name == "address_text" %}<div class="sm:col-span-3 xl:col-span-5">{% include "partials/field.html" %}</div>{% else %}{% include "partials/field.html" %}{% endif %}{% endfor %}</div>
   </section>
 
   <details class="group" {% if form.errors %}open{% endif %}>

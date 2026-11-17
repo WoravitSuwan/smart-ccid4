@@ -27,6 +27,7 @@ class Person(models.Model):
     amphoe = models.CharField("อำเภอ/เขต", max_length=120, blank=True)
     province = models.CharField("จังหวัด", max_length=120, blank=True)
     postcode = models.CharField("รหัสไปรษณีย์", max_length=10, blank=True)
+    address_text = models.CharField("ที่อยู่ (ตามที่แจ้ง)", max_length=400, blank=True, help_text="ใช้เมื่อยังไม่ได้แยกเป็นบ้านเลขที่ ตำบล อำเภอ")
     contact_name = models.CharField("บุคคลที่ติดต่อได้", max_length=200, blank=True)
     contact_relation = models.CharField("ความเกี่ยวข้อง", max_length=60, blank=True)
     contact_phone = models.CharField("โทรศัพท์ผู้ติดต่อ", max_length=40, blank=True)
@@ -56,7 +57,7 @@ class Person(models.Model):
             f"จ.{self.province}" if self.province else "",
             self.postcode,
         ]
-        return " ".join(p for p in parts if p)
+        return " ".join(p for p in parts if p) or self.address_text
 
     @property
     def masked_id(self):
