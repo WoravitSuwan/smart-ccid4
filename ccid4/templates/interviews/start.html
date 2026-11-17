@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}สอบด้วยเสียง · {{ party.person.full_name }}{% endblock %}
+{% block content %}
+<nav class="text-sm reveal"><a href="{% url 'cases:detail' case.pk %}">{{ case.label }}</a> › สอบด้วยเสียง</nav>
+<div class="reveal"><h1>สอบปากคำด้วยเสียง</h1><p class="text-muted">{{ party.get_role_display }} {{ party.person.full_name }} · บันทึกเสียงจริงในห้องสอบ แล้วระบบถอดเสียงและเรียบเรียงเป็นคำให้การแบบถาม–ตอบ ตรวจย้อนกับเสียงได้ทุกคำตอบ</p></div>
+{% if party.role == "suspect" and not party.rights_informed_at %}
+<div class="card p-5 flex flex-col gap-2 reveal" role="alert"><h2 class="text-danger">ต้องแจ้งข้อกล่าวหาและสิทธิก่อน</h2>
+  <p class="text-sm">ผู้ต้องหาต้องผ่านขั้นแจ้งสิทธิ (ป.วิ.อาญา ม.134/4) ก่อนเริ่มบันทึก</p>
+  <a class="btn btn-primary self-start" href="{% url 'cases:detail' case.pk %}#suspects">ไปแท็บผู้ต้องหา → "แจ้งสิทธิและสอบคำให้การ"</a></div>
+{% else %}
+<form method="post" class="card glass glow-border p-5 flex flex-col gap-4 max-w-3xl reveal">{% csrf_token %}
+  <label><span class="label">สถานที่สอบปากคำ</span><input class="input" name="place" value="ห้องสอบสวน {{ case.owner.unit.name|default:'' }}" required maxlength="300"></label>
+  <div class="flex flex-col gap-2"><span class="label">ผู้เข้าร่วม (พนักงานสอบสวนและผู้ให้การ ระบบใส่ให้แล้ว)</span>
+    {% for i in "123" %}<div class="grid gap-2 sm:grid-cols-[12rem_1fr_10rem]">
+      <select class="input" name="role">{% for k, v in roles %}<option value="{{ k }}" {% if forloop.counter == forloop.parentloop.counter %}selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+      <input class="input" name="name" placeholder="ชื่อ (เว้นว่างถ้าไม่มี)"><input class="input" name="language" placeholder="ภาษา (ล่าม)"></div>{% endfor %}
+  </div>
+  <button class="btn btn-primary self-start"><svg class="w-5 h-5"><use href="#i-mic"/></svg>ไปหน้าบันทึกเสียง</button>
+</form>
+{% endif %}
+{% if existing %}<section class="card p-5 flex flex-col gap-2 reveal"><h2>การสอบปากคำครั้งก่อนของบุคคลนี้</h2>
+  {% for e in existing %}<a href="{% url 'interviews:review' e.pk %}">{{ e.created_at|be_datetime }} · {{ e.get_status_display }}</a>{% endfor %}</section>{% endif %}
+{% endblock %}

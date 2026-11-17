@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}บันทึกเสียง · {{ s.party.person.full_name }}{% endblock %}
+{% block head %}<script src="{% static 'js/recorder.js' %}" defer></script>{% endblock %}
+{% block content %}
+<nav class="text-sm reveal"><a href="{% url 'cases:detail' s.case.pk %}">{{ s.case.label }}</a> › สอบด้วยเสียง</nav>
+<div class="flex flex-wrap items-end gap-3 reveal"><div class="flex-1"><h1>บันทึกเสียงสอบปากคำ</h1>
+  <p class="text-muted">{{ s.party.get_role_display }} {{ s.party.person.full_name }} · {{ s.place }} · {% for p in participants %}{{ p.get_role_display }} {{ p.name }}{% if not forloop.last %} · {% endif %}{% endfor %}</p></div></div>
+<div class="grid gap-4 xl:grid-cols-[1fr_22rem] items-start"
+     data-recorder data-chunk-url="{% url 'interviews:chunk' s.pk %}" data-status-url="{% url 'interviews:status' s.pk %}"
+     data-marker-url="{% url 'interviews:marker' s.pk %}" data-uploaded="{{ status.seconds }}" data-take="{{ status.take }}">
+  <section class="card glass glow-border p-6 flex flex-col gap-5 reveal">
+    <div class="rec-face">
+      <span class="rec-dot" data-rec-dot aria-hidden="true"></span>
+      <span class="rec-timer" data-timer aria-live="off">00:00</span>
+      <span class="chip chip-muted" data-rec-state role="status">พร้อมบันทึก</span>
+    </div>
+    <div class="level-meter" aria-hidden="true"><span data-level></span></div>
+    <p class="text-sm" data-uploaded-text>{% if status.seconds %}บันทึกขึ้นเซิร์ฟเวอร์แล้ว {{ status.seconds|floatformat:0 }} วินาที · กด "บันทึกต่อ" เพื่ออัดต่อจากเดิม{% else %}ยังไม่มีเสียงบนเซิร์ฟเวอร์{% endif %}</p>
+    {% if can_edit %}
+    <div class="flex flex-wrap gap-2">
+      <button type="button" class="btn btn-secondary" data-mic-test>ทดสอบไมค์ 5 วินาที</button>
+      <button type="button" class="btn btn-primary" data-rec-start><svg class="w-5 h-5"><use href="#i-mic"/></svg>{% if status.seconds %}บันทึกต่อ{% else %}เริ่มบันทึก{% endif %}</button>
+      <button type="button" class="btn btn-secondary" data-rec-pause disabled>พัก</button>
+      <button type="button" class="btn btn-secondary" data-rec-stop disabled>หยุด (เก็บไว้บันทึกต่อได้)</button>
+    </div>
+    <audio data-test-audio controls hidden></audio>
+    <div class="flex flex-wrap gap-2 items-end">
+      <label class="flex-1 min-w-[200px]"><span class="label">ทำเครื่องหมายช่วงนี้</span><input class="input" data-marker-note maxlength="200" placeholder="หมายเหตุสั้น เช่น เริ่มถามเรื่องบัญชี"></label>
+      <button type="button" class="btn btn-secondary" data-marker-add disabled>ทำเครื่องหมาย</button>
+    </div>
+    <ul class="flex flex-wrap gap-2 text-sm" data-markers>{% for m in markers %}<li class="chip chip-muted">{{ m.at|floatformat:0 }} วิ · {{ m.note }}</li>{% endfor %}</ul>
+    <form method="post" action="{% url 'interviews:close' s.pk %}" class="flex flex-wrap items-center gap-3 border-t border-border pt-4" data-close-form>{% csrf_token %}
+      <button class="btn btn-danger" data-rec-close {% if not status.seconds %}disabled{% endif %}>ปิดการบันทึกและประมวลผล</button>
+      <span class="text-xs text-muted">ปิดแล้วไฟล์เสียงถูกล็อก คำนวณ SHA-256 และแก้ไม่ได้อีก</span>
+    </form>
+    {% endif %}
+    <p class="text-xs text-muted">ถ้าปิดแท็บหรือเน็ตหลุด ท่อนที่ส่งขึ้นแล้วไม่หาย เปิดหน้านี้ใหม่แล้วกด "บันทึกต่อ" · เบราว์เซอร์ใช้ไมค์ได้เฉพาะ HTTPS ภายในหน่วย</p>
+  </section>
+  <aside class="flex flex-col gap-4">
+    {% if s.is_suspect %}
+    <section class="card p-5 flex flex-col gap-2 reveal">
+      <h2>สคริปต์ที่ต้องอ่านออกเสียงก่อนถาม</h2>
+      <p class="text-sm whitespace-pre-line leading-relaxed">{{ script }}</p>
+      <p class="text-xs text-muted">ระบบตรวจจากเสียงว่าอ่านครบทุกข้อหรือไม่ ถ้าไม่ครบจะเตือนก่อนยืนยัน</p>
+    </section>
+    {% endif %}
+    <section class="card p-5 flex flex-col gap-2 reveal"><h2>ขั้นตอน</h2>
+      <ol class="text-sm list-decimal pl-5 flex flex-col gap-1"><li>ทดสอบไมค์</li><li>เริ่มบันทึก (ส่งขึ้นเซิร์ฟเวอร์ทุก 5 วินาที)</li><li>ปิดการบันทึก</li><li>ระบบถอดเสียง แยกผู้พูด ร่างถาม–ตอบ</li><li>ตรวจทานกับเสียง แล้วยืนยัน</li><li>ได้คำให้การ Word/PDF</li></ol></section>
+  </aside>
+</div>
+{% endblock %}

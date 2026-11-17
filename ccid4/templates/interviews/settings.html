@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}ตั้งค่าห้องสอบปากคำ{% endblock %}
+{% block content %}
+<div class="reveal"><h1>ตั้งค่าห้องสอบปากคำ</h1></div>
+<form method="post" class="card p-5 flex flex-col gap-3 max-w-3xl reveal">{% csrf_token %}
+  <label><span class="label">สคริปต์แจ้งสิทธิผู้ต้องหา (ให้พี่เลี้ยงตรวจถ้อยคำ)</span><textarea class="input py-2" name="rights_script" rows="6">{{ conf.rights_script }}</textarea></label>
+  <label class="max-w-xs"><span class="label">ระยะเก็บไฟล์เสียง (วัน)</span><input class="input" type="number" min="30" name="retention_days" value="{{ conf.retention_days }}"></label>
+  <button class="btn btn-primary self-start">บันทึก</button>
+</form>
+<section class="card p-5 flex flex-col gap-3 max-w-3xl reveal">
+  <h2>แบบฟอร์มคำให้การ</h2>
+  <p class="text-sm text-muted">ใช้แบบฟอร์มชั่วคราวของ CCID4 อยู่ เมื่อได้แบบฟอร์มจริงจากพี่เลี้ยง ใส่ตัวแทนด้านล่างในไฟล์ Word แล้วอัปโหลด ไม่ต้องแก้โค้ด · บล็อกถาม–ตอบ: วาง <code>{qa.ถาม}</code> <code>{qa.ตอบ}</code> <code>{qa.เวลา}</code> ไว้ในแถวตาราง 1 แถว ระบบทำซ้ำให้ทุกคู่ · หัวกระดาษหน้าถัดไปใส่ "ใบต่อคำให้การ ของ {ผู้ให้การ}" (ตั้ง "หน้าแรกแตกต่าง" ใน Word)</p>
+  <table class="tbl"><thead><tr><th>ตัวแทน</th><th>ความหมาย</th></tr></thead><tbody>{% for k, v in placeholders.items %}<tr><td><code>{{ "{" }}{{ k }}{{ "}" }}</code></td><td>{{ v }}</td></tr>{% endfor %}</tbody></table>
+  <form method="post" enctype="multipart/form-data" class="flex flex-wrap gap-2 items-end">{% csrf_token %}<input class="input py-2" type="file" name="template" accept=".docx" required><button class="btn btn-secondary">อัปโหลดแบบฟอร์ม</button></form>
+</section>
+{% endblock %}

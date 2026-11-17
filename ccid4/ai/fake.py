@@ -291,3 +291,12 @@ def extract_arrest(ctx, extra):
         out["properties"] = [{"name": x.strip(), "value": 0} for x in re.split(r"[,;]", ex) if x.strip()]
     out["title"] = f"จับกุม {name} ข้อหา {out['offense']}".strip() if name else out["offense"]
     return out
+
+
+# ---------------------------------------------------------------- interview Q&A (phase 8)
+def arrange_qa(ctx, extra):
+    """FakeLLM = the deterministic pairing in interviews.qa (same rules the real model must follow)."""
+    from interviews.qa import Seg, build_pairs
+
+    segs = [Seg(s["id"], s["start"], s["end"], s["role"], s["text"]) for s in ctx]
+    return {"pairs": [{"question": p.question, "answer": p.answer, "segment_ids": p.segment_ids} for p in build_pairs(segs)]}

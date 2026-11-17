@@ -1,0 +1,16 @@
+<li id="pair-{{ p.pk }}" class="qa-pair{% if p.flags %} has-flags{% endif %}{% if p.reviewed %} is-reviewed{% endif %}">
+  <div class="flex flex-wrap items-center gap-2">
+    <span class="doc-no">{{ p.order }}</span>
+    <button type="button" class="chip chip-muted text-xs" data-seek="{{ p.start }}" data-until="{{ p.end }}">▶ {{ p.start|floatformat:0 }}–{{ p.end|floatformat:0 }} วิ</button>
+    {% for f in p.flags %}<span class="chip chip-danger text-xs">{{ f }}</span>{% endfor %}
+    {% if p.reviewed %}<span class="chip chip-success text-xs">ตรวจแล้ว</span>{% endif %}
+  </div>
+  {% if can_edit and not p.draft.locked %}
+  <form class="flex flex-col gap-2" hx-post="{% url 'interviews:save_pair' s.pk p.pk %}" hx-target="#pair-{{ p.pk }}" hx-swap="outerHTML">
+    <label class="text-sm"><b>ถาม</b><textarea class="input py-2 mt-1" name="question" rows="2">{{ p.question }}</textarea></label>
+    <label class="text-sm"><b>ตอบ</b><textarea class="input py-2 mt-1" name="answer" rows="3">{{ p.answer }}</textarea></label>
+    <div class="flex items-center gap-3"><label class="flex items-center gap-2 text-sm"><input type="checkbox" name="reviewed" {% if p.reviewed %}checked{% endif %}> ฟังแล้ว ตรงกับเสียง</label>
+      <button class="btn btn-secondary btn-sm">บันทึกคู่นี้</button></div>
+  </form>
+  {% else %}<p class="text-sm"><b>ถาม</b> {{ p.question }}</p><p class="text-sm"><b>ตอบ</b> {{ p.answer }}</p>{% endif %}
+</li>

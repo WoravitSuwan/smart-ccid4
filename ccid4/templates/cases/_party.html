@@ -52,7 +52,7 @@
       {% elif editable %}
         <span class="text-xs text-muted">บันทึกบุคคลนี้ก่อน จึงให้ AI ร่างคำให้การได้</span>
       {% endif %}
-      <button type="button" class="btn btn-secondary btn-sm" disabled title="เปิดใช้ในเฟส 8"><svg class="w-4 h-4"><use href="#i-mic"/></svg>สอบด้วยเสียง</button>
+      {% if form.party and editable %}<button type="button" class="btn btn-primary btn-sm" :disabled="dirty" data-href="{% url 'interviews:start' case.pk form.party.pk %}" title="บันทึกเสียงสอบปากคำ แล้วให้ระบบเรียบเรียงเป็นคำให้การ"><svg class="w-4 h-4"><use href="#i-mic"/></svg>สอบด้วยเสียง</button>{% endif %}
     </div>
     {% if form.party %}<div id="ai-st-{{ form.party.pk }}"></div>{% endif %}
     {% with f=form.statement %}{{ f }}{% for e in f.errors %}<p class="text-danger text-sm">{{ e }}</p>{% endfor %}{% endwith %}

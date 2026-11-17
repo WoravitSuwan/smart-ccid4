@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}ประมวลผลเสียง{% endblock %}
+{% block content %}
+<nav class="text-sm reveal"><a href="{% url 'cases:detail' s.case.pk %}">{{ s.case.label }}</a> › ประมวลผลเสียง</nav>
+<div class="reveal"><h1>ประมวลผลเสียงสอบปากคำ</h1>
+  {% if rec %}<p class="text-muted">ไฟล์ต้นฉบับ {{ rec.duration|floatformat:0 }} วินาที · ล็อกแล้ว · SHA-256 <code class="text-xs break-all">{{ rec.sha256 }}</code></p>{% endif %}</div>
+<div class="reveal">{% include "interviews/_progress.html" %}</div>
+{% if s.status == "transcript" %}
+<section class="card p-5 flex flex-col gap-3 reveal">
+  <h2>นำเข้าข้อความถอดเสียง</h2>
+  <p class="text-sm text-muted">เครื่องนี้ยังไม่ได้เปิดใช้โมเดลถอดเสียง (Typhoon Whisper) · นำเข้าข้อความจากเครื่องถอดเสียงในหน่วยได้ รูปแบบ JSON (start, end, speaker, text, words) SRT WebVTT หรือบรรทัด "[00:45] S1: ข้อความ"</p>
+  <form method="post" action="{% url 'interviews:import_transcript' s.pk %}" enctype="multipart/form-data" class="flex flex-col gap-3">{% csrf_token %}
+    <input class="input py-2" type="file" name="file" accept=".json,.srt,.vtt,.txt">
+    <textarea class="input py-2" name="text" rows="5" placeholder="หรือวางข้อความที่นี่"></textarea>
+    <div class="flex flex-wrap gap-2"><button class="btn btn-primary">นำเข้าและร่างถาม–ตอบ</button>
+      {% if demo %}<button class="btn btn-secondary" name="demo" value="1">ใช้ข้อความถอดเสียงตัวอย่าง (ข้อมูลจำลอง)</button>{% endif %}</div>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

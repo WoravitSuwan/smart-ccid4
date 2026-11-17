@@ -1,0 +1,164 @@
+"""ai.asr — speech to text and speaker separation on the unit's own machine (B2).
+
+transcribe(path) → [{"start","end","text","words":[{"w","s","e","p"}]}]
+    whisper: Typhoon Whisper converted to CTranslate2, run with faster-whisper (VAD on, word timestamps, word confidence).
+diarize(path) → [{"start","end","speaker"}] or None
+    pyannote.audio pipeline loaded from a local folder (DIARIZATION_MODEL); None = the officer labels speakers.
+parse_transcript(text) → the same shape, from a transcript made by another on-prem tool (JSON / SRT / WebVTT / plain lines).
+
+Models are downloaded once at install time; HF_HUB_OFFLINE=1 makes sure nothing is fetched while running.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import subprocess
+from pathlib import Path
+
+from django.conf import settings
+
+from .llm import AIError
+
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
+os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+
+
+def available() -> bool:
+    if settings.ASR_BACKEND != "whisper" or not settings.ASR_MODEL:
+        return False
+    try:
+        import faster_whisper  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+def to_flac(src: Path, dst: Path) -> Path:
+    """16 kHz mono FLAC for the speech model (the original file is never touched)."""
+    subprocess.run([settings.FFMPEG_BIN, "-y", "-loglevel", "error", "-i", str(src), "-ac", "1", "-ar", "16000", str(dst)],
+                   check=True, timeout=3600)  # fmt: skip
+    return dst
+
+
+def duration(path: Path) -> float:
+    try:
+        out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", str(path)],
+                             capture_output=True, text=True, timeout=60, check=False)  # fmt: skip
+        return float(out.stdout.strip())
+    except (ValueError, OSError, subprocess.SubprocessError):
+        return 0.0
+
+
+def transcribe(path: Path) -> list[dict]:
+    if not available():
+        raise AIError("ยังไม่ได้เปิดใช้การถอดเสียงในเครื่อง (ASR_BACKEND=whisper, ASR_MODEL) · นำเข้าข้อความถอดเสียงแทนได้")
+    from faster_whisper import WhisperModel
+
+    model = WhisperModel(settings.ASR_MODEL, device=settings.ASR_DEVICE, compute_type="auto")
+    segments, _ = model.transcribe(
+        str(path), language="th", vad_filter=True, word_timestamps=True, condition_on_previous_text=False
+    )
+    out = []
+    for s in segments:
+        text = s.text.strip()
+        if not text:
+            continue
+        words = [
+            {"w": w.word.strip(), "s": round(w.start, 2), "e": round(w.end, 2), "p": round(w.probability, 3)}
+            for w in (s.words or [])
+        ]
+        out.append({"start": float(s.start), "end": float(s.end), "text": text, "words": words})
+    return out
+
+
+def diarize(path: Path) -> list[dict] | None:
+    if not settings.DIARIZATION_MODEL:
+        return None
+    try:
+        from pyannote.audio import Pipeline
+    except ImportError:
+        return None
+    pipeline = Pipeline.from_pretrained(settings.DIARIZATION_MODEL)
+    result = pipeline(str(path))
+    return [{"start": float(t.start), "end": float(t.end), "speaker": spk} for t, _, spk in result.itertracks(yield_label=True)]
+
+
+def assign_speakers(segments: list[dict], turns: list[dict] | None) -> list[dict]:
+    """Give each segment the speaker who talks most during it (diarization turns)."""
+    for seg in segments:
+        if not turns:
+            seg.setdefault("speaker", "S1")
+            continue
+        overlap: dict[str, float] = {}
+        for t in turns:
+            o = min(seg["end"], t["end"]) - max(seg["start"], t["start"])
+            if o > 0:
+                overlap[t["speaker"]] = overlap.get(t["speaker"], 0) + o
+        seg["speaker"] = max(overlap, key=overlap.get) if overlap else seg.get("speaker", "S1")
+    labels = {}
+    for seg in segments:  # SPEAKER_00 → S1 in order of first appearance
+        labels.setdefault(seg["speaker"], f"S{len(labels) + 1}")
+        seg["speaker"] = labels[seg["speaker"]]
+    return segments
+
+
+def repeated(text: str) -> bool:
+    """Whisper sometimes loops on silence ("ครับ ครับ ครับ …"): flag unusual repetition."""
+    toks = text.split()
+    return len(toks) >= 6 and len(set(toks)) <= max(2, len(toks) // 4)
+
+
+# ---------------------------------------------------------------- import a transcript made elsewhere (on-prem)
+_TS = r"(\d{1,2}):(\d{2})(?::(\d{2}))?(?:[.,](\d{1,3}))?"
+_ARROW = re.compile(_TS + r"\s*-->\s*" + _TS)
+_LINE = re.compile(r"^\s*\[?" + _TS + r"\]?\s+([A-Za-z]+\d*|[ก-๙]+)\s*[:：]?\s+(.+)$")
+
+
+def _secs(a, b, c, ms) -> float:
+    h, mi, sec = (0, int(a), int(b)) if c is None else (int(a), int(b), int(c))
+    return h * 3600 + mi * 60 + sec + (int(ms.ljust(3, "0")) / 1000 if ms else 0)
+
+
+def parse_transcript(text: str) -> list[dict]:
+    text = (text or "").strip().lstrip("﻿")
+    if not text:
+        return []
+    if text[0] in "[{":
+        try:
+            data = json.loads(text)
+            items = data["segments"] if isinstance(data, dict) else data
+            return [{"start": float(d["start"]), "end": float(d.get("end", d["start"])), "text": str(d["text"]).strip(),
+                     "speaker": str(d.get("speaker", "S1")), "words": d.get("words") or []} for d in items]  # fmt: skip
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as e:
+            raise AIError("อ่านไฟล์ JSON ไม่ได้ ต้องมี start, end, text") from e
+    out: list[dict] = []
+    if _ARROW.search(text):
+        for block in re.split(r"\n\s*\n", text):
+            m = _ARROW.search(block)
+            if not m:
+                continue
+            g = m.groups()
+            body, spk = block[m.end() :].strip(), "S1"
+            sm = re.match(r"^(?:<v\s+([^>]+)>|([A-Za-z]+\d*|[ก-๙]+)\s*:)\s*", body)
+            if sm:
+                spk, body = (sm.group(1) or sm.group(2)).strip(), body[sm.end() :]
+            body = re.sub(r"<[^>]+>", "", body).strip()
+            if body:
+                out.append({"start": _secs(*g[:4]), "end": _secs(*g[4:]), "text": body, "speaker": spk, "words": []})
+        return out
+    for line in text.splitlines():
+        if not line.strip():
+            continue
+        m = _LINE.match(line)
+        if m:
+            g = m.groups()
+            start = _secs(*g[:4])
+            out.append({"start": start, "end": start, "text": g[5].strip(), "speaker": g[4], "words": []})
+        elif out:
+            out[-1]["text"] += " " + line.strip()
+    for i, seg in enumerate(out):
+        if seg["end"] <= seg["start"]:
+            seg["end"] = out[i + 1]["start"] if i + 1 < len(out) else seg["start"] + 5
+    return out

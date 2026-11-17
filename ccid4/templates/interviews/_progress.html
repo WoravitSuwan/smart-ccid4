@@ -1,0 +1,4 @@
+<div id="progress" class="card glass glow-border p-5 flex flex-col gap-3" {% if s.status == "processing" %}hx-get="{% url 'interviews:process' s.pk %}" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %} aria-live="polite">
+  <ol class="steps-list">{% for st in s.progress %}<li class="step-{{ st.state }}"><span class="step-icon" aria-hidden="true"></span><span><b>{{ st.label }}</b>{% if st.note %}<span class="block text-xs text-muted">{{ st.note }}</span>{% endif %}</span></li>{% endfor %}</ol>
+  {% if s.error %}<p class="text-sm text-danger">{{ s.error }}</p>{% endif %}
+</div>

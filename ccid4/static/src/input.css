@@ -321,3 +321,34 @@
   a.tab[aria-selected="true"] { color: var(--primary); }
   a.tab[aria-selected="true"]::after { transform: scaleX(1); }
 }
+
+@layer components {
+  /* ---------- Interview room (B2) ---------- */
+  .rec-face { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .rec-dot { width: 18px; height: 18px; border-radius: 999px; background: var(--border); }
+  .rec-dot.on { background: var(--danger); box-shadow: 0 0 0 0 var(--danger); animation: ping 1.4s infinite; }
+  .rec-timer { font-size: 3rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+  .level-meter { height: 12px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); overflow: hidden; }
+  .level-meter span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--success), var(--warning), var(--danger)); transition: width .08s linear; }
+  .steps-list { display: flex; flex-direction: column; gap: .6rem; }
+  .steps-list li { display: flex; align-items: flex-start; gap: .7rem; }
+  .step-icon { flex: none; width: 22px; height: 22px; margin-top: 2px; border-radius: 999px; border: 2px solid var(--border); }
+  .step-done .step-icon { background: var(--success); border-color: var(--success); }
+  .step-running .step-icon { border-color: var(--primary); border-top-color: transparent; animation: spin .8s linear infinite; }
+  .step-warning .step-icon { background: var(--warning); border-color: var(--warning); }
+  .step-skipped .step-icon { border-style: dashed; }
+  .waveform { min-height: 72px; }
+  .seg { padding: .6rem .75rem; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); }
+  .seg-investigator { border-left: 4px solid var(--primary); }
+  .seg-subject { border-left: 4px solid var(--accent); }
+  .seg-uncovered { border-color: color-mix(in srgb, var(--warning) 70%, var(--border)); }
+  .seg-text { line-height: 1.9; }
+  .word { cursor: pointer; border-radius: 4px; padding: 0 1px; transition: background-color .15s; }
+  .word:hover { background: var(--primary-soft); }
+  .word.low { text-decoration: underline wavy var(--warning); text-underline-offset: 4px; }
+  .word.figure { background: color-mix(in srgb, var(--accent) 16%, transparent); font-weight: 600; }
+  .word.speaking { background: var(--primary); color: var(--on-primary); }
+  .qa-pair { display: flex; flex-direction: column; gap: .5rem; padding: .8rem; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); }
+  .qa-pair.has-flags { border-color: color-mix(in srgb, var(--danger) 55%, var(--border)); }
+  .qa-pair.is-reviewed { border-color: color-mix(in srgb, var(--success) 55%, var(--border)); }
+}

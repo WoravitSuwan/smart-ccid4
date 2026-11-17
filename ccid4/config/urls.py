@@ -15,6 +15,7 @@ urlpatterns = [
     path("cases/", include("dika.urls")),
     path("intake/", include("intake.urls")),
     path("summons/", include("summons.urls")),
+    path("interviews/", include("interviews.urls")),
     path("", include("intake.public_urls")),
     path("django-admin/", admin.site.urls),
 ]

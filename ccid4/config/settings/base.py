@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "dika",
     "intake",
     "summons",
+    "interviews",
 ]
 
 MIDDLEWARE = [
@@ -127,6 +128,8 @@ CELERY_BROKER_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_EAGER", default=False)
 CELERY_TIMEZONE = TIME_ZONE
+# With a GPU worker (docker compose --profile gpu) send audio processing to its own queue.
+CELERY_TASK_ROUTES = {"interviews.tasks.process_task": {"queue": "asr"}} if env.bool("CCID4_ASR_QUEUE", default=False) else {}
 CELERY_BEAT_SCHEDULE = {
     "intake-pending": {"task": "intake.tasks.process_pending", "schedule": 60.0},
 }
@@ -142,7 +145,10 @@ AI_BACKEND = env("AI_BACKEND", default="fake")  # fake | ollama
 OLLAMA_URL = env("OLLAMA_URL", default="http://ollama:11434")
 OLLAMA_MODEL = env("OLLAMA_MODEL", default="")
 ASR_BACKEND = env("ASR_BACKEND", default="fake")  # fake | whisper
-ASR_MODEL = env("ASR_MODEL", default="")
+ASR_MODEL = env("ASR_MODEL", default="")  # path to a CTranslate2 Typhoon Whisper model (faster-whisper)
+ASR_DEVICE = env("ASR_DEVICE", default="auto")  # cuda | cpu | auto
+DIARIZATION_MODEL = env("DIARIZATION_MODEL", default="")  # local pyannote pipeline folder; empty = officer labels speakers
+FFMPEG_BIN = env("CCID4_FFMPEG", default="ffmpeg")
 OLLAMA_TIMEOUT = env.int("OLLAMA_TIMEOUT", default=90)
 OLLAMA_EMBED_MODEL = env("OLLAMA_EMBED_MODEL", default="")  # e.g. bge-m3
 AI_EMBED_DIM = 1024  # bge-m3
