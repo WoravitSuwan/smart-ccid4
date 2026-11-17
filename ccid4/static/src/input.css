@@ -313,3 +313,11 @@
   .no-print { display: none !important; }
   .poster { border: 0; border-radius: 0; margin: 0; width: 148mm; height: 210mm; }
 }
+
+@layer components {
+  .progress-bar { height: 10px; border-radius: 999px; background: var(--surface-2); overflow: hidden; border: 1px solid var(--border); }
+  .progress-bar span { display: block; height: 100%; width: var(--p); border-radius: inherit; transition: width .4s ease;
+    background: linear-gradient(90deg, var(--primary), var(--accent)); background-size: 200% 100%; animation: shimmer 2s linear infinite; }
+  a.tab[aria-selected="true"] { color: var(--primary); }
+  a.tab[aria-selected="true"]::after { transform: scaleX(1); }
+}

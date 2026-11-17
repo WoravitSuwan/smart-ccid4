@@ -35,14 +35,16 @@ def find_placeholders(data: bytes) -> list[str]:
     return list(seen)
 
 
-def fill(data: bytes, values: dict, thai_digits: bool = True) -> tuple[bytes, list[str]]:
-    """Return the filled document and the placeholders that had no value (left visible as ……)."""
+def fill(data: bytes, values: dict, thai_digits: bool = True, allow_empty=()) -> tuple[bytes, list[str]]:
+    """Return the filled document and the placeholders that had no value (left visible as ……).
+
+    Names in allow_empty print as nothing when empty (e.g. a postcode on an envelope, written in by hand)."""
     doc = Document(BytesIO(data))
     missing: list[str] = []
     for root in _roots(doc):
         _expand_rows(root, values, thai_digits)
         for p in list(root.iter(W_P)):
-            _fill_paragraph(p, values, thai_digits, missing)
+            _fill_paragraph(p, values, thai_digits, missing, allow_empty)
     out = BytesIO()
     doc.save(out)
     return out.getvalue(), sorted(set(missing))
@@ -110,7 +112,7 @@ def lookup(values: dict, name: str):
     return cur
 
 
-def _fill_paragraph(p, values: dict, thai_digits: bool, missing: list[str]) -> None:
+def _fill_paragraph(p, values: dict, thai_digits: bool, missing: list[str], allow_empty=()) -> None:
     runs = _runs(p)
     texts = [_run_text(r) for r in runs]
     full = "".join(texts)
@@ -134,7 +136,9 @@ def _fill_paragraph(p, values: dict, thai_digits: bool, missing: list[str]) -> N
     for m in reversed(matches):
         name = m.group(1).strip()
         value = lookup(values, name)
-        if value in (None, ""):
+        if value in (None, "") and name in allow_empty:
+            replacement = ""
+        elif value in (None, ""):
             missing.append(name)
             replacement = "……………"
         else:

@@ -328,6 +328,19 @@ document.addEventListener('submit', (e) => {
   if (busy) { busy.disabled = true; busy.textContent = busy.dataset.busy; }
 });
 
+// ---------- Summons register: select rows ----------
+function updateSelection(form) {
+  const n = form.querySelectorAll('[data-check-row]:checked').length;
+  const label = form.querySelector('[data-selected-text]');
+  if (label) label.textContent = `ออกหมายเรียก (${thaiDigits(n)} รายการ)`;
+}
+document.addEventListener('change', (e) => {
+  const form = e.target.closest('[data-select-form]');
+  if (!form) return;
+  if (e.target.matches('[data-check-all]')) form.querySelectorAll('[data-check-row]').forEach((b) => { b.checked = e.target.checked; });
+  updateSelection(form);
+});
+
 // HTMX sends the CSRF token on every request.
 document.addEventListener('htmx:configRequest', (e) => {
   e.detail.headers['X-CSRFToken'] = document.querySelector('meta[name="csrf-token"]').content;

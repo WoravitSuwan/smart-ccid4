@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 
 from django.core.cache import cache
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import transaction
 from django.utils import timezone
 
@@ -176,8 +176,23 @@ def case_deadlines(case, now=None, rs: RuleSet | None = None) -> list[Item]:
             dl = rules.days_after(start, rs.params["unknown_offender"], rs.is_holiday, "unknown_offender")
             dl.short = "ความเห็นคดีไม่ปรากฏตัวผู้กระทำผิด"
             out.append(dl)
+    out += summons_deadlines(case)
     out.sort(key=rules.Deadline.sort_key)
     return [Item(d, rules.status(d, now, rs.warn_days)) for d in out]
+
+
+def summons_deadlines(case) -> list[rules.Deadline]:
+    """B1: appointments from summons that are still waiting for the accuser (shown in the case panel)."""
+    try:
+        reg = case.register
+    except ObjectDoesNotExist:  # case not in the unit register
+        return []
+    out = []
+    for s in reg.summons.filter(result="issued").order_by("number"):
+        at = timezone.localtime(s.appointment_at)
+        out.append(rules.Deadline("summons", f"นัดผู้กล่าวหาตามหมายเรียกครั้งที่ {s.number}", at, at, "ป.วิ.อาญา ม.52",
+                                  short=f"นัดตามหมายเรียกครั้งที่ {s.number}"))  # fmt: skip
+    return out
 
 
 def nearest(case, now=None) -> Item | None:

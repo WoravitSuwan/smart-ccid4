@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}นำเข้าทะเบียนคดี{% endblock %}
+{% block content %}
+<div class="reveal"><h1>นำเข้าข้อมูล</h1><p class="text-muted">ไฟล์ผู้แจ้ง (ชีต Grid) และทะเบียนคดีของกอง (แยกชีตรายปี) · รวมกันด้วยเลขรับแจ้ง · นำเข้าซ้ำได้ ระบบอัปเดตของเดิม ไม่สร้างซ้ำ</p></div>
+{% include "summons/_nav.html" with sub="import" %}
+<form method="post" enctype="multipart/form-data" class="card glass glow-border p-5 flex flex-wrap items-end gap-3 reveal">{% csrf_token %}
+  <label class="flex-1 min-w-[260px]"><span class="label">ไฟล์ Excel (.xlsx)</span><input class="input py-2" type="file" name="file" accept=".xlsx,.xlsm" required></label>
+  <label><span class="label">ชนิดไฟล์</span><select class="input" name="kind"><option value="">ให้ระบบดูเอง</option>{% for k, v in kinds %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+  <button class="btn btn-primary" data-busy="กำลังอ่านไฟล์…">อัปโหลดและตรวจสอบ</button>
+</form>
+<p class="text-sm text-muted reveal">ขั้นตอน: อัปโหลด → เลือกชีต → จับคู่คอลัมน์ → ตรวจสอบ (เพิ่มใหม่ / อัปเดต / มีปัญหา / จับคู่อีกไฟล์ไม่ได้) → ยืนยัน</p>
+<section class="card p-5 flex flex-col gap-3 reveal">
+  <h2>ประวัติการนำเข้า</h2>
+  {% if history %}<div class="overflow-x-auto"><table class="tbl">
+    <thead><tr><th>เมื่อ</th><th>ไฟล์</th><th>ชนิด</th><th>ผู้นำเข้า</th><th>ใหม่</th><th>อัปเดต</th><th>มีปัญหา</th><th>สถานะ</th></tr></thead>
+    <tbody>{% for b in history %}<tr><td class="whitespace-nowrap">{{ b.created_at|be_datetime }}</td><td><a href="{% url 'summons:import_review' b.pk %}">{{ b.file_name }}</a></td><td>{{ b.get_kind_display }}</td><td>{{ b.created_by.display_name }}</td>
+      <td>{{ b.counts.new|default:"—" }}</td><td>{{ b.counts.updated|default:"—" }}</td><td>{{ b.counts.issues|default:"—" }}</td><td><span class="chip {% if b.status == 'done' %}chip-success{% else %}chip-muted{% endif %} text-xs">{{ b.get_status_display }}</span></td></tr>{% endfor %}</tbody>
+  </table></div>{% else %}<p class="empty-state text-sm">ยังไม่เคยนำเข้า</p>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}ตรวจสอบการนำเข้า{% endblock %}
+{% block content %}
+<nav class="text-sm reveal"><a href="{% url 'summons:import' %}">นำเข้าข้อมูล</a> › {{ batch.file_name }}</nav>
+<div class="flex flex-wrap items-end gap-3 reveal"><div class="flex-1"><h1>{{ batch.get_kind_display }}</h1><p class="text-muted">{{ batch.file_name }}</p></div>
+  <span class="chip {% if batch.status == 'done' %}chip-success{% else %}chip-warning{% endif %}">{{ batch.get_status_display }}</span></div>
+<section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 reveal">
+  <div class="card p-4"><span class="text-sm text-muted">แถวที่มีเลขรับแจ้ง</span><b class="stat-value block">{{ counts.rows|default:0 }}</b></div>
+  <div class="card p-4"><span class="text-sm text-muted">เพิ่มใหม่</span><b class="stat-value block">{{ counts.new|default:0 }}</b></div>
+  <div class="card p-4"><span class="text-sm text-muted">อัปเดต</span><b class="stat-value block">{{ counts.updated|default:0 }}</b>{% for k, v in counts.changes.items %}<span class="text-xs text-muted">{{ k }} {{ v }}</span>{% endfor %}</div>
+  <div class="card p-4"><span class="text-sm text-muted">มีปัญหา (ยังนำเข้าได้)</span><b class="stat-value block">{{ counts.issues|default:0 }}</b></div>
+  <div class="card p-4"><span class="text-sm text-muted">จับคู่อีกไฟล์ไม่ได้</span><b class="stat-value block">{{ counts.unmatched|default:0 }}</b></div>
+</section>
+{% if batch.status == "preview" %}
+<form method="post" class="flex flex-col gap-4">{% csrf_token %}
+  <section class="card p-5 flex flex-col gap-3 reveal">
+    <h2>1. เลือกชีต</h2>
+    <div class="flex flex-wrap gap-3">{% for s in all_sheets %}<label class="plea"><input type="checkbox" name="sheets" value="{{ s }}" {% if s in batch.sheets %}checked{% endif %}> {{ s }}</label>{% endfor %}</div>
+  </section>
+  <section class="card p-5 flex flex-col gap-3 reveal">
+    <h2>2. จับคู่คอลัมน์</h2>
+    {% if missing %}<p class="chip chip-danger self-start">ยังไม่ได้จับคู่: {{ missing|join:", " }}</p>{% else %}<p class="text-sm text-muted">ระบบจับคู่จากชื่อหัวตารางให้แล้ว แก้ได้ถ้าไฟล์ใช้ชื่ออื่น · การจับคู่ที่แก้จะจำไว้ใช้ครั้งหน้า</p>{% endif %}
+    <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+      {% for h in headers %}<label class="flex items-center gap-2 text-sm"><span class="w-40 truncate" title="{{ h }}">{{ h|default:"(ว่าง)" }}</span>
+        <select class="input min-h-[36px]" name="map:{{ h }}"><option value="">— ไม่ใช้ —</option>{% for label, f in field_choices %}<option value="{{ f }}" {% if batch.mapping|get_item:h == f %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>{% endfor %}
+    </div>
+  </section>
+  <div class="savebar card glass p-3 flex flex-wrap gap-2">
+    <button class="btn btn-secondary" name="action" value="preview">ตรวจสอบอีกครั้ง</button>
+    <button class="btn btn-primary" name="action" value="apply" data-busy="กำลังนำเข้า…" {% if missing %}disabled{% endif %}>ยืนยันนำเข้า</button>
+  </div>
+</form>
+{% endif %}
+<section class="card p-5 flex flex-col gap-3 reveal">
+  <div class="flex items-center gap-2"><h2 class="flex-1">รายการที่มีปัญหา</h2>{% if issues %}<a class="btn btn-secondary btn-sm" href="{% url 'summons:import_issues' batch.pk %}">ดาวน์โหลด Excel</a>{% endif %}</div>
+  {% if issues %}<div class="overflow-x-auto max-h-96"><table class="tbl"><thead><tr><th>ชีต</th><th>แถว</th><th>เลขรับแจ้ง</th><th>ปัญหา</th></tr></thead>
+    <tbody>{% for s, r, n, p in issues %}<tr><td>{{ s }}</td><td>{{ r }}</td><td>{{ n }}</td><td><span class="chip chip-warning text-xs">{{ p }}</span></td></tr>{% endfor %}</tbody></table></div>
+  {% else %}<p class="text-sm text-muted">ไม่มี</p>{% endif %}
+</section>
+{% endblock %}

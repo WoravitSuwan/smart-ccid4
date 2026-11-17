@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}หมายเรียก{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-end gap-3 reveal"><div class="flex-1"><h1>หมายเรียกผู้กล่าวหา</h1>
+  <p class="text-muted">ออกหมายเรียกทีละคนหรือหลายร้อยฉบับพร้อมกัน จากทะเบียนคดีของกอง พร้อมใบจ่าหน้าซอง</p></div>
+  <a class="btn btn-primary" href="{% url 'summons:register' %}?open=1">เลือกคดีออกหมาย</a></div>
+{% include "summons/_nav.html" with sub="home" %}
+<section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+  <a class="card card-hover glow-border p-4 flex flex-col gap-1 no-underline text-text reveal" href="{% url 'summons:register' %}"><span class="text-sm text-muted">คดีทั้งหมด</span><b class="stat-value" x-data="countUp" data-value="{{ counts.total }}">{{ counts.total }}</b></a>
+  <a class="card card-hover p-4 flex flex-col gap-1 no-underline text-text reveal" href="{% url 'summons:register' %}?open=1"><span class="text-sm text-muted">ยังไม่สิ้นสุด</span><b class="stat-value" x-data="countUp" data-value="{{ counts.open }}">{{ counts.open }}</b></a>
+  <a class="card card-hover p-4 flex flex-col gap-1 no-underline text-text reveal" href="{% url 'summons:register' %}?open=1&never=1"><span class="text-sm text-muted">ยังไม่เคยออกหมาย</span><b class="stat-value" x-data="countUp" data-value="{{ counts.never }}">{{ counts.never }}</b></a>
+  <a class="card card-hover p-4 flex flex-col gap-1 no-underline text-text reveal" href="{% url 'summons:register' %}?open=1&bad_address=1"><span class="text-sm text-muted">ที่อยู่ไม่ครบ</span><b class="stat-value" x-data="countUp" data-value="{{ counts.bad_address }}">{{ counts.bad_address }}</b></a>
+  <div class="card p-4 flex flex-col gap-1 reveal"><span class="text-sm text-muted">รอมาตามนัด</span><b class="stat-value" x-data="countUp" data-value="{{ counts.waiting }}">{{ counts.waiting }}</b></div>
+  <div class="card p-4 flex flex-col gap-1 reveal"><span class="text-sm text-muted">ไม่มาตามนัด</span><b class="stat-value" x-data="countUp" data-value="{{ counts.absent }}">{{ counts.absent }}</b></div>
+</section>
+<div class="grid gap-4 lg:grid-cols-[2fr_1fr] items-start">
+  <section class="card p-5 flex flex-col gap-3 reveal">
+    <h2>แยกตามพนักงานสอบสวน (คดียังไม่สิ้นสุด)</h2>
+    {% if by_investigator %}
+    <table class="tbl"><thead><tr><th>พนักงานสอบสวน</th><th class="text-right">คดีค้าง</th><th class="text-right">ยังไม่เคยออกหมาย</th></tr></thead>
+      <tbody>{% for r in by_investigator %}<tr><td>{{ r.investigator__name|default:"(ไม่ระบุ)" }}</td><td class="text-right">{{ r.n|thai_digits }}</td><td class="text-right">{{ r.never|thai_digits }}</td></tr>{% endfor %}</tbody></table>
+    {% else %}<p class="empty-state text-sm">ยังไม่มีข้อมูล {% if can_import %}<a href="{% url 'summons:import' %}">นำเข้าทะเบียนคดี</a>{% endif %}</p>{% endif %}
+  </section>
+  <section class="card p-5 flex flex-col gap-3 reveal">
+    <h2>การออกหมายล่าสุดของฉัน</h2>
+    {% for b in batches %}<a class="flex items-center gap-2 no-underline text-text" href="{% url 'summons:batch' b.pk %}"><span class="chip {% if b.status == 'done' %}chip-success{% elif b.status == 'failed' %}chip-danger{% else %}chip-muted chip-live{% endif %} text-xs">{{ b.get_status_display }}</span><span class="text-sm">{{ b.done_count|thai_digits }}/{{ b.total|thai_digits }} ฉบับ · {{ b.created_at|be_datetime }}</span></a>
+    {% empty %}<p class="text-sm text-muted">ยังไม่เคยออกหมาย</p>{% endfor %}
+  </section>
+</div>
+{% endblock %}

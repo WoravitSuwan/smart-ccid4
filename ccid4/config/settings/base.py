@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "ai",
     "dika",
     "intake",
+    "summons",
 ]
 
 MIDDLEWARE = [

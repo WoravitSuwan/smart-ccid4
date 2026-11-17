@@ -1,0 +1,36 @@
+<form method="post" action="{% url 'summons:issue' %}?{{ query }}" class="flex flex-col gap-3" data-select-form>{% csrf_token %}
+  <input type="hidden" name="ids" value="">
+  <div class="card overflow-x-auto">
+    <table class="tbl">
+      <thead><tr>
+        <th class="w-10">{% if can_issue %}<input type="checkbox" data-check-all aria-label="เลือกทั้งหน้า">{% endif %}</th>
+        <th>เลขรับแจ้ง</th><th>ผู้กล่าวหา</th><th>ที่อยู่</th><th>ประเภทคดี</th><th>วันที่รับแจ้ง</th><th>พนักงานสอบสวน</th><th>สถานะ</th><th>หมายเรียก</th>
+      </tr></thead>
+      <tbody>{% for rc in page %}
+        <tr>
+          <td>{% if can_issue %}<input type="checkbox" name="ids" value="{{ rc.pk }}" data-check-row aria-label="เลือก {{ rc.receipt_no }}">{% endif %}</td>
+          <td class="whitespace-nowrap"><a href="{% url 'summons:detail' rc.pk %}">{{ rc.receipt_no }}</a>{% if rc.case_no %}<span class="block text-xs text-muted">คดี {{ rc.case_no }}</span>{% endif %}</td>
+          <td>{% if rc.complainant %}{{ rc.complainant.full_name }}{% else %}{{ rc.victim_name }} <span class="chip chip-warning text-xs">ไม่พบในไฟล์ผู้แจ้ง</span>{% endif %}</td>
+          <td class="text-sm max-w-xs">{% if rc.complainant %}{{ rc.complainant.address|default:"—"|truncatechars:70 }}{% for p in rc.complainant.issues %}{% if p == "ไม่มีบ้านเลขที่" or p == "ไม่มีจังหวัด" %}<span class="chip chip-warning text-xs ml-1">{{ p }}</span>{% endif %}{% endfor %}{% else %}—{% endif %}</td>
+          <td class="text-sm max-w-[14rem]">{{ rc.case_type|truncatechars:50 }}</td>
+          <td class="whitespace-nowrap">{{ rc.report_date|be_date }}</td>
+          <td>{{ rc.investigator.name|default:"—" }}</td>
+          <td><span class="chip {% if rc.status.is_final %}chip-success{% else %}chip-primary{% endif %} text-xs">{{ rc.status.name|default:"—" }}</span></td>
+          <td>{% if rc.n_summons %}<span class="chip chip-muted text-xs">{{ rc.n_summons|thai_digits }} ครั้ง</span>{% else %}<span class="text-xs text-muted">ยังไม่เคย</span>{% endif %}</td>
+        </tr>
+      {% empty %}<tr><td colspan="9"><p class="empty-state text-sm">ไม่พบคดีตามเงื่อนไข</p></td></tr>{% endfor %}</tbody>
+    </table>
+  </div>
+  <div class="flex flex-wrap items-center gap-2 text-sm">
+    <span class="text-muted">พบ {{ total|thai_digits }} คดี · หน้า {{ page.number|thai_digits }}/{{ page.paginator.num_pages|thai_digits }}</span>
+    {% if page.has_previous %}<a class="btn btn-secondary btn-sm" href="?{{ query }}&page={{ page.previous_page_number }}">ก่อนหน้า</a>{% endif %}
+    {% if page.has_next %}<a class="btn btn-secondary btn-sm" href="?{{ query }}&page={{ page.next_page_number }}">ถัดไป</a>{% endif %}
+  </div>
+  {% if can_issue %}
+  <div class="savebar card glass p-3 flex flex-wrap items-center gap-3">
+    <button class="btn btn-primary" data-selected-label="ออกหมายเรียก (n รายการ)"><svg class="w-5 h-5"><use href="#i-mail"/></svg><span data-selected-text>ออกหมายเรียก (๐ รายการ)</span></button>
+    <button class="btn btn-secondary" name="all_filtered" value="1">ออกให้ทุกคดีตามตัวกรอง ({{ total|thai_digits }})</button>
+    <span class="text-xs text-muted">ขั้นต่อไปตรวจวันนัด สถานที่ และดูตัวอย่างก่อนยืนยัน</span>
+  </div>
+  {% endif %}
+</form>
