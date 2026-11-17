@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from audit.services import log
@@ -88,3 +89,46 @@ def download_bundle(request, pk, job_id):
     case = get_case(request.user, pk)
     job = get_object_or_404(DocumentJob, pk=job_id, case=case)
     return _send(request, case, job.bundle, "ไฟล์รวมเอกสาร (ZIP)", "document_job", job.pk)
+
+
+# ---------------------------------------------------------------- B12: รวมสำนวนเป็น PDF เล่มเดียว
+@login_required
+def bundle_page(request, pk):
+    from . import bundle
+    from .models import CaseBundle
+
+    case = get_case(request.user, pk)
+    if request.method == "POST":
+        if not may_issue(request.user, case):
+            raise PermissionDenied
+        valid = {p.token for p in bundle.candidates(case)}
+        picked = [t for t in request.POST.getlist("part") if t in valid]
+        order = {t: request.POST.get(f"order-{t}", "") for t in picked}
+        picked.sort(key=lambda t: (float(order[t]) if order[t].replace(".", "", 1).isdigit() else 9999))
+        if not picked:
+            messages.error(request, "เลือกอย่างน้อย 1 รายการ")
+            return redirect("documents:case_bundle", pk=case.pk)
+        b = CaseBundle.objects.create(case=case, request=picked, created_by=request.user)
+        from .tasks import build_bundle
+
+        build_bundle.delay(b.pk)
+        return redirect(f"{reverse('documents:case_bundle', args=[case.pk])}?b={b.pk}")
+    parts = bundle.candidates(case)
+    current = case.bundles.filter(pk=request.GET.get("b") or 0).first()
+    return render(request, "documents/bundle.html", {"case": case, "parts": parts, "current": current, "history": case.bundles.select_related("created_by")[:20],
+                                                     "may_issue": may_issue(request.user, case), "pdf_available": soffice_available(), "active": "cases"})  # fmt: skip
+
+
+@login_required
+def bundle_status(request, pk, bid):
+    case = get_case(request.user, pk)
+    b = get_object_or_404(case.bundles, pk=bid)
+    return render(request, "documents/_bundle_status.html", {"case": case, "b": b})
+
+
+@login_required
+def bundle_download(request, pk, bid):
+    case = get_case(request.user, pk)
+    b = get_object_or_404(case.bundles, pk=bid, status="done")
+    log(request.user, "download", "case_bundle", b.pk, f"ดาวน์โหลดสำนวนรวม PDF {b.pages} หน้า คดี {case}")
+    return FileResponse(b.file.open("rb"), as_attachment=True, filename=b.file.name.rsplit("/", 1)[-1])

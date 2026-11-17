@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}พยานหลักฐาน · {{ case.label }}{% endblock %}
+{% block content %}
+<nav class="text-sm reveal" aria-label="เส้นทาง"><a href="{% url 'cases:list' %}">คดีของฉัน</a> › <a href="{% url 'cases:detail' case.pk %}">{{ case.label }}</a> › พยานหลักฐานและของกลาง</nav>
+<div class="flex flex-wrap items-end gap-3 reveal">
+  <div class="flex-1"><h1>พยานหลักฐานและของกลาง</h1>
+    <p class="text-muted">{{ case.label }} · ไฟล์รับเข้าแบบเขียนครั้งเดียว คำนวณ SHA-256 ทันที · ทุกการเปิด ดาวน์โหลด และส่งมอบ บันทึกว่าใคร เมื่อไร เพราะอะไร</p></div>
+  <a class="btn btn-secondary" href="{% url 'documents:page' case.pk %}"><svg class="w-5 h-5"><use href="#i-file"/></svg>ออกบัญชีของกลาง/บันทึกตรวจยึด</a>
+</div>
+
+<div class="card p-0 reveal" data-tabs="evidence" data-hash>
+  <div class="tabbar px-3 pt-2" role="tablist" aria-label="พยานหลักฐาน">
+    <button type="button" class="tab" role="tab" data-tab="files" aria-selected="true">ไฟล์พยานหลักฐาน <span class="count">{{ active_files|length }}</span></button>
+    <button type="button" class="tab" role="tab" data-tab="exhibits" aria-selected="false">ทะเบียนของกลาง <span class="count">{{ exhibits|length }}</span></button>
+    <button type="button" class="tab" role="tab" data-tab="custody" aria-selected="false">บันทึกการครอบครอง (chain of custody)</button>
+  </div>
+
+  {# ---------- ไฟล์ ---------- #}
+  <div role="tabpanel" data-panel="files" class="p-5 flex flex-col gap-4">
+    {% if editable %}
+    <form method="post" action="{% url 'evidence:upload' case.pk %}" enctype="multipart/form-data" class="card glass p-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4 items-end">{% csrf_token %}
+      <label class="sm:col-span-2"><span class="label">ไฟล์ (เลือกได้หลายไฟล์) *</span><input class="input py-2" type="file" name="files" multiple required></label>
+      <label><span class="label">ชื่อพยานหลักฐาน</span><input class="input" name="title" maxlength="200" placeholder="ว่าง = ใช้ชื่อไฟล์"></label>
+      <label><span class="label">ได้มาจาก</span><input class="input" name="source" maxlength="300" placeholder="เช่น ผู้เสียหายส่งทางไลน์"></label>
+      <label><span class="label">วันเวลาที่ได้มา</span><input class="input" type="datetime-local" name="collected_at"></label>
+      <label><span class="label">เป็นส่วนของของกลาง</span><select class="input" name="exhibit"><option value="">— ไม่ผูก —</option>{% for x in exhibits %}<option value="{{ x.pk }}">{{ x.order }}. {{ x.name }}</option>{% endfor %}</select></label>
+      <label class="flex items-center gap-2 text-sm min-h-[44px]"><input type="checkbox" name="is_digital" checked> ลงในบันทึกตรวจยึดพยานหลักฐานดิจิทัล</label>
+      <button class="btn btn-primary"><svg class="w-5 h-5"><use href="#i-lock"/></svg>รับเข้าและล็อกไฟล์</button>
+    </form>
+    {% endif %}
+    <div class="grid gap-4 xl:grid-cols-[1fr_26rem] items-start">
+      {% if files %}
+      <ul class="evidence-grid">{% for f in files %}
+        <li class="evidence-card{% if f.withdrawn_at %} is-withdrawn{% endif %}">
+          <button type="button" class="evidence-open" hx-get="{% url 'evidence:file' case.pk f.pk %}" hx-target="#evidence-panel" aria-label="เปิด {{ f.title }}">
+            <span class="evidence-kind kind-{{ f.kind }}">{{ f.get_kind_display }}</span>
+            <b class="text-sm break-all">{{ f.title }}</b>
+            <span class="text-xs text-muted">{{ f.size|filesizeformat }} · {{ f.uploaded_at|be_datetime }}</span>
+            <code class="text-xs text-muted break-all">SHA-256 {{ f.sha256|truncatechars:20 }}</code>
+            {% if f.exhibit %}<span class="text-xs">ของกลาง {{ f.exhibit.order }}. {{ f.exhibit.name }}</span>{% endif %}
+            {% if f.origin == "interview" %}<span class="chip chip-muted text-xs self-start">จากห้องสอบปากคำ</span>{% endif %}
+            {% if f.withdrawn_at %}<span class="chip chip-muted text-xs self-start">ถอนออกแล้ว</span>{% endif %}
+          </button>
+        </li>{% endfor %}</ul>
+      {% else %}<p class="empty-state text-sm">ยังไม่มีไฟล์พยานหลักฐาน</p>{% endif %}
+      <aside id="evidence-panel" class="card glass p-4 flex flex-col gap-3 sticky top-[72px]" aria-live="polite">
+        <b>ดูพยานหลักฐาน</b><p class="text-sm text-muted">เลือกไฟล์ทางซ้าย ภาพ PDF เสียง และวิดีโอ เปิดดูในหน้านี้ได้โดยไม่ต้องดาวน์โหลด (ทุกการเปิดถูกบันทึก)</p>
+      </aside>
+    </div>
+  </div>
+
+  {# ---------- ของกลาง ---------- #}
+  <div role="tabpanel" data-panel="exhibits" class="p-5 flex flex-col gap-4" hidden>
+    {% if editable %}
+    <details class="card glass p-4"><summary class="cursor-pointer font-semibold">+ เพิ่มของกลาง</summary>
+      <form method="post" action="{% url 'evidence:exhibit_add' case.pk %}" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 items-end mt-3">{% csrf_token %}
+        {% for field in exhibit_form %}{% if field.name == "is_digital" %}<label class="flex items-center gap-2 text-sm min-h-[44px]">{{ field }} {{ field.label }}</label>
+        {% else %}<label class="{% if field.name == 'name' %}xl:col-span-2{% endif %}"><span class="label">{{ field.label }}{% if field.field.required %} *{% endif %}</span>{{ field }}</label>{% endif %}{% endfor %}
+        <button class="btn btn-primary">บันทึกของกลาง</button></form>
+    </details>
+    {% endif %}
+    {% if exhibits %}
+    <div class="overflow-x-auto rounded-card border border-border"><table class="tbl">
+      <thead><tr><th>ลำดับ</th><th>รายการ</th><th>จำนวน</th><th>สภาพ</th><th>ได้มาจาก</th><th>ที่เก็บ</th><th>สถานะ</th><th>ผู้ครอบครอง</th></tr></thead>
+      <tbody>{% for x in exhibits %}
+        <tr><td>{{ x.order }}</td><td><b>{{ x.name }}</b>{% if x.is_digital %} <span class="chip chip-muted text-xs">ดิจิทัล</span>{% endif %}{% if x.note %}<span class="block text-xs text-muted">{{ x.note }}</span>{% endif %}</td>
+          <td>{{ x.quantity }} {{ x.unit }}</td><td>{{ x.condition|default:"—" }}</td>
+          <td>{{ x.source|default:"—" }}{% if x.party %}<span class="block text-xs text-muted">{{ x.party.get_role_display }} {{ x.party.person.full_name }}</span>{% endif %}{% if x.seized_at %}<span class="block text-xs text-muted">{{ x.seized_at|be_datetime }}</span>{% endif %}</td>
+          <td>{{ x.storage|default:"—" }}</td><td><span class="chip exhibit-{{ x.status }} text-xs">{{ x.get_status_display }}</span></td><td>{{ x.holder|default:"—" }}</td></tr>
+        {% if editable %}<tr class="row-detail"><td></td><td colspan="7"><div class="flex flex-wrap gap-4">
+          <details><summary class="text-xs text-primary cursor-pointer">แก้ไข/ย้ายที่เก็บ</summary>
+            {% with f=edit_forms|get_item:x.pk %}<form method="post" action="{% url 'evidence:exhibit_update' case.pk x.pk %}" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 items-end mt-2">{% csrf_token %}
+              {% for field in f %}{% if field.name == "is_digital" %}<label class="flex items-center gap-2 text-sm min-h-[44px]">{{ field }} {{ field.label }}</label>{% else %}<label><span class="label">{{ field.label }}</span>{{ field }}</label>{% endif %}{% endfor %}
+              <label class="xl:col-span-2"><span class="label">เหตุผล (ต้องกรอกเมื่อเปลี่ยนสถานะ ที่เก็บ สภาพ หรือผู้ครอบครอง)</span><input class="input" name="reason" maxlength="300"></label>
+              <button class="btn btn-secondary btn-sm">บันทึก</button></form>{% endwith %}</details>
+          <details><summary class="text-xs text-primary cursor-pointer">ส่งมอบ/รับคืน</summary>
+            <form method="post" action="{% url 'evidence:exhibit_handover' case.pk x.pk %}" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 items-end mt-2">{% csrf_token %}
+              <label><span class="label">การกระทำ</span><select class="input" name="direction"><option value="out">ส่งมอบให้</option><option value="back">รับคืนจาก</option></select></label>
+              <label><span class="label">บุคคล/หน่วยงาน *</span><input class="input" name="to_whom" required maxlength="200" placeholder="เช่น พฐ.จว. / พนักงานอัยการ"></label>
+              <label><span class="label">สถานะใหม่ (เมื่อส่งมอบ)</span><select class="input" name="status"><option value="">— คงเดิม —</option>{% for k, v in statuses %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+              <label><span class="label">เหตุผล *</span><input class="input" name="reason" required minlength="5" maxlength="300"></label>
+              <button class="btn btn-secondary btn-sm">บันทึก</button></form></details>
+        </div></td></tr>{% endif %}
+      {% endfor %}</tbody></table></div>
+    {% else %}<p class="empty-state text-sm">ยังไม่มีของกลาง · เพิ่มแล้วออก "บัญชีของกลาง" ได้จากหน้าออกเอกสาร</p>{% endif %}
+  </div>
+
+  {# ---------- chain of custody ---------- #}
+  <div role="tabpanel" data-panel="custody" class="p-5 flex flex-col gap-3" hidden>
+    {% if events %}<ol class="custody-list">{% for e in events %}
+      <li class="custody-item act-{{ e.action }}"><span class="custody-dot" aria-hidden="true"></span>
+        <div class="flex flex-col"><span class="text-sm"><b>{{ e.get_action_display }}</b> · {% if e.evidence %}{{ e.evidence.title }}{% else %}{{ e.exhibit.name }}{% endif %}
+          {% if e.to_whom %}· {{ e.to_whom }}{% endif %}{% if e.ok is not None %} · {% if e.ok %}<span class="text-success">ตรงกัน</span>{% else %}<span class="text-danger">ไม่ตรง</span>{% endif %}{% endif %}</span>
+          <span class="text-xs text-muted">{{ e.at|be_datetime }} · {{ e.by.display_name }} · {{ e.reason }}{% if e.note %} · {{ e.note }}{% endif %}</span></div></li>
+    {% endfor %}</ol>{% else %}<p class="empty-state text-sm">ยังไม่มีบันทึก</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -135,6 +135,28 @@ def property_rows(items) -> list[dict]:
     ]
 
 
+def exhibit_rows(case) -> list[dict]:
+    """ทะเบียนของกลาง (B6) → บัญชีของกลาง."""
+    return [
+        {"ลำดับ": str(i), "ชื่อ": x.name, "จำนวน": f"{x.quantity} {x.unit}".strip(), "สภาพ": x.condition or "-", "ที่มา": x.source or "-",
+         "ที่เก็บ": x.storage or "-", "สถานะ": f"{x.storage + ' · ' if x.storage else ''}{x.get_status_display()}", "หมายเหตุ": x.note or "-"}
+        for i, x in enumerate(case.exhibits.all(), start=1)
+    ]  # fmt: skip
+
+
+def digital_rows(case) -> list[dict]:
+    """บันทึกตรวจยึดพยานหลักฐานดิจิทัล: ของกลางดิจิทัล (พร้อมแฮชของไฟล์ที่ทำสำเนามา) + ไฟล์ดิจิทัลที่รับเข้าเอง."""
+    rows = []
+    files = list(case.evidence_files.filter(is_digital=True, withdrawn_at__isnull=True))
+    for x in case.exhibits.filter(is_digital=True):
+        mine = [f for f in files if f.exhibit_id == x.pk]
+        rows.append({"ชื่อ": x.name, "แฮช": "\n".join(f"{f.title}: {f.sha256}" for f in mine) or "-", "ที่มา": x.source or "-"})
+    for f in files:
+        if f.exhibit_id is None:
+            rows.append({"ชื่อ": f.title, "แฮช": f.sha256, "ที่มา": f.source or "-"})
+    return [r | {"ลำดับ": str(i)} for i, r in enumerate(rows, start=1)]
+
+
 def build(case, party=None, letter=None, user=None) -> dict:
     """All values for one document. `party` / `letter` is the item of a per-person / per-letter document."""
     now = timezone.localtime()
@@ -218,7 +240,8 @@ def build(case, party=None, letter=None, user=None) -> dict:
         "รวมทรัพย์": money(sum((p.value for p in props), Decimal(0))),
         "รวมทรัพย์ได้คืน": money(sum((p.value for p in returned), Decimal(0))),
         "รวมทรัพย์ไม่ได้คืน": money(sum((p.value for p in lost), Decimal(0))),
-        "ของกลาง": [],  # evidence register arrives in phase 10
+        "ของกลาง": exhibit_rows(case),
+        "หลักฐานดิจิทัล": digital_rows(case),
         "บันทึก": [{"วันที่": d(x.done_at), "รายการ": x.title, "อ้างอิง": x.reason} for x in done],
         "เอกสารในสำนวน": [{"ชื่อ": x.title, "วันที่": d(x.created_at), "แผ่น": ""} for x in issued],
         "ฎีกาที่อ้าง": "\n".join(

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}รวมสำนวน PDF · {{ case.label }}{% endblock %}
+{% block content %}
+<nav class="text-sm reveal"><a href="{% url 'cases:detail' case.pk %}">{{ case.label }}</a> › <a href="{% url 'documents:page' case.pk %}">ออกเอกสาร</a> › รวมสำนวนเป็น PDF</nav>
+<div class="reveal"><h1>รวมสำนวนเป็น PDF เล่มเดียว</h1>
+  <p class="text-muted">เลือกเอกสารที่ออกแล้ว คำให้การจากเสียง และพยานหลักฐานที่เป็น PDF/ภาพ เรียงตามบัญชีสำนวน (แก้ลำดับได้) · ได้ PDF มีสารบัญ เลขหน้า และลายน้ำชื่อผู้ส่งออกกับเวลา · บันทึกการส่งออกทุกครั้ง</p></div>
+
+{% if current %}{% include "documents/_bundle_status.html" with b=current %}{% endif %}
+
+{% if not pdf_available %}<p class="card demo-warning p-4 text-sm reveal">เครื่องนี้ไม่มี LibreOffice จึงรวมเป็น PDF ไม่ได้ (ระบบที่ติดตั้งด้วย Docker มีให้แล้ว)</p>{% endif %}
+{% if parts %}
+<form method="post" class="card p-5 flex flex-col gap-3 reveal">{% csrf_token %}
+  <div class="overflow-x-auto rounded-card border border-border"><table class="tbl">
+    <thead><tr><th><span class="sr-only">เลือก</span></th><th>ลำดับ</th><th>รายการ</th><th>ประเภท</th><th>รายละเอียด</th></tr></thead>
+    <tbody>{% for p in parts %}<tr>
+      <td><input type="checkbox" name="part" value="{{ p.token }}" checked aria-label="เลือก {{ p.title }}"></td>
+      <td><input class="input min-h-[36px] w-20" type="number" min="1" step="1" name="order-{{ p.token }}" value="{{ forloop.counter }}" aria-label="ลำดับของ {{ p.title }}"></td>
+      <td>{{ p.title }}</td><td><span class="chip chip-muted text-xs">{{ p.kind }}</span></td><td class="text-xs text-muted">{{ p.note }}</td></tr>{% endfor %}</tbody></table></div>
+  {% if may_issue and pdf_available %}<button class="btn btn-primary self-start"><svg class="w-5 h-5"><use href="#i-file"/></svg>รวมเป็น PDF</button>{% endif %}
+</form>
+{% else %}<p class="empty-state text-sm reveal">ยังไม่มีเอกสารที่ออกแล้วหรือพยานหลักฐาน PDF/ภาพ · ออกเอกสารก่อน</p>{% endif %}
+
+{% if history %}<section class="card p-5 flex flex-col gap-2 reveal"><h2>ที่รวมไว้แล้ว</h2>
+  <ul class="flex flex-col gap-1">{% for b in history %}<li class="text-sm flex flex-wrap items-center gap-2">
+    <span>{{ b.created_at|be_datetime }} · {{ b.created_by.display_name }}</span>
+    {% if b.status == "done" %}<span>{{ b.pages }} หน้า · {{ b.items|length }} รายการ</span><a href="{% url 'documents:case_bundle_download' case.pk b.pk %}">ดาวน์โหลด</a>
+    {% elif b.status == "failed" %}<span class="text-danger">{{ b.error }}</span>{% else %}<span class="text-muted">กำลังรวม…</span>{% endif %}</li>{% endfor %}</ul></section>{% endif %}
+{% endblock %}

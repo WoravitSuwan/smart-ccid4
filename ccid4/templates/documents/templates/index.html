@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}เทมเพลตเอกสาร{% endblock %}
+{% block content %}
+<div class="reveal"><h1>เทมเพลตเอกสาร</h1>
+  <p class="text-muted">อัปโหลดไฟล์ Word ของหน่วยที่มีช่อง <code>{ชื่อช่อง}</code> ระบบสแกนหาช่องแล้วให้จับคู่กับข้อมูลในระบบ · ทุกเทมเพลตมีเวอร์ชัน ย้อนกลับได้ · เอกสารที่ออกแล้วจำเวอร์ชันที่ใช้</p></div>
+
+<form method="post" action="{% url 'doctemplates:add_custom' %}" class="card glass glow-border p-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5 items-end reveal">{% csrf_token %}
+  <div class="sm:col-span-2 xl:col-span-5"><h2>เพิ่มเอกสารใหม่ของหน่วย</h2><p class="text-sm text-muted">ไม่ต้องขอผ่านแจ้งปัญหา: ตั้งชื่อ เลือกกลุ่ม แล้วอัปโหลดไฟล์ Word</p></div>
+  <label class="xl:col-span-2"><span class="label">ชื่อเอกสาร *</span><input class="input" name="title" required maxlength="300" placeholder="เช่น หนังสือขอความร่วมมือแพลตฟอร์ม (แบบของหน่วย)"></label>
+  <label><span class="label">กลุ่ม</span><select class="input" name="group">{% for g in groups %}<option>{{ g }}</option>{% endfor %}</select></label>
+  <label><span class="label">ออกเป็น</span><select class="input" name="per">{% for k, v in per_choices %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+  <button class="btn btn-primary"><svg class="w-5 h-5"><use href="#i-plus"/></svg>เพิ่มเอกสาร</button>
+</form>
+
+{% for group, docs in rows %}
+<section class="card p-5 flex flex-col gap-3 reveal"><h2>{{ group }}</h2>
+  <div class="overflow-x-auto rounded-card border border-border"><table class="tbl">
+    <thead><tr><th>ลำดับ</th><th>เอกสาร</th><th>ที่ใช้อยู่</th><th>เวอร์ชันที่อัปโหลด</th><th></th></tr></thead>
+    <tbody>{% for d, tv, n in docs %}<tr>
+      <td>{{ d.no }}</td><td>{{ d.title }}{% if d.no >= 100 %} <span class="chip chip-primary text-xs">ของหน่วย</span>{% elif d.new %} <span class="chip chip-muted text-xs">ใหม่ CCID4</span>{% endif %}</td>
+      <td>{% if tv %}<span class="chip chip-success text-xs">v{{ tv.version }} ของหน่วย</span>{% elif d.no >= 100 %}<span class="chip chip-warning text-xs">ยังไม่มีไฟล์</span>{% else %}<span class="chip chip-muted text-xs">ไฟล์มาตรฐาน</span>{% endif %}</td>
+      <td>{{ n }}</td><td><a class="btn btn-secondary btn-sm" href="{% url 'doctemplates:manage' d.key %}">จัดการ</a></td></tr>{% endfor %}</tbody></table></div>
+</section>
+{% endfor %}
+{% endblock %}

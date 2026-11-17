@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}จับคู่ช่อง · {{ doc.title }}{% endblock %}
+{% block content %}
+<nav class="text-sm reveal"><a href="{% url 'doctemplates:index' %}">เทมเพลตเอกสาร</a> › <a href="{% url 'doctemplates:manage' doc.key %}">{{ doc.title }}</a> › จับคู่ช่อง v{{ tv.version }}</nav>
+<div class="reveal"><h1>จับคู่ช่องในไฟล์กับข้อมูลในระบบ</h1>
+  <p class="text-muted">ช่องที่ชื่อตรงกับระบบอยู่แล้วจับคู่ให้เอง · ช่องที่ไม่รู้จักให้เลือกข้อมูล หรือเลือก “เว้นว่าง” ถ้าจะเขียนด้วยมือ</p></div>
+<form method="post" class="flex flex-col gap-4">{% csrf_token %}
+  <section class="card p-5 reveal"><div class="overflow-x-auto"><table class="tbl">
+    <thead><tr><th>ช่องในไฟล์</th><th>ใช้ข้อมูลจาก</th><th></th></tr></thead>
+    <tbody>{% for i, p, current, known in rows %}<tr>
+      <td><code>{{ "{" }}{{ p }}{{ "}" }}</code></td>
+      <td><select class="input" name="map-{{ i }}" aria-label="ข้อมูลสำหรับช่อง {{ p }}">
+        <option value="" {% if not current %}selected{% endif %}>— เว้นว่าง (เขียนด้วยมือ) —</option>
+        {% for g, paths in groups.items %}<optgroup label="{{ g }}">{% for path, kind in paths %}{% if kind != "list" %}<option value="{{ path }}" {% if path == current %}selected{% endif %}>{{ path }}{% if kind == "row" %} (แถวตาราง){% endif %}</option>{% endif %}{% endfor %}</optgroup>{% endfor %}
+      </select></td>
+      <td>{% if known %}<span class="chip chip-success text-xs">ชื่อตรงกับระบบ</span>{% elif current %}<span class="chip chip-primary text-xs">จับคู่แล้ว</span>{% else %}<span class="chip chip-warning text-xs">ยังไม่จับคู่</span>{% endif %}</td></tr>{% endfor %}</tbody>
+  </table></div></section>
+  <section class="card p-5 flex flex-wrap items-center gap-4 reveal">
+    <span class="font-semibold">ตัวเลขในค่าที่เติม</span>
+    <label class="format-option"><input type="radio" name="digits" value="thai" {% if tv.digits == "thai" %}checked{% endif %}> เลขไทย</label>
+    <label class="format-option"><input type="radio" name="digits" value="arabic" {% if tv.digits == "arabic" %}checked{% endif %}> เลขอารบิก</label>
+    <label class="flex items-center gap-2"><input type="checkbox" name="activate" {% if not tv.active %}checked{% endif %}> เปิดใช้เวอร์ชันนี้หลังบันทึก</label>
+    <button class="btn btn-primary ml-auto">บันทึกการจับคู่</button>
+  </section>
+</form>
+{% endblock %}

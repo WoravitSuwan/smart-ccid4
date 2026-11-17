@@ -1,0 +1,8 @@
+<div class="card glass glow-border p-5 flex flex-col gap-2 reveal" role="status"{% if b.status == "pending" %} hx-get="{% url 'documents:case_bundle_status' case.pk b.pk %}" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+  {% if b.status == "pending" %}<p class="flex items-center gap-2"><span class="spinner" aria-hidden="true"></span>กำลังแปลงและรวมไฟล์… (เอกสารหลายฉบับอาจใช้เวลา 1–2 นาที)</p>
+  {% elif b.status == "done" %}<h2>รวมเสร็จแล้ว · {{ b.pages }} หน้า</h2>
+    <ol class="text-sm list-decimal pl-5">{% for it in b.items %}<li>{{ it.title }} <span class="text-muted">· หน้า {{ it.start }}{% if it.pages > 1 %}–{{ it.start|add:it.pages|add:"-1" }}{% endif %}</span></li>{% endfor %}</ol>
+    <p class="text-xs text-muted">SHA-256 {{ b.sha256 }}</p>
+    <a class="btn btn-primary self-start" href="{% url 'documents:case_bundle_download' case.pk b.pk %}">ดาวน์โหลด PDF</a>
+  {% else %}<p class="text-danger">{{ b.error }}</p>{% endif %}
+</div>

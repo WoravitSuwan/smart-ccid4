@@ -162,7 +162,7 @@ def case_detail(request, pk):
             else:
                 messages.info(request, "ไม่มีข้อมูลที่เปลี่ยน")
             tab = request.POST.get("tab", "info")
-            return redirect(f"{case.get_absolute_url()}#{tab if tab in dict(TABS) or tab == 'money' else 'info'}")
+            return redirect(f"{case.get_absolute_url()}#{tab if tab in dict(TABS) or tab in ('money', 'evidence') else 'info'}")
         messages.error(request, "ยังบันทึกไม่ได้ ตรวจช่องที่มีกรอบสีแดงในแท็บที่มีจุดเตือน")
         status = 400
     else:
@@ -202,7 +202,9 @@ def case_detail(request, pk):
                 others = cyber_index.others_for(links, kind, value)
                 if others:
                     f.links.append({"label": label, "cases": others})
-    tabs = TABS + ([("money", "เส้นทางเงิน")] if case.case_type == "online" else [])
+    tabs = TABS + ([("money", "เส้นทางเงิน")] if case.case_type == "online" else []) + [("evidence", "พยานหลักฐาน/ของกลาง")]
+    evidence_summary = {"files": case.evidence_files.filter(withdrawn_at__isnull=True).count(), "exhibits": case.exhibits.count(),
+                        "events": case.custody_events.count()}  # fmt: skip
     money_summary = None
     if case.case_type == "online":
         rows = cyber_money.account_rows(case, links)
@@ -224,6 +226,7 @@ def case_detail(request, pk):
             "soon_tabs": SOON_TABS,
             "linked_count": cyber_index.linked_case_count(links),
             "money": money_summary,
+            "evidence_summary": evidence_summary,
             "errors": errors,
             "first_error_tab": next((t for t, e in errors.items() if e), ""),
             "can_reveal": request.user.can("pii.reveal"),
