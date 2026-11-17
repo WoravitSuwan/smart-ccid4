@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}เส้นทางเงิน · {{ case.label }}{% endblock %}
+{% block head %}<script src="{% static 'vendor/cytoscape.min.js' %}" defer></script><script src="{% static 'js/graphkit.js' %}" defer></script><script src="{% static 'js/flow.js' %}" defer></script>{% endblock %}
+{% block content %}
+<nav class="text-sm reveal" aria-label="เส้นทาง"><a href="{% url 'cases:list' %}">คดีของฉัน</a> › <a href="{% url 'cases:detail' case.pk %}">{{ case.label }}</a> › เส้นทางเงิน</nav>
+<div class="flex flex-wrap items-end gap-3 reveal">
+  <div class="flex-1"><h1>เส้นทางเงินและบัญชีม้า</h1>
+    <p class="text-muted">{{ case.label }} · {{ case.offense|default:"ยังไม่ระบุฐานความผิด" }} · พนักงานสอบสวน {{ case.owner.display_name }}</p></div>
+  <a class="btn btn-secondary" href="{% url 'cyber:network' %}?case={{ case.pk }}"><svg class="w-5 h-5"><use href="#i-share"/></svg>ดูเครือข่ายคดี</a>
+</div>
+
+<datalist id="bank-list">{% for b in banks %}<option value="{{ b }}">{% endfor %}</datalist>
+<datalist id="channel-list">{% for c in channels %}<option value="{{ c }}">{% endfor %}</datalist>
+
+<section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="สรุปเส้นทางเงิน">
+  <div class="card glow-border p-4 flex items-center gap-4 reveal"><span class="stat-icon"><svg class="w-5 h-5"><use href="#i-scale"/></svg></span>
+    <span><span class="text-sm text-muted block">ยอดที่ผู้เสียหายโอนออก (บาท)</span><b class="stat-value">{{ total_loss|floatformat:"2g" }}</b>
+      <span class="text-xs text-muted block">ผูกกับบัญชีทรัพย์ของผู้กล่าวหาอัตโนมัติ</span></span></div>
+  <div class="card p-4 flex items-center gap-4 reveal"><span class="stat-icon"><svg class="w-5 h-5"><use href="#i-id"/></svg></span>
+    <span><span class="text-sm text-muted block">บัญชีปลายทาง</span><b class="stat-value" x-data="countUp" data-value="{{ mules|length }}">{{ mules|length }}</b>
+      <span class="text-xs text-muted block">{% for label, n in status_counts.items %}{% if n %}{{ label }} {{ n }} · {% endif %}{% endfor %}</span></span></div>
+  <div class="card p-4 flex items-center gap-4 reveal"><span class="stat-icon"><svg class="w-5 h-5"><use href="#i-timeline"/></svg></span>
+    <span><span class="text-sm text-muted block">ธุรกรรม</span><b class="stat-value" x-data="countUp" data-value="{{ transfers|length }}">{{ transfers|length }}</b></span></div>
+  <a class="card card-hover p-4 flex items-center gap-4 no-underline text-text reveal {% if linked %}link-alert{% endif %}" href="{% url 'cyber:network' %}?case={{ case.pk }}">
+    <span class="stat-icon"><svg class="w-5 h-5"><use href="#i-share"/></svg></span>
+    <span><span class="text-sm text-muted block">เชื่อมโยงกับคดีอื่น</span><b class="stat-value" x-data="countUp" data-value="{{ linked }}">{{ linked }}</b>
+      <span class="text-xs text-muted block">คดีที่มีตัวระบุเดียวกัน</span></span></a>
+</section>
+
+<div class="card p-0 reveal" data-tabs="cyber" data-hash>
+  <div class="tabbar px-3 pt-2" role="tablist" aria-label="ส่วนของเส้นทางเงิน">
+    <button type="button" class="tab" role="tab" data-tab="transfers" aria-selected="true">ธุรกรรม <span class="count">{{ transfers|length }}</span></button>
+    <button type="button" class="tab" role="tab" data-tab="accounts" aria-selected="false">บัญชีปลายทาง (บัญชีม้า) <span class="count">{{ mules|length }}</span></button>
+    <button type="button" class="tab" role="tab" data-tab="flow" aria-selected="false">แผนภาพเส้นทางเงิน</button>
+    <button type="button" class="tab" role="tab" data-tab="online" aria-selected="false">บัญชีออนไลน์/URL <span class="count">{{ online|length }}</span></button>
+    <button type="button" class="tab" role="tab" data-tab="crypto" aria-selected="false">คริปโต <span class="count">{{ wallets|length }}</span></button>
+  </div>
+
+  {# ---------- ธุรกรรม ---------- #}
+  <div role="tabpanel" data-panel="transfers" class="p-5 flex flex-col gap-5">
+    {% if editable %}
+    <div class="grid gap-4 xl:grid-cols-[1fr_20rem] items-start">
+      <div id="transfer-form">{% include "cyber/_transfer_form.html" %}</div>
+      <aside class="flex flex-col gap-3">
+        <form class="card glass p-4 flex flex-col gap-2" hx-post="{% url 'cyber:slip' case.pk %}" hx-target="#transfer-form" hx-encoding="multipart/form-data" hx-indicator="#slip-wait">
+          <b><span class="ai-badge">AI</span> อ่านจากสลิป</b>
+          <p class="text-xs text-muted">อัปโหลดสลิป (PDF/ภาพ) ระบบกรอกฟอร์มให้ แล้วต้องตรวจทานก่อนกดบันทึก · AI รันในเครื่องของหน่วย</p>
+          <input class="input py-2" type="file" name="slip" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic" required>
+          <button class="btn btn-secondary btn-sm self-start">อ่านสลิป</button><span id="slip-wait" class="htmx-indicator spinner" aria-hidden="true"></span>
+        </form>
+        <a class="card card-hover p-4 no-underline text-text flex flex-col gap-1" href="{% url 'cyber:import' case.pk %}">
+          <b><svg class="w-4 h-4 inline"><use href="#i-file"/></svg> นำเข้า statement ธนาคาร</b>
+          <span class="text-xs text-muted">Excel (.xlsx) หรือ CSV · มีหน้าจับคู่คอลัมน์ก่อนนำเข้า</span></a>
+      </aside>
+    </div>
+    {% endif %}
+    {% if transfers %}
+    <div class="overflow-x-auto rounded-card border border-border">
+      <table class="tbl">
+        <thead><tr><th>วันเวลา</th><th>จากบัญชี</th><th>ไปบัญชี</th><th>ธนาคาร</th><th class="text-right">จำนวนเงิน</th><th>ช่องทาง</th><th>เลขอ้างอิง</th><th>หลักฐาน</th><th></th></tr></thead>
+        <tbody>{% for t in transfers %}
+          <tr><td class="whitespace-nowrap">{{ t.occurred_at|be_datetime|default:"—" }}</td>
+            <td>{% if t.from_account %}<span class="font-mono text-sm">{{ t.from_account.masked }}</span>{% if t.from_account.is_victim %} <span class="chip chip-muted text-xs">ผู้เสียหาย</span>{% endif %}{% else %}<span class="text-muted">ผู้เสียหาย</span>{% endif %}</td>
+            <td><span class="font-mono text-sm">{{ t.to_account.masked }}</span>{% if t.to_account.account_name %}<span class="block text-xs text-muted">{{ t.to_account.account_name }}</span>{% endif %}</td>
+            <td>{{ t.to_account.bank|default:"—" }}</td>
+            <td class="text-right tabular-nums whitespace-nowrap">{{ t.amount|floatformat:"2g" }}</td>
+            <td>{{ t.channel|default:"—" }}</td><td class="text-sm">{{ t.reference|default:"—" }}</td>
+            <td>{% if t.evidence %}<a href="{% url 'cyber:transfer_evidence' case.pk t.pk %}">เปิด</a>{% else %}—{% endif %}{% if t.source != "manual" %}<span class="block text-xs text-muted">{{ t.get_source_display }}</span>{% endif %}</td>
+            <td>{% if editable %}<form method="post" action="{% url 'cyber:transfer_delete' case.pk t.pk %}">{% csrf_token %}<button class="btn btn-secondary btn-sm" data-confirm="ลบธุรกรรมนี้? (ยอดในบัญชีทรัพย์จะปรับตาม)">ลบ</button></form>{% endif %}</td></tr>
+        {% endfor %}</tbody>
+      </table>
+    </div>
+    {% else %}<p class="empty-state text-sm">ยังไม่มีธุรกรรม · เพิ่มเอง อ่านจากสลิป หรือนำเข้า statement</p>{% endif %}
+  </div>
+
+  {# ---------- บัญชีปลายทาง ---------- #}
+  <div role="tabpanel" data-panel="accounts" class="p-5 flex flex-col gap-4" hidden>
+    {% if mules %}
+    <form method="post" action="{% url 'cyber:letters' case.pk %}" id="letters-form" class="card glass p-4 flex flex-wrap items-end gap-3">{% csrf_token %}
+      <b class="w-full">หนังสือถึงธนาคารแบบชุด <span class="text-xs text-muted font-normal">· ติ๊กบัญชีในตาราง ระบบออกธนาคารละ 1 ฉบับพร้อมตารางบัญชี (Word และ PDF เมื่อมี LibreOffice) และบันทึกในหนังสือออกภายนอก</span></b>
+      <label><span class="label">ประเภท</span><select class="input" name="purpose"><option value="info">ขอข้อมูลบัญชีและรายการเดินบัญชี</option><option value="freeze">ขอระงับการทำธุรกรรม + ขอข้อมูล</option></select></label>
+      <label><span class="label">รายการเดินบัญชี ตั้งแต่</span><input class="input" type="date" name="date_from"></label>
+      <label><span class="label">ถึง</span><input class="input" type="date" name="date_to"></label>
+      {% if editable %}<button class="btn btn-primary"><svg class="w-5 h-5"><use href="#i-mail"/></svg>ออกหนังสือที่เลือก</button>{% endif %}
+    </form>
+    <div class="overflow-x-auto rounded-card border border-border">
+      <table class="tbl">
+        <thead><tr><th><span class="sr-only">เลือก</span></th><th>ชั้น</th><th>บัญชี</th><th class="text-right">ยอดรับ (บาท)</th><th>ครั้ง</th><th>ช่วงเวลา</th><th>สถานะ</th><th>พบในคดีอื่น</th></tr></thead>
+        <tbody>{% for r in mules %}{% with a=r.account %}
+          <tr id="acc-{{ a.pk }}">
+            <td><input type="checkbox" name="account" value="{{ a.pk }}" form="letters-form" aria-label="เลือกบัญชี {{ a.masked }}"></td>
+            <td>{% if r.layer %}<span class="layer-chip">ชั้น {{ r.layer }}</span>{% else %}<span class="text-xs text-muted">ไม่เชื่อมผู้เสียหาย</span>{% endif %}</td>
+            <td><b>{{ a.bank|default:"ไม่ระบุธนาคาร" }}</b>
+              <span class="block font-mono text-sm" id="accno-{{ a.pk }}">{{ a.masked }}{% if can_reveal %} <button type="button" class="text-primary text-xs" hx-post="{% url 'cyber:account_reveal' case.pk a.pk %}" hx-target="#accno-{{ a.pk }}">ดูเต็ม</button>{% endif %}</span>
+              {% if a.account_name %}<span class="block text-xs text-muted">{{ a.account_name }}</span>{% endif %}</td>
+            <td class="text-right tabular-nums">{{ r.received|floatformat:"2g" }}</td><td>{{ r.count_in }}</td>
+            <td class="text-xs whitespace-nowrap">{{ r.first_at|be_datetime|default:"—" }}{% if r.last_at and r.last_at != r.first_at %}<br>ถึง {{ r.last_at|be_datetime }}{% endif %}</td>
+            <td><span class="chip status-{{ a.status }} text-xs">{{ a.get_status_display }}</span></td>
+            <td>{% if r.other_cases %}<a class="link-badge" href="{% url 'cyber:network' %}?case={{ case.pk }}" title="{% for c in r.other_cases %}{{ c.label }} ({{ c.owner.display_name }}){% if not forloop.last %} · {% endif %}{% endfor %}">พบในคดีอื่น {{ r.other_cases|length }} คดี</a>{% else %}<span class="text-xs text-muted">—</span>{% endif %}</td>
+          </tr>
+          {% if editable %}<tr class="row-detail"><td></td><td colspan="7">
+            <details><summary class="text-xs text-primary cursor-pointer">แก้สถานะ/ข้อมูลเจ้าของบัญชี</summary>
+              {% with f=account_forms|get_item:a.pk %}
+              <form method="post" action="{% url 'cyber:account_update' case.pk a.pk %}" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 mt-2">{% csrf_token %}
+                {% for field in f %}<label class="{% if field.name == 'owner_info' %}sm:col-span-2{% endif %}"><span class="label">{{ field.label }}</span>{{ field }}</label>{% endfor %}
+                <button class="btn btn-secondary btn-sm self-end">บันทึก</button></form>{% endwith %}
+            </details></td></tr>{% endif %}
+        {% endwith %}{% endfor %}</tbody>
+      </table>
+    </div>
+    {% else %}<p class="empty-state text-sm">ยังไม่มีบัญชีปลายทาง · เพิ่มธุรกรรมก่อน ระบบสร้างทะเบียนบัญชีให้เอง</p>{% endif %}
+  </div>
+
+  {# ---------- แผนภาพ ---------- #}
+  <div role="tabpanel" data-panel="flow" class="p-5 flex flex-col gap-3" hidden>
+    <div class="flex flex-wrap items-center gap-3 text-sm"><span class="legend legend-victim">ผู้เสียหาย/บัญชีผู้เสียหาย</span><span class="legend legend-account">บัญชีปลายทาง</span>
+      <span class="legend legend-linked">พบในคดีอื่น</span><span class="legend legend-frozen">ระงับแล้ว</span>
+      <button type="button" class="btn btn-secondary btn-sm ml-auto" data-flow-png>ส่งออกภาพ PNG</button></div>
+    <div class="grid gap-4 xl:grid-cols-[1fr_22rem]">
+      <div class="graph-box" data-flow data-url="{% url 'cyber:flow' case.pk %}" data-name="เส้นทางเงิน-{{ case.pk }}" aria-label="แผนภาพเส้นทางเงิน: ผู้เสียหายไปบัญชีชั้นที่ 1 และชั้นถัดไป"></div>
+      <aside class="card glass p-4 flex flex-col gap-2" data-flow-panel aria-live="polite"><b>รายละเอียด</b><p class="text-sm text-muted">คลิกโหนดเพื่อดูธุรกรรมของบัญชีนั้น · ลากเพื่อจัดตำแหน่ง · เลื่อนลูกกลิ้งเพื่อซูม</p></aside>
+    </div>
+  </div>
+
+  {# ---------- บัญชีออนไลน์ ---------- #}
+  <div role="tabpanel" data-panel="online" class="p-5 flex flex-col gap-4" hidden>
+    {% if editable %}<form method="post" action="{% url 'cyber:online_add' case.pk %}" class="card glass p-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-6 items-end">{% csrf_token %}
+      {% for field in online_form %}<label class="{% if field.name == 'value' %}xl:col-span-2{% endif %}"><span class="label">{{ field.label }}</span>{{ field }}</label>{% endfor %}
+      <button class="btn btn-primary btn-sm">เพิ่ม</button></form>{% endif %}
+    {% if online %}<ul class="flex flex-col gap-2">{% for o in online %}
+      <li class="card p-3 flex flex-wrap items-center gap-3"><span class="chip chip-muted text-xs">{{ o.get_kind_display }}</span>
+        <span class="font-mono text-sm break-all">{{ o.value }}</span>{% if o.display_name %}<span class="text-sm text-muted">{{ o.display_name }}</span>{% endif %}
+        {% if o.party %}<span class="text-xs text-muted">ของ{{ o.party.get_role_display }} {{ o.party.person.full_name }}</span>{% endif %}
+        {% if o.other_cases %}<a class="link-badge" href="{% url 'cyber:network' %}?case={{ case.pk }}">พบในคดีอื่น {{ o.other_cases|length }} คดี</a>{% endif %}
+        {% if editable %}<form method="post" action="{% url 'cyber:online_delete' case.pk o.pk %}" class="ml-auto">{% csrf_token %}<button class="btn btn-secondary btn-sm" data-confirm="ลบรายการนี้?">ลบ</button></form>{% endif %}</li>
+    {% endfor %}</ul>{% else %}<p class="empty-state text-sm">ยังไม่มีบัญชีโซเชียล LINE ID เว็บไซต์ หรืออีเมลที่เกี่ยวข้อง</p>{% endif %}
+  </div>
+
+  {# ---------- คริปโต ---------- #}
+  <div role="tabpanel" data-panel="crypto" class="p-5 flex flex-col gap-5" hidden>
+    <p class="text-xs text-muted">ตรวจรูปแบบและ checksum ของที่อยู่ในเครื่อง (BTC, EVM, TRON) · ไม่เรียก blockchain explorer ภายนอก · ส่งออก JSON สำหรับระบบ CryptoTrace</p>
+    <section class="flex flex-col gap-3"><div class="flex flex-wrap items-center gap-2"><h3 class="section-title flex-1">กระเป๋า</h3>
+      <a class="btn btn-secondary btn-sm" href="{% url 'cyber:crypto_export' case.pk %}">ส่งออก JSON (CryptoTrace)</a></div>
+      {% if editable %}<form method="post" action="{% url 'cyber:wallet_add' case.pk %}" class="card glass p-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-6 items-end">{% csrf_token %}
+        {% for field in wallet_form %}<label class="{% if field.name == 'address' %}xl:col-span-2{% endif %}"><span class="label">{{ field.label }}</span>{{ field }}</label>{% endfor %}
+        <button class="btn btn-primary btn-sm">เพิ่มกระเป๋า</button></form>{% endif %}
+      {% if wallets %}<ul class="flex flex-col gap-2">{% for w in wallets %}
+        <li class="card p-3 flex flex-wrap items-center gap-3"><span class="chip chip-muted text-xs">{{ w.get_network_display }}</span>
+          <span class="font-mono text-sm break-all">{{ w.address }}</span>
+          <span class="chip {% if w.valid %}chip-success{% else %}chip-danger{% endif %} text-xs" title="{{ w.message }}">{% if w.valid %}รูปแบบถูกต้อง{% else %}รูปแบบไม่ถูกต้อง{% endif %}</span>
+          {% if w.label %}<span class="text-sm">{{ w.label }}</span>{% endif %}{% if w.party %}<span class="text-xs text-muted">ของ{{ w.party.get_role_display }} {{ w.party.person.full_name }}</span>{% endif %}
+          {% if w.other_cases %}<a class="link-badge" href="{% url 'cyber:network' %}?case={{ case.pk }}">พบในคดีอื่น {{ w.other_cases|length }} คดี</a>{% endif %}
+          {% if editable %}<form method="post" action="{% url 'cyber:wallet_delete' case.pk w.pk %}" class="ml-auto">{% csrf_token %}<button class="btn btn-secondary btn-sm" data-confirm="ลบกระเป๋านี้?">ลบ</button></form>{% endif %}</li>
+      {% endfor %}</ul>{% else %}<p class="empty-state text-sm">ยังไม่มีกระเป๋าคริปโต</p>{% endif %}
+    </section>
+    <section class="flex flex-col gap-3"><h3 class="section-title">ธุรกรรมคริปโต</h3>
+      {% if editable %}<form method="post" action="{% url 'cyber:tx_add' case.pk %}" class="card glass p-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4 items-end">{% csrf_token %}
+        {% for field in tx_form %}<label class="{% if field.name == 'tx_hash' %}xl:col-span-2{% endif %}"><span class="label">{{ field.label }}</span>{{ field }}</label>{% endfor %}
+        <button class="btn btn-primary btn-sm">เพิ่มธุรกรรม</button></form>
+      <form method="post" action="{% url 'cyber:tx_import' case.pk %}" enctype="multipart/form-data" class="flex flex-wrap items-end gap-2 text-sm">{% csrf_token %}
+        <label><span class="label">นำเข้า CSV (คอลัมน์ tx_hash, network, from, to, amount, asset, time)</span><input class="input py-2" type="file" name="file" accept=".csv" required></label>
+        <label><span class="label">เครือข่าย (ถ้าไฟล์ไม่มีคอลัมน์ network)</span><select class="input" name="network"><option value="">ตามไฟล์</option><option value="btc">BTC</option><option value="evm">EVM</option><option value="tron">TRON</option></select></label>
+        <button class="btn btn-secondary btn-sm">นำเข้า</button></form>{% endif %}
+      {% if txs %}<div class="overflow-x-auto rounded-card border border-border"><table class="tbl">
+        <thead><tr><th>วันเวลา</th><th>เครือข่าย</th><th>Tx hash</th><th>จาก</th><th>ไป</th><th class="text-right">จำนวน</th><th></th></tr></thead>
+        <tbody>{% for t in txs %}<tr><td class="whitespace-nowrap">{{ t.occurred_at|be_datetime|default:"—" }}</td><td>{{ t.get_network_display }}</td>
+          <td class="font-mono text-xs break-all">{{ t.tx_hash|truncatechars:22 }}</td><td class="font-mono text-xs">{{ t.from_address|truncatechars:16|default:"—" }}</td>
+          <td class="font-mono text-xs">{{ t.to_address|truncatechars:16|default:"—" }}</td><td class="text-right tabular-nums whitespace-nowrap">{{ t.amount.normalize }} {{ t.asset }}</td>
+          <td>{% if editable %}<form method="post" action="{% url 'cyber:tx_delete' case.pk t.pk %}">{% csrf_token %}<button class="btn btn-secondary btn-sm" data-confirm="ลบธุรกรรมนี้?">ลบ</button></form>{% endif %}</td></tr>{% endfor %}</tbody>
+      </table></div>{% else %}<p class="empty-state text-sm">ยังไม่มีธุรกรรมคริปโต</p>{% endif %}
+    </section>
+  </div>
+</div>
+
+{% if linked_cases and editable %}
+<form method="post" action="{% url 'cyber:merge_propose' case.pk %}" class="card p-5 flex flex-wrap items-end gap-3 reveal">{% csrf_token %}
+  <input type="hidden" name="next" value="{% url 'cyber:case' case.pk %}">
+  <div class="w-full"><h2>เสนอรวมสำนวน</h2><p class="text-sm text-muted">คดีนี้มีตัวระบุตรงกับคดีอื่น ส่งคำขอให้หัวหน้างานสอบสวนพิจารณารวมสำนวนได้</p></div>
+  <label><span class="label">รวมกับคดี</span><select class="input" name="other">{% for c in linked_cases %}<option value="{{ c.pk }}">{{ c.label }} · {{ c.owner.display_name }}</option>{% endfor %}</select></label>
+  <label class="flex-1 min-w-[240px]"><span class="label">เหตุผล</span><input class="input" name="reason" required minlength="10" placeholder="เช่น ใช้บัญชีม้าชุดเดียวกัน คนร้ายกลุ่มเดียวกัน"></label>
+  <button class="btn btn-secondary">ส่งคำขอ</button>
+</form>
+{% endif %}
+{% endblock %}

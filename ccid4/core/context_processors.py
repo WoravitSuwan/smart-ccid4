@@ -13,6 +13,7 @@ def ui(request):
         "THEME": getattr(user, "theme", "dark") if authed else request.COOKIES.get("theme", "dark"),
         "MENU": menu_for(user) if authed else [],
         "PROFILE_MISSING": _profile_missing(user) if authed else 0,
+        "UNREAD": _unread(user) if authed else 0,
     }
 
 
@@ -20,3 +21,9 @@ def _profile_missing(user):
     from accounts.services import completeness
 
     return completeness(user).missing_count
+
+
+def _unread(user):
+    from .notify import unread_count
+
+    return unread_count(user)

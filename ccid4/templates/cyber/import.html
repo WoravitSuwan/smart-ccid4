@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}นำเข้า statement · {{ case.label }}{% endblock %}
+{% block content %}
+<nav class="text-sm reveal"><a href="{% url 'cases:detail' case.pk %}">{{ case.label }}</a> › <a href="{% url 'cyber:case' case.pk %}">เส้นทางเงิน</a> › นำเข้า statement</nav>
+<h1 class="reveal">นำเข้า statement ธนาคาร</h1>
+<form method="post" enctype="multipart/form-data" class="card glass glow-border p-6 flex flex-col gap-4 max-w-2xl reveal">{% csrf_token %}
+  <p class="text-sm">รองรับ Excel (.xlsx) และ CSV (UTF-8 หรือ Windows-874 ที่ธนาคารไทยใช้) · แถวแรกต้องเป็นหัวตาราง</p>
+  <ol class="text-sm text-muted list-decimal pl-5 flex flex-col gap-1">
+    <li>อัปโหลดไฟล์</li><li>จับคู่คอลัมน์ในไฟล์กับช่องของระบบ (ระบบเดาให้ก่อน) แล้วดูตัวอย่าง</li>
+    <li>นำเข้า: รายการเงินเข้าหรือไม่มีบัญชีปลายทางจะถูกข้าม รายการซ้ำจะไม่เพิ่มซ้ำ</li></ol>
+  <input class="input py-2" type="file" name="file" accept=".xlsx,.xlsm,.csv,.txt" required>
+  <div class="flex gap-2"><button class="btn btn-primary">อัปโหลดและจับคู่คอลัมน์</button><a class="btn btn-secondary" href="{% url 'cyber:case' case.pk %}#transfers">ยกเลิก</a></div>
+  <p class="text-xs text-muted">ไฟล์เก็บชั่วคราวในเครื่องของหน่วยและลบทันทีหลังนำเข้าหรือยกเลิก</p>
+</form>
+{% endblock %}

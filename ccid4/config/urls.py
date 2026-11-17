@@ -16,6 +16,7 @@ urlpatterns = [
     path("intake/", include("intake.urls")),
     path("summons/", include("summons.urls")),
     path("interviews/", include("interviews.urls")),
+    path("cyber/", include("cyber.urls")),
     path("", include("intake.public_urls")),
     path("django-admin/", admin.site.urls),
 ]

@@ -1,0 +1,27 @@
+<form method="post" action="{% url 'cyber:transfer_add' case.pk %}" enctype="multipart/form-data" class="card p-4 flex flex-col gap-3{% if from_slip %} ai-frame{% endif %}">{% csrf_token %}
+  <div class="flex flex-wrap items-center gap-2"><b class="flex-1">เพิ่มธุรกรรม</b>
+    {% if from_slip %}<span class="ai-badge">ร่างโดย AI – รอตรวจ</span><span class="text-xs text-muted w-full">ระบบกรอกจากสลิปให้ ตรวจทุกช่องเทียบกับสลิปก่อนกดบันทึก สลิปจะแนบเป็นหลักฐาน</span>{% endif %}
+    {% if slip_error %}<p class="chip chip-warning text-xs w-full">{{ slip_error }} · กรอกเองได้ สลิปจะแนบเป็นหลักฐาน</p>{% endif %}</div>
+  {% with f=transfer_form %}{{ f.slip_token }}
+  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <label><span class="label">{{ f.occurred_at.label }}</span>{{ f.occurred_at }}</label>
+    <label><span class="label">{{ f.amount.label }} *</span>{{ f.amount }}</label>
+    <label><span class="label">{{ f.channel.label }}</span>{{ f.channel }}</label>
+    <label><span class="label">{{ f.reference.label }}</span>{{ f.reference }}</label>
+  </div>
+  <fieldset class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 p-3 rounded-btn border border-border"><legend class="text-sm font-semibold px-1">ต้นทาง</legend>
+    <label><span class="label">{{ f.from_no.label }}</span>{{ f.from_no }}</label>
+    <label><span class="label">{{ f.from_bank.label }}</span>{{ f.from_bank }}</label>
+    <label><span class="label">{{ f.from_name.label }}</span>{{ f.from_name }}</label>
+    <label class="flex items-center gap-2 text-sm self-end min-h-[44px]">{{ f.from_victim }} {{ f.from_victim.label }}</label>
+  </fieldset>
+  <fieldset class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 p-3 rounded-btn border border-border"><legend class="text-sm font-semibold px-1">ปลายทาง</legend>
+    <label><span class="label">{{ f.to_no.label }} *</span>{{ f.to_no }}</label>
+    <label><span class="label">{{ f.to_bank.label }}</span>{{ f.to_bank }}</label>
+    <label><span class="label">{{ f.to_name.label }}</span>{{ f.to_name }}</label>
+    {% if not f.slip_token.value %}<label><span class="label">{{ f.evidence.label }}</span>{{ f.evidence }}</label>{% else %}<p class="text-xs text-muted self-end">แนบสลิปที่อัปโหลดแล้วเป็นหลักฐาน</p>{% endif %}
+  </fieldset>
+  {% endwith %}
+  <p class="text-xs text-muted">โอนต่อจากบัญชีม้าไปบัญชีอื่น: ใส่บัญชีม้าเป็นต้นทาง แล้วเอาติ๊ก “เป็นของผู้เสียหาย” ออก · ระบบสร้างทะเบียนบัญชีปลายทางและคำนวณชั้นให้เอง</p>
+  <button class="btn btn-primary self-start"><svg class="w-5 h-5"><use href="#i-save"/></svg>บันทึกธุรกรรม</button>
+</form>

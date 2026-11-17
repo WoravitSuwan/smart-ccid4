@@ -63,9 +63,11 @@ def test_styleguide_shows_both_themes(client_inv):
 
 
 @pytest.mark.django_db
-def test_menu_marks_unbuilt_items(client_inv):
-    html = client_inv.get("/").content.decode()
-    assert "ภาพรวม" in html and "เร็ว ๆ นี้" in html
+def test_menu_marks_unbuilt_items(client, make_user):
+    client.force_login(make_user(role="supervisor"))
+    html = client.get("/").content.decode()
+    assert "ภาพรวม" in html and "เร็ว ๆ นี้" in html  # แดชบอร์ดหน่วยงาน arrives in phase 11
+    assert 'href="/cyber/network/"' in html  # เครือข่ายคดี is built (phase 9)
 
 
 def test_thai_formatting():

@@ -2,6 +2,7 @@
 <div class="flex flex-col gap-5">
   {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
   {% if form.non_field_errors %}<div class="chip chip-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  {% if form.links %}<div class="flex flex-wrap gap-2">{% for l in form.links %}<a class="link-badge" href="{% url 'cyber:network' %}?case={{ case.pk }}" title="{% for c in l.cases %}{{ c.label }} ({{ c.owner.display_name }}){% if not forloop.last %} · {% endif %}{% endfor %}">{{ l.label }}นี้พบในคดีอื่น {{ l.cases|length }} คดี</a>{% endfor %}</div>{% endif %}
 
   <section class="flex flex-col gap-3">
     <h3 class="section-title">ข้อมูลส่วนตัว</h3>

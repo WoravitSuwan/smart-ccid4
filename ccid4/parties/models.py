@@ -108,6 +108,7 @@ class PropertyItem(models.Model):
         "สถานะ", max_length=20, choices=[("not_returned", "ไม่ได้คืน"), ("returned", "ได้คืน")], default="not_returned"
     )
     note = models.CharField("หมายเหตุ", max_length=300, blank=True)
+    auto_source = models.CharField("คำนวณจาก", max_length=20, blank=True, help_text="money = ยอดจากเส้นทางเงิน (B3) ระบบปรับให้เอง")
 
     class Meta:
         verbose_name = "ทรัพย์ถูกประทุษร้าย"

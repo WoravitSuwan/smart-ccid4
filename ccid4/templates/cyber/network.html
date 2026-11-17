@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}เครือข่ายคดี{% endblock %}
+{% block head %}<script src="{% static 'vendor/cytoscape.min.js' %}" defer></script><script src="{% static 'js/graphkit.js' %}" defer></script><script src="{% static 'js/network.js' %}" defer></script>{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-end gap-3 reveal">
+  <div class="flex-1"><h1>เครือข่ายคดี</h1>
+    <p class="text-muted">คดีที่มีเลขบัญชี เบอร์โทร เลขบัตร บัญชีโซเชียล เว็บไซต์ หรือกระเป๋าคริปโตเดียวกัน · คดีของคนอื่นเห็นเฉพาะเลขคดีและพนักงานสอบสวนเจ้าของ</p></div>
+  <a class="btn btn-secondary" href="{% url 'cyber:merge_list' %}">คำขอรวมสำนวน{% if pending %} <span class="count">{{ pending }}</span>{% endif %}</a>
+</div>
+
+<form method="get" class="card glass p-4 flex flex-wrap items-end gap-3 reveal">
+  <label><span class="label">คดี</span><select class="input" name="case"><option value="">ทุกคดีที่เห็นได้</option>{% for c in my_cases %}<option value="{{ c.pk }}" {% if args.focus == c.pk %}selected{% endif %}>{{ c.label }}{% if c.title %} · {{ c.title|truncatechars:30 }}{% endif %}</option>{% endfor %}</select></label>
+  <label><span class="label">ประเภทตัวระบุ</span><select class="input" name="kind"><option value="">ทุกประเภท</option>{% for k, v in kinds.items %}<option value="{{ k }}" {% if args.kind == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+  <label><span class="label">รับแจ้งตั้งแต่</span><input class="input" type="date" name="from" value="{{ args.date_from|date:'Y-m-d' }}"></label>
+  <label><span class="label">ถึง</span><input class="input" type="date" name="to" value="{{ args.date_to|date:'Y-m-d' }}"></label>
+  <button class="btn btn-primary">กรอง</button>
+  <span class="ml-auto flex gap-2"><button type="button" class="btn btn-secondary" data-net-png>ส่งออก PNG</button>
+    <a class="btn btn-secondary" href="{% url 'cyber:network_export' %}?{{ query }}">ส่งออก Excel</a></span>
+</form>
+
+<div class="grid gap-4 xl:grid-cols-[1fr_22rem] items-start">
+  <section class="card p-3 flex flex-col gap-2 reveal">
+    <div class="flex flex-wrap items-center gap-3 text-sm px-2"><span class="legend legend-case">คดีที่เปิดดูได้</span><span class="legend legend-locked">คดีอื่น (ดูไม่ได้)</span>
+      <span class="legend legend-ident">ตัวระบุที่พบซ้ำ</span><span class="text-muted ml-auto" data-net-count></span></div>
+    <div class="graph-box graph-tall" data-net data-url="{% url 'cyber:network_data' %}?{{ query }}" aria-label="กราฟคดีกับตัวระบุ"></div>
+    <p class="empty-state text-sm" data-net-empty hidden>ยังไม่พบตัวระบุที่ซ้ำกันระหว่างคดีตามเงื่อนไขนี้</p>
+  </section>
+  <aside class="flex flex-col gap-4">
+    <div class="card glass p-4 flex flex-col gap-2" data-net-panel aria-live="polite"><b>รายละเอียด</b>
+      <p class="text-sm text-muted">คลิกโหนดคดีหรือตัวระบุ · ดับเบิลคลิกคดีเพื่อเปิด (ถ้ามีสิทธิ์)</p></div>
+    {% if focus %}
+    <form method="post" action="{% url 'cyber:merge_propose' focus.pk %}" class="card p-4 flex flex-col gap-2" data-merge-form>{% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <b>เสนอรวมสำนวน</b><p class="text-xs text-muted">คดี {{ focus.label }} กับคดีที่เลือกในกราฟ · ส่งให้หัวหน้างานสอบสวนพิจารณา</p>
+      <label><span class="label">คดีที่จะรวมด้วย</span><select class="input" name="other" data-merge-other required><option value="">คลิกคดีในกราฟ</option></select></label>
+      <label><span class="label">เหตุผล</span><textarea class="input py-2" name="reason" rows="2" required minlength="10"></textarea></label>
+      <button class="btn btn-secondary btn-sm self-start">ส่งคำขอ</button></form>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}
