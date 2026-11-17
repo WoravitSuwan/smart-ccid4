@@ -300,3 +300,13 @@ def arrange_qa(ctx, extra):
 
     segs = [Seg(s["id"], s["start"], s["end"], s["role"], s["text"]) for s in ctx]
     return {"pairs": [{"question": p.question, "answer": p.answer, "segment_ids": p.segment_ids} for p in build_pairs(segs)]}
+
+
+def summarize_interview(ctx, extra):
+    """FakeLLM = the code-only summary in interviews.summary (facts lifted straight from the speech)."""
+    from interviews import summary
+    from interviews.qa import Seg, build_pairs
+
+    segs = [Seg(s["id"], s["start"], s.get("end", s["start"]), s["role"], s["text"]) for s in ctx]
+    pairs = build_pairs(segs)
+    return {"points": summary.code_points(pairs, segs), "narrative": summary.code_narrative(pairs, segs)}

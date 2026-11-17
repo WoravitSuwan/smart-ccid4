@@ -62,7 +62,26 @@ def index(request):
     qs = InterviewSession.objects.filter(case__in=visible).select_related("case", "party__person", "created_by")
     if request.user.role not in ("supervisor", "commander", "admin"):
         qs = qs.filter(created_by=request.user) | qs.filter(case__owner=request.user)
-    return render(request, "interviews/index.html", {"sessions": qs.distinct()[:100], "active": "interviews"})
+    kinds = [("online", "คดีออนไลน์ (หลอกลวง/ฉ้อโกงทางออนไลน์)"), ("criminal", "คดีอาญาทั่วไป")]
+    return render(request, "interviews/index.html", {"sessions": qs.distinct()[:100], "kinds": kinds, "active": "interviews",
+                                                     "can_quick": request.user.role in ("investigator", "supervisor", "admin")})  # fmt: skip
+
+
+@login_required
+@require_POST
+def quick_start(request):
+    """อัดเสียงผู้แจ้งความรายใหม่: สร้างคดีรับแจ้ง + ผู้กล่าวหา + ห้องสอบ แล้วไปหน้าบันทึกเสียงทันที."""
+    if request.user.role not in ("investigator", "supervisor", "admin"):
+        raise PermissionDenied
+    name = request.POST.get("name", "").strip()
+    title = request.POST.get("title", "").strip()
+    if len(name) < 2 or len(title) < 3:
+        messages.error(request, "กรอกชื่อผู้แจ้งและเรื่องที่แจ้งโดยย่อก่อน")
+        return redirect("interviews:index")
+    s = services.quick_start(request.user, name, request.POST.get("phone", "").strip(), request.POST.get("kind", "online"), title,
+                             request.POST.get("place", "").strip() or "ห้องสอบสวน")  # fmt: skip
+    messages.success(request, f"สร้างคดีรับแจ้งและห้องสอบปากคำของ {s.party.person.full_name} แล้ว เริ่มบันทึกเสียงได้เลย")
+    return redirect("interviews:record", pk=s.pk)
 
 
 # ---------------------------------------------------------------- recording
@@ -217,7 +236,16 @@ def review_ctx(request, s):
         "role_choices": Participant.Role.choices, "rights": s.rights.all(), "rights_ok": rights_ok,
         "uncovered": set(draft.uncovered) if draft else set(), "blockers": services.blockers(s), "can_edit": services.can_edit(request.user, s),
         "reviewed": sum(1 for p in pairs if p.reviewed), "markers": s.markers.all(), "documents": s.documents.all(), "active": "interviews",
+        "speaker_options": speaker_options(s),
     }  # fmt: skip
+
+
+def speaker_options(s) -> list[tuple[str, str]]:
+    names = dict(Participant.Role.choices)
+    roles = dict(s.speaker_maps.values_list("label", "role"))
+    labels = sorted(set(roles) | {"S1", "S2"})
+    defaults = {"S1": "investigator", "S2": "subject"}
+    return [(lab, f"{lab} · {names.get(roles.get(lab) or defaults.get(lab, ''), 'ไม่ระบุ')}") for lab in labels]
 
 
 @login_required
@@ -237,14 +265,72 @@ def edit_segment(request, pk, seg_id):
     s = session_for(request, pk, edit=True)
     seg = get_object_or_404(Segment, pk=seg_id, session=s)
     services.edit_segment(seg, request.user, request.POST.get("text", ""))
-    seg = Segment.objects.prefetch_related("edits").get(pk=seg.pk)
+    return segment_partial(request, s, seg.pk)
+
+
+@login_required
+@require_POST
+def segment_speaker(request, pk, seg_id):
+    s = session_for(request, pk, edit=True)
+    seg = get_object_or_404(Segment, pk=seg_id, session=s)
+    services.set_segment_speaker(seg, request.user, request.POST.get("speaker", ""))
+    return segment_partial(request, s, seg.pk, note="เปลี่ยนผู้พูดแล้ว — กด “ร่างใหม่” เพื่อปรับคำให้การและสรุป")
+
+
+def segment_partial(request, s, seg_id, note=""):
+    seg = Segment.objects.prefetch_related("edits").get(pk=seg_id)
     roles = dict(s.speaker_maps.values_list("label", "role"))
     seg.role = roles.get(seg.speaker, "")
     seg.role_name = dict(Participant.Role.choices).get(seg.role, seg.speaker)
     seg.word_list = (
         seg.words if seg.text == seg.text_ai and seg.words else [{"w": w, "s": None, "e": None, "p": 1} for w in seg.text.split()]
     )
-    return render(request, "interviews/_segment.html", {"seg": seg, "s": s, "can_edit": True})
+    ctx = {"seg": seg, "s": s, "can_edit": True, "speaker_options": speaker_options(s), "note": note}
+    return render(request, "interviews/_segment.html", ctx)
+
+
+@login_required
+@require_POST
+def narrative(request, pk):
+    s = session_for(request, pk, edit=True)
+    draft = services.current_draft(s)
+    if not draft or draft.locked:
+        raise PermissionDenied
+    services.update_narrative(
+        draft, request.user, request.POST.get("narrative", draft.narrative), request.POST.get("reviewed") == "on"
+    )
+    from django.template.loader import render_to_string
+
+    html = render_to_string("interviews/_narrative.html", {"s": s, "draft": draft, "can_edit": True, "saved": True}, request)
+    html += render_to_string("interviews/_blockers.html", {"blockers": services.blockers(s), "oob": True}, request)
+    return HttpResponse(html)
+
+
+@login_required
+@require_POST
+def statement_format(request, pk):
+    s = session_for(request, pk, edit=True)
+    if request.POST.get("format") in ("narrative", "qa") and s.status != InterviewSession.Status.CONFIRMED:
+        s.statement_format = request.POST["format"]
+        s.save(update_fields=["statement_format"])
+        log(request.user, "edit", "interview", s.pk, f"เลือกรูปแบบคำให้การ: {s.get_statement_format_display()}")
+        messages.success(request, f"ใช้คำให้การรูปแบบ{s.get_statement_format_display()}")
+    return redirect("interviews:review", pk=s.pk)
+
+
+@login_required
+def summary_download(request, pk):
+    s = session_for(request, pk)
+    draft = s.drafts.filter(locked=True).first() or services.current_draft(s)
+    if not draft:
+        raise Http404
+    data = documents.summary_docx(s, draft)
+    log(request.user, "export", "interview", s.pk, f"ดาวน์โหลดสรุปการสอบปากคำ (ร่างฉบับที่ {draft.version})")
+    resp = HttpResponse(data, content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    from urllib.parse import quote
+
+    resp["Content-Disposition"] = f"attachment; filename*=UTF-8''{quote(f'สรุปการสอบปากคำ-{s.pk}-ร่าง{draft.version}.docx')}"
+    return resp
 
 
 @login_required

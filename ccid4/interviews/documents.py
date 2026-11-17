@@ -38,7 +38,8 @@ PLACEHOLDERS = {
     "วันที่": "วันที่สอบปากคำ (แบบราชการ)",
     "เวลาเริ่ม": "เวลาเริ่มบันทึกเสียง",
     "ย่อหน้าแจ้งสิทธิ": "ข้อความแจ้งสิทธิ (เฉพาะผู้ต้องหา ไม่ใช่ผู้ต้องหา = ว่าง)",
-    "qa.ถาม / qa.ตอบ / qa.เวลา / qa.ลำดับ": "บล็อกถาม–ตอบ: วางในแถวตาราง 1 แถว ระบบทำซ้ำต่อคู่",
+    "เรื่องเล่า": "คำให้การแบบบรรยาย (เล่าเรื่อง) — ใช้เมื่อเลือกรูปแบบบรรยาย แบบถาม–ตอบ = ว่าง",
+    "qa.ถาม / qa.ตอบ / qa.เวลา / qa.ลำดับ": "บล็อกถาม–ตอบ: วางในแถวตาราง 1 แถว ระบบทำซ้ำต่อคู่ (แบบบรรยาย = ตัดแถวออก)",
     "บล็อกล่าม": "ข้อความรับรองของล่าม (ไม่มีล่าม = ว่าง)",
     "พงส": "ยศ ชื่อ พนักงานสอบสวน",
     "ตำแหน่ง": "ตำแหน่งพนักงานสอบสวน",
@@ -48,7 +49,7 @@ PLACEHOLDERS = {
     "รหัสเอกสาร": "รหัสเอกสาร",
     "sha256": "SHA-256 ของไฟล์เสียงต้นฉบับ",
 }
-OPTIONAL = {"ย่อหน้าแจ้งสิทธิ", "บล็อกล่าม", "ทนาย", "ล่าม", "อายุ", "ที่อยู่"}
+OPTIONAL = {"ย่อหน้าแจ้งสิทธิ", "บล็อกล่าม", "ทนาย", "ล่าม", "อายุ", "ที่อยู่", "เรื่องเล่า"}
 
 
 def build_template() -> bytes:
@@ -84,6 +85,7 @@ def build_template() -> bytes:
         after=4,
     )
     para(doc, "{ย่อหน้าแจ้งสิทธิ}", WD_ALIGN_PARAGRAPH.THAI_JUSTIFY, indent=12, after=4)
+    para(doc, "{เรื่องเล่า}", WD_ALIGN_PARAGRAPH.THAI_JUSTIFY, indent=12, after=4)
     table = doc.add_table(rows=1, cols=1)
     cell = table.rows[0].cells[0]
     p = cell.paragraphs[0]
@@ -129,17 +131,22 @@ def values(session: InterviewSession, draft, code: str) -> dict:
     started = timezone.localtime(session.recording.closed_at - timezone.timedelta(seconds=session.recording.duration))
     from documents.context import age
 
+    narrative = session.statement_format == "narrative"
     rights = ""
     if session.is_suspect:
         rights = ("ก่อนถามคำให้การ พนักงานสอบสวนได้แจ้งข้อกล่าวหาและแจ้งให้ทราบว่า ผู้ต้องหามีสิทธิให้การหรือไม่ให้การก็ได้ "
                   "ถ้าให้การ ถ้อยคำที่ให้การนั้นอาจใช้เป็นพยานหลักฐานในการพิจารณาคดีได้ และมีสิทธิให้ทนายความหรือผู้ซึ่งตนไว้วางใจ"
                   "เข้าฟังการสอบปากคำได้ ตาม ป.วิ.อาญา มาตรา ๑๓๔/๔ (บันทึกอยู่ในไฟล์เสียง)")  # fmt: skip
     return {
-        "ฐานะ": cp.get_role_display(), "ผู้ให้การ": p.full_name, "อายุ": age(p.birth_date), "ที่อยู่": p.address,
+        # unknown age/address (e.g. a walk-in complainant) print as dotted lines to be written in by hand
+        "ฐานะ": cp.get_role_display(), "ผู้ให้การ": p.full_name, "อายุ": age(p.birth_date) or "......",
+        "ที่อยู่": p.address or "..................................................",
         "เลขคดี": session.case.case_no or session.case.receipt_no or str(session.case), "ข้อหา": session.case.offense or "-",
         "สถานที่": session.place, "วันที่": thai.format_date(started.date(), "long"), "เวลาเริ่ม": f"{started:%H.%M} น.",
         "ย่อหน้าแจ้งสิทธิ": rights,
-        "qa": [{"ลำดับ": i, "ถาม": q.question, "ตอบ": q.answer, "เวลา": f"{thai.mmss(q.start)}–{thai.mmss(q.end)}"} for i, q in enumerate(draft.pairs.all(), start=1)],
+        "เรื่องเล่า": draft.narrative if narrative else "",
+        "qa": [] if narrative else [{"ลำดับ": i, "ถาม": q.question, "ตอบ": q.answer, "เวลา": f"{thai.mmss(q.start)}–{thai.mmss(q.end)}"}
+                                    for i, q in enumerate(draft.pairs.all(), start=1)],
         "บล็อกล่าม": f"ข้าฯ {interp.name} ล่ามภาษา{interp.language or '……'} ได้แปลคำถามและคำตอบให้ผู้ให้การและพนักงานสอบสวนฟังโดยถูกต้องแล้ว" if interp else "",
         "พงส": officer.display_name, "ตำแหน่ง": officer.position, "ทนาย": counsel.name if counsel else "", "ล่าม": interp.name if interp else "",
         "ผู้บันทึก": people["recorder"][0].name if people["recorder"] else officer.display_name,
@@ -173,6 +180,68 @@ def transcript_docx(session) -> bytes:
     return out.getvalue()
 
 
+def summary_docx(session, draft) -> bytes:
+    """สรุปการสอบปากคำ: สรุปใจความสำคัญ · เรื่องราว · คำที่พบบ่อย — เอกสารประกอบสำนวน ไม่ใช่คำให้การ."""
+    from docx import Document
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.shared import Mm, Pt
+
+    from documents.management.commands.build_doc_templates import para, thai_font
+
+    doc = Document()
+    sec = doc.sections[0]
+    sec.page_width, sec.page_height = Mm(210), Mm(297)
+    sec.top_margin, sec.bottom_margin, sec.left_margin, sec.right_margin = Mm(25), Mm(20), Mm(30), Mm(20)
+    doc.styles["Normal"].font.name, doc.styles["Normal"].font.size = settings.DOC_FONT, Pt(16)
+    confirmed = draft.locked and session.confirmed_at
+    label = (f"ตรวจแล้วโดย {session.confirmed_by.display_name} เมื่อ {thai.format_datetime(timezone.localtime(session.confirmed_at))}"
+             if confirmed else "ร่างโดย AI – รอตรวจ")  # fmt: skip
+    para(doc, label, WD_ALIGN_PARAGRAPH.RIGHT, 12, True)
+    para(doc, "สรุปการสอบปากคำ", WD_ALIGN_PARAGRAPH.CENTER, 20, True, after=4)
+    para(doc, "เอกสารประกอบการทำสำนวน ไม่ใช่บันทึกคำให้การ", WD_ALIGN_PARAGRAPH.CENTER, 12, after=8)
+    rec = session.recording
+    started = timezone.localtime(rec.closed_at - timezone.timedelta(seconds=rec.duration)) if rec and rec.closed_at else None
+    for k, v in (
+        ("คดี", session.case.case_no or session.case.receipt_no or str(session.case)),
+        ("ผู้ให้การ", f"{session.party.person.full_name} ({session.party.get_role_display()})"),
+        ("วันที่สอบปากคำ", thai.format_datetime(started) if started else "-"),
+        ("ความยาวเสียง", thai.mmss(rec.duration) if rec else "-"),
+        ("SHA-256 ไฟล์เสียง", rec.sha256 if rec else "-"),
+        ("ร่างฉบับที่", f"{draft.version} ({'AI ในเครื่อง' if draft.summary_source == 'ai' else 'ระบบดึงจากคำพูด'})"),
+    ):
+        p = para(doc, "", size=14)
+        thai_font(p.add_run(f"{k}  "), 14, True)
+        thai_font(p.add_run(str(v)), 14)
+    para(doc, "๑. สรุปใจความสำคัญ", size=16, bold=True, after=2).paragraph_format.space_before = Pt(10)
+    for point in draft.points or ["-"]:
+        p = doc.add_paragraph(style="List Bullet")
+        thai_font(p.add_run(point), 16)
+    para(doc, "๒. เรื่องราวตามคำบอกเล่า", size=16, bold=True, after=2).paragraph_format.space_before = Pt(10)
+    for chunk in (draft.narrative or "-").split("\n"):
+        if chunk.strip():
+            para(doc, chunk.strip(), WD_ALIGN_PARAGRAPH.THAI_JUSTIFY, indent=12, after=4)
+    para(doc, "๓. คำที่พบบ่อย", size=16, bold=True, after=2).paragraph_format.space_before = Pt(10)
+    words = draft.keywords or []
+    t = doc.add_table(rows=1, cols=3)
+    t.style = "Table Grid"
+    for cell, text in zip(t.rows[0].cells, ("ลำดับ", "คำ", "จำนวนครั้ง"), strict=True):
+        thai_font(cell.paragraphs[0].add_run(text), 14, True)
+    for i, (word, count) in enumerate(words, start=1):
+        row = t.add_row().cells
+        for cell, text in zip(row, (str(i), word, str(count)), strict=True):
+            thai_font(cell.paragraphs[0].add_run(text), 14)
+    if draft.narrative_flags:
+        para(doc, "๔. ข้อสังเกตจากระบบ (ต้องฟังเสียงตรวจ)", size=16, bold=True, after=2).paragraph_format.space_before = Pt(10)
+        for flag in draft.narrative_flags:
+            p = doc.add_paragraph(style="List Bullet")
+            thai_font(p.add_run(flag), 14)
+    para(doc, "ข้อความทั้งหมดดึงจากเสียงบันทึก ระบบตรวจตัวเลขและข้อความเทียบกับเสียงแล้ว พนักงานสอบสวนต้องฟังเสียงตรวจก่อนใช้",
+         size=11).paragraph_format.space_before = Pt(10)  # fmt: skip
+    out = io.BytesIO()
+    doc.save(out)
+    return out.getvalue()
+
+
 def generate(session_id: int, user_id: int) -> InterviewDocument:
     from accounts.models import User
 
@@ -182,7 +251,12 @@ def generate(session_id: int, user_id: int) -> InterviewDocument:
     user = User.objects.get(pk=user_id)
     draft = session.drafts.filter(locked=True).first()
     code = f"CCID4-INT-{session.pk}-{draft.version}-{session.recording.sha256[:8].upper()}"
-    data, missing = engine.fill(template_bytes(), values(session, draft, code), thai_digits=False, allow_empty=OPTIONAL)
+    template = template_bytes()
+    narrative = session.statement_format == "narrative"
+    if narrative and "เรื่องเล่า" not in engine.find_placeholders(template):
+        raise ValueError("แบบฟอร์มคำให้การที่อัปโหลดไม่มีช่อง {เรื่องเล่า} จึงออกคำให้การแบบบรรยายไม่ได้ — เพิ่มช่องนี้ในแบบฟอร์ม")
+    data, missing = engine.fill(template, values(session, draft, code), thai_digits=False, allow_empty=OPTIONAL,
+                                drop_empty_rows={"qa"} if narrative else ())  # fmt: skip
     if missing:
         raise ValueError("แบบฟอร์มมีช่องที่ระบบไม่มีค่า: " + ", ".join(missing))
     doc = InterviewDocument(session=session, draft=draft, code=code, created_by=user)
@@ -195,6 +269,7 @@ def generate(session_id: int, user_id: int) -> InterviewDocument:
         f"audio/{Path(session.recording.original.name).name}": None,
         "transcript.json": dumps(transcript_json(session)),
         "transcript.docx": transcript_docx(session),
+        f"สรุปการสอบปากคำ-{code}.docx": summary_docx(session, draft),
         f"{name}.docx": data,
     }
     if pdf:

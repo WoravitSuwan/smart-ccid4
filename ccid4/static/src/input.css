@@ -348,6 +348,33 @@
   .word.low { text-decoration: underline wavy var(--warning); text-underline-offset: 4px; }
   .word.figure { background: color-mix(in srgb, var(--accent) 16%, transparent); font-weight: 600; }
   .word.speaking { background: var(--primary); color: var(--on-primary); }
+  /* ---------- สรุปจากเสียง ---------- */
+  .format-option { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; padding: 0 .9rem; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface-2); transition: border-color .2s, background-color .2s, box-shadow .2s; }
+  .format-option:has(input:checked) { border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 0 0 3px var(--primary-soft); }
+  .points { display: flex; flex-direction: column; gap: .5rem; }
+  .points li { position: relative; padding: .6rem .8rem .6rem 2rem; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border);
+    line-height: 1.7; animation: fade-up .45s cubic-bezier(.2,.8,.2,1) both; }
+  .points li:nth-child(2) { animation-delay: .05s; } .points li:nth-child(3) { animation-delay: .1s; } .points li:nth-child(4) { animation-delay: .15s; }
+  .points li:nth-child(n+5) { animation-delay: .2s; }
+  .points li::before { content: ""; position: absolute; left: .8rem; top: 1.05rem; width: 8px; height: 8px; border-radius: 999px;
+    background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
+  .narrative-text { line-height: 1.95; font-size: 1.02rem; }
+  .kw-chip { display: inline-flex; align-items: center; gap: .4rem; min-height: 36px; padding: 0 .8rem; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+    font-size: clamp(.85rem, calc(.8rem + var(--kw-weight, 1) * .02rem), 1.2rem); transition: transform .15s, border-color .2s, background-color .2s; }
+  .kw-chip b { font-size: .75rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .kw-chip:hover { transform: translateY(-1px); border-color: var(--primary); }
+  .kw-chip[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+  .kw-chip[aria-pressed="true"] b { color: var(--on-primary); }
+  .seg .word.kw-hit, .seg-text mark.kw-hit { background: color-mix(in srgb, var(--warning) 35%, transparent); color: inherit; border-radius: 4px;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--warning) 45%, transparent); }
+  .seg.kw-seg { border-color: color-mix(in srgb, var(--warning) 60%, var(--border)); }
+  .input-xs { min-height: 30px; padding: 0 .5rem; font-size: .75rem; }
+  .demo-warning { border: 1px solid color-mix(in srgb, var(--danger) 55%, var(--border)); background: color-mix(in srgb, var(--danger) 10%, var(--surface)); }
+  .quick-card { position: relative; overflow: hidden; }
+  .quick-card::after { content: ""; position: absolute; right: -60px; bottom: -90px; width: 240px; height: 240px; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, color-mix(in srgb, var(--primary) 22%, transparent), transparent 70%); animation: float 9s ease-in-out infinite; }
   .qa-pair { display: flex; flex-direction: column; gap: .5rem; padding: .8rem; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); }
   .qa-pair.has-flags { border-color: color-mix(in srgb, var(--danger) 55%, var(--border)); }
   .qa-pair.is-reviewed { border-color: color-mix(in srgb, var(--success) 55%, var(--border)); }

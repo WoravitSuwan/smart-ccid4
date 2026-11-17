@@ -22,6 +22,9 @@ class InterviewSession(models.Model):
     place = models.CharField("สถานที่สอบปากคำ", max_length=300)
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.DRAFT)
     mode = models.CharField("ระดับการเรียบเรียง", max_length=10, choices=Mode.choices, default=Mode.CLOSE)
+    statement_format = models.CharField(
+        "รูปแบบคำให้การ", max_length=10, choices=[("narrative", "บรรยาย (เล่าเรื่อง)"), ("qa", "ถาม–ตอบ")], default="narrative"
+    )
     progress = models.JSONField("ขั้นการประมวลผล", default=list, blank=True)  # [{"key","label","state","note"}]
     error = models.CharField(max_length=400, blank=True)
     rights_override = models.TextField("เหตุผลที่ยืนยันแม้ตรวจไม่พบการแจ้งสิทธิครบ", blank=True)
@@ -175,6 +178,12 @@ class StatementDraft(models.Model):
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
     uncovered = models.JSONField("ช่วงที่ผู้ให้การพูดแต่ไม่อยู่ในคำตอบ", default=list, blank=True)
+    points = models.JSONField("สรุปใจความสำคัญ", default=list, blank=True)
+    narrative = models.TextField("เล่าเรื่อง (คำให้การแบบบรรยาย)", blank=True)
+    narrative_flags = models.JSONField(default=list, blank=True)
+    narrative_reviewed = models.BooleanField(default=False)
+    keywords = models.JSONField("คำที่พบบ่อย", default=list, blank=True)  # [[word, count], ...]
+    summary_source = models.CharField(max_length=10, default="code")
 
     class Meta:
         ordering = ["-version"]

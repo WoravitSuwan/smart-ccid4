@@ -18,3 +18,4 @@ pypdf==5.1.0
 docxcompose==2.0.2
 openpyxl==3.1.5
 rapidfuzz==3.11.0
+pythainlp==5.1.2

@@ -5,9 +5,11 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 from django.conf import settings
@@ -19,8 +21,9 @@ from django.utils import timezone
 
 from ai import asr, llm
 from audit.services import log
+from core import thai
 
-from . import qa
+from . import qa, summary
 from .models import (
     InterviewSession,
     Participant,
@@ -73,7 +76,8 @@ def require(ok: bool):
 def start(user, party, place: str, people: list[tuple[str, str, str]]) -> InterviewSession:
     if party.role == "suspect" and not party.rights_informed_at:
         raise ValidationError("ผู้ต้องหา: ต้องแจ้งข้อกล่าวหาและสิทธิ (A4.4) ก่อนเริ่มบันทึก")
-    s = InterviewSession.objects.create(case=party.case, party=party, place=place, created_by=user)
+    s = InterviewSession.objects.create(case=party.case, party=party, place=place, created_by=user,
+                                        statement_format="qa" if party.role == "suspect" else "narrative")  # fmt: skip
     Participant.objects.create(session=s, role=Participant.Role.INVESTIGATOR, name=user.display_name)
     Participant.objects.create(session=s, role=Participant.Role.SUBJECT, name=party.person.full_name)
     for role, name, language in people:
@@ -147,16 +151,12 @@ def close_recording(session, user) -> Recording:
     with tempfile.TemporaryDirectory(prefix="ccid4-rec-") as tmp:
         merged = merge_takes(session, Path(tmp))
         digest = sha256_file(merged)
-        rec = Recording(session=session, sha256=digest, size=merged.stat().st_size, duration=asr.duration(merged), closed_by=user)
+        # browser WebM often carries no duration header: fall back to the seconds counted while recording
+        seconds = asr.duration(merged) or uploaded(session)["seconds"]
+        rec = Recording(session=session, sha256=digest, size=merged.stat().st_size, duration=seconds, closed_by=user)
         with open(merged, "rb") as f:
             rec.original.save(f"original-{digest[:12]}.webm", File(f), save=False)
-        try:
-            flac = asr.to_flac(merged, Path(tmp) / "asr.flac")
-            with open(flac, "rb") as f:
-                rec.for_asr.save("asr-16k.flac", File(f), save=False)
-        except (subprocess.SubprocessError, OSError):
-            pass  # transcription can still use the original
-        rec.save()
+        rec.save()  # the 16 kHz copy for the speech model is made by the worker (long recordings take a while)
     os.chmod(rec.original.path, 0o444)  # read-only on disk; the app never writes it again
     for c in session.chunks.all():
         c.file.delete(save=False)
@@ -188,6 +188,14 @@ def set_step(session, key, state, note=""):
 def process(session_id: int) -> InterviewSession:
     session = InterviewSession.objects.select_related("party", "recording").get(pk=session_id)
     rec = session.recording
+    if not rec.for_asr:
+        with tempfile.TemporaryDirectory(prefix="ccid4-asr-") as tmp:
+            try:
+                flac = asr.to_flac(Path(rec.original.path), Path(tmp) / "asr.flac")
+                with open(flac, "rb") as f:
+                    rec.for_asr.save("asr-16k.flac", File(f), save=True)
+            except (subprocess.SubprocessError, OSError):
+                pass  # transcription can still use the original
     audio = Path(rec.for_asr.path if rec.for_asr else rec.original.path)
     if not session.progress:
         session.progress = [{"key": k, "label": label, "state": "waiting", "note": ""} for k, label in STEPS]
@@ -197,13 +205,16 @@ def process(session_id: int) -> InterviewSession:
         session.save(update_fields=["status"])
         return session
     try:
-        set_step(session, "asr", "running")
-        segs = asr.transcribe(audio)
+        set_step(session, "asr", "running", f"เสียงยาว {thai.mmss(rec.duration)} · เริ่มถอดเสียง")
+        segs = asr.transcribe(audio, progress=asr_progress(session, rec.duration))
         set_step(session, "asr", "done", f"{len(segs)} ช่วงพูด")
         set_step(session, "diarize", "running")
         turns = asr.diarize(audio)
         set_step(session, "diarize", "done" if turns else "skipped", "" if turns else "ไม่มีโมเดลแยกผู้พูด · กำหนดผู้พูดเองในหน้าตรวจ")
         segs = asr.assign_speakers(segs, turns)
+        if not turns:  # no speaker model: questions and procedure → officer, the rest → the person giving the statement
+            for seg in segs:
+                seg["speaker"] = summary.guess_speaker(seg["text"])
         set_step(session, "align", "done")
         save_segments(session, segs)
         analyse(session)
@@ -214,7 +225,26 @@ def process(session_id: int) -> InterviewSession:
     return session
 
 
+def asr_progress(session, duration: float):
+    """Report ถอดเสียงแล้ว mm:ss / mm:ss (xx%) at most every 10 seconds of wall time."""
+    last = [0.0]
+
+    def report(done: float, total: float):
+        total = total or duration
+        now = time.monotonic()
+        if now - last[0] < 10:
+            return
+        last[0] = now
+        pct = f" ({min(99, int(done / total * 100))}%)" if total else ""
+        set_step(session, "asr", "running", f"ถอดเสียงแล้ว {thai.mmss(done)} จาก {thai.mmss(total)}{pct}")
+
+    return report
+
+
 def save_segments(session, items: list[dict]) -> None:
+    if len(items) > 3 and len({d.get("speaker") or "S1" for d in items}) == 1:  # transcript without speaker labels
+        for d in items:
+            d["speaker"] = summary.guess_speaker(d["text"])
     with transaction.atomic():
         session.segments.all().delete()
         for i, d in enumerate(sorted(items, key=lambda x: x["start"]), start=1):
@@ -297,12 +327,49 @@ def build_draft(session, user=None) -> StatementDraft:
                                               uncovered=qa.uncovered(segs, pairs))  # fmt: skip
         QAPair.objects.bulk_create([QAPair(draft=draft, order=i, question=p.question, answer=p.answer, start=p.start, end=p.end,
                                            segment_ids=p.segment_ids, flags=p.flags) for i, p in enumerate(pairs, start=1)])  # fmt: skip
+    build_summary(session, draft, pairs, segs, user)
     flagged = sum(1 for p in pairs if p.flags)
     set_step(session, "draft", "done", f"{len(pairs)} คู่ ({'AI' if source == 'ai' else 'จับคู่ตามคำพูด'})")
     set_step(
         session, "verify", "done" if not flagged else "warning", f"ติดธง {flagged} คู่ · ช่วงที่ไม่อยู่ในคำตอบ {len(draft.uncovered)}"
     )
     return draft
+
+
+def build_summary(session, draft, pairs, segs, user=None) -> None:
+    """สรุปใจความสำคัญ + เล่าเรื่อง + คำที่พบบ่อย (all from the recording; checked by code)."""
+    points, narrative, source = summary.code_points(pairs, segs), summary.code_narrative(pairs, segs), "code"
+    if settings.AI_BACKEND == "ollama":
+        ctx = [{"id": s.id, "role": s.role or "other", "start": s.start, "text": s.text} for s in segs]
+        extra = {"role_label": session.party.get_role_display(), "mode_label": session.get_mode_display()}
+        try:
+            out = llm.complete_json("summarize_interview", ctx, user=user, case=session.case, extra=extra)
+            points, narrative, source = [p for p in out["points"] if p.strip()], llm.clean_text(out["narrative"]), "ai"
+        except llm.AIError:
+            pass  # keep the code-only summary
+    subject = [s.text for s in segs if s.role == "subject"] or [s.text for s in segs]
+    draft.points, draft.narrative, draft.summary_source = points, narrative, source
+    draft.narrative_flags = summary.verify_text(narrative, segs)
+    draft.keywords = summary.keywords(subject)
+    draft.save(update_fields=["points", "narrative", "summary_source", "narrative_flags", "keywords"])
+
+
+def update_narrative(draft: StatementDraft, user, text: str, reviewed: bool) -> None:
+    draft.narrative = (text or "").strip()
+    draft.narrative_reviewed = reviewed
+    draft.narrative_flags = summary.verify_text(draft.narrative, segs_of(draft.session))
+    draft.save(update_fields=["narrative", "narrative_reviewed", "narrative_flags"])
+    log(user, "edit", "interview", draft.session_id, f"ตรวจ/แก้คำให้การแบบเล่าเรื่อง ร่างฉบับที่ {draft.version}")
+
+
+def set_segment_speaker(seg: Segment, user, label: str) -> None:
+    if not re.fullmatch(r"S\d{1,2}", label or ""):
+        return
+    old = seg.speaker
+    seg.speaker = label
+    seg.save(update_fields=["speaker"])
+    SpeakerMap.objects.get_or_create(session=seg.session, label=label, defaults={"role": ""})
+    log(user, "edit", "interview_segment", seg.pk, f"เปลี่ยนผู้พูดช่วง {seg.idx}: {old} → {label}")
 
 
 def current_draft(session) -> StatementDraft | None:
@@ -339,12 +406,23 @@ def update_pair(pair: QAPair, user, question: str, answer: str, reviewed: bool) 
 
 def blockers(session, override: str = "") -> list[str]:
     draft = current_draft(session)
-    reviewed = list(draft.pairs.values_list("reviewed", flat=True)) if draft else []
     rights_ok = session.rights.exists() and not session.rights.filter(found_at__isnull=True).exists()
+    if session.statement_format == "narrative":
+        problems = []
+        if not draft or not draft.narrative.strip():
+            problems.append("ยังไม่มีคำให้การแบบเล่าเรื่อง")
+        elif not draft.narrative_reviewed:
+            problems.append('ยังไม่ได้ติ๊ก "ฟังแล้ว ตรงกับเสียง" ในคำให้การแบบเล่าเรื่อง')
+        if session.is_suspect and not rights_ok and len((override or session.rights_override or "").strip()) < 10:
+            problems.append("ตรวจไม่พบการแจ้งสิทธิครบในเสียง ต้องฟังเองและระบุเหตุผลก่อนยืนยัน")
+        return problems
+    reviewed = list(draft.pairs.values_list("reviewed", flat=True)) if draft else []
     return qa.confirm_blockers(reviewed, rights_ok, override or session.rights_override, session.is_suspect)
 
 
-def statement_text(draft: StatementDraft) -> str:
+def statement_text(draft: StatementDraft, fmt: str = "qa") -> str:
+    if fmt == "narrative":
+        return draft.narrative
     return "\n".join(f"ถาม {p.question}\nตอบ {p.answer}" for p in draft.pairs.all())
 
 
@@ -361,7 +439,7 @@ def confirm(session, user, override: str = ""):
     draft.save(update_fields=["locked"])
     cp = session.party
     version = (cp.statements.aggregate(m=Max("version"))["m"] or 0) + 1
-    st = Statement.objects.create(party=cp, version=version, text=statement_text(draft), source=Statement.Source.VOICE,
+    st = Statement.objects.create(party=cp, version=version, text=statement_text(draft, session.statement_format), source=Statement.Source.VOICE,
                                   created_by=user, confirmed_by=user, confirmed_at=timezone.now())  # fmt: skip
     session.statement, session.status = st, InterviewSession.Status.CONFIRMED
     session.confirmed_by, session.confirmed_at = user, timezone.now()
@@ -391,3 +469,23 @@ def transcript_json(session) -> dict:
 
 def dumps(data) -> bytes:
     return json.dumps(data, ensure_ascii=False, indent=1).encode()
+
+
+@transaction.atomic
+def quick_start(user, name: str, phone: str, kind: str, title: str, place: str) -> InterviewSession:
+    """ผู้แจ้งความรายใหม่ที่มาที่สถานี: สร้างคดี (รับแจ้งใหม่) + ผู้กล่าวหา + ห้องสอบ ในขั้นเดียว."""
+    from ai.fake import split_name
+    from cases.models import Case, CaseStatus, CaseType
+    from deadlines.services import sync_rule_tasks
+    from parties.models import CaseParty, Person
+
+    case = Case.objects.create(owner=user, case_type=CaseType.ONLINE if kind == "online" else CaseType.CRIMINAL,
+                               status=CaseStatus.RECEIVED, title=title[:300])  # fmt: skip
+    n = split_name(name)
+    person = Person.objects.create(
+        title=n["title"], first_name=n["first_name"] or name[:120], last_name=n["last_name"], phone=phone[:40]
+    )
+    party = CaseParty.objects.create(case=case, person=person, role="accuser", order=1)
+    log(user, "create", "case", case.pk, f"สร้างคดีจากห้องสอบปากคำ (ผู้แจ้งรายใหม่) {person}")
+    sync_rule_tasks(case)
+    return start(user, party, place, [])

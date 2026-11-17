@@ -35,16 +35,17 @@ def find_placeholders(data: bytes) -> list[str]:
     return list(seen)
 
 
-def fill(data: bytes, values: dict, thai_digits: bool = True, allow_empty=()) -> tuple[bytes, list[str]]:
+def fill(data: bytes, values: dict, thai_digits: bool = True, allow_empty=(), drop_empty_rows=()) -> tuple[bytes, list[str]]:
     """Return the filled document and the placeholders that had no value (left visible as ……).
 
     Names in allow_empty print as nothing when empty (e.g. a postcode on an envelope, written in by hand)."""
     doc = Document(BytesIO(data))
     missing: list[str] = []
     for root in _roots(doc):
-        _expand_rows(root, values, thai_digits)
+        _expand_rows(root, values, thai_digits, drop_empty_rows)
         for p in list(root.iter(W_P)):
-            _fill_paragraph(p, values, thai_digits, missing, allow_empty)
+            if not _split_block(p, values, thai_digits):
+                _fill_paragraph(p, values, thai_digits, missing, allow_empty)
     out = BytesIO()
     doc.save(out)
     return out.getvalue(), sorted(set(missing))
@@ -158,7 +159,27 @@ def _fill_paragraph(p, values: dict, thai_digits: bool, missing: list[str], allo
             _set_run_text(r, t)
 
 
-def _expand_rows(root, values: dict, thai_digits: bool) -> None:
+def _split_block(p, values: dict, thai_digits: bool) -> bool:
+    """A paragraph that is only {name} and whose value has several lines becomes one paragraph per line (same format)."""
+    m = PLACEHOLDER.fullmatch(_paragraph_text(p).strip())
+    if not m:
+        return False
+    name = m.group(1).strip()
+    value = lookup(values, name)
+    if not isinstance(value, str) or "\n" not in value.strip():
+        return False
+    anchor = p
+    for line in (x.strip() for x in value.split("\n")):
+        if line:
+            clone = copy.deepcopy(p)
+            _fill_paragraph(clone, {name: line}, thai_digits, missing=[])
+            anchor.addnext(clone)
+            anchor = clone
+    p.getparent().remove(p)
+    return True
+
+
+def _expand_rows(root, values: dict, thai_digits: bool, drop_empty_rows=()) -> None:
     """Repeat table rows whose placeholders point into a list: {ทรัพย์.ชื่อ} with values['ทรัพย์'] = [{...}, ...]."""
     for tr in list(root.iter(W_TR)):
         text = "".join(_paragraph_text(p) for p in tr.iter(W_P))
@@ -177,8 +198,10 @@ def _expand_rows(root, values: dict, thai_digits: bool) -> None:
                 _fill_paragraph(p, row_values, thai_digits, missing=[])
             anchor.addnext(clone)
             anchor = clone
-        if items:
+        if items or key in drop_empty_rows:
             parent.remove(tr)
+            if not items and not any(child.tag == W_TR for child in parent):  # the table is now empty: remove it too
+                parent.getparent().remove(parent)
         else:
             for p in tr.iter(W_P):  # keep one empty row so the table still prints
                 _fill_paragraph(p, {n: "-" for n in names}, thai_digits, missing=[])

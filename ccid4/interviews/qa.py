@@ -57,6 +57,9 @@ def to_official_answer(text: str) -> str:
     t = clean(text)
     # a pronoun that starts a word (after a space) → ข้าฯ; Thai has no space before the next word ("ผมเปิด")
     t = re.sub(r"(?<=\s)(?:กระผม|ผม|ดิฉัน)(?=\s|[ก-๙])", "ข้าฯ ", f" {t} ")
+    t = re.sub(r"(?<=[ก-๙])(?:ดิฉัน|กระผม)", " ข้าฯ ", t)  # object pronoun after a word ("บล็อกไลน์ดิฉัน")
+    # "ผม" after a word only when a verb/particle follows ("ส่งไปผมก็", "เฟซบุ๊กผมไป") — not "ผมยาว" (hair)
+    t = re.sub(r"(?<=[ก-๙])ผม(?=ก็|ไม่|ได้|จะ|เคย|เป็น|มี|ไป|แล้ว|เอง|ด้วย|\s|$)", " ข้าฯ ", t)
     t = re.sub(r"ข้าฯ\s+", "ข้าฯ ", t).strip()
     if _PRONOUN.match(t):
         t = _PRONOUN.sub("ข้าฯ ", t, count=1)

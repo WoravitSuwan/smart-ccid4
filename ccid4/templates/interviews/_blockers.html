@@ -1,0 +1,1 @@
+<div id="blockers" class="flex flex-col gap-1"{% if oob %} hx-swap-oob="true"{% endif %}>{% for b in blockers %}<p class="chip chip-warning self-start">{{ b }}</p>{% empty %}<p class="chip chip-success self-start">พร้อมยืนยัน</p>{% endfor %}</div>

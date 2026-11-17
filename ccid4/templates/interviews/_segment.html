@@ -1,7 +1,10 @@
 <li id="seg-{{ seg.pk }}" class="seg seg-{{ seg.role|default:'unknown' }}{% if seg.pk in uncovered %} seg-uncovered{% endif %}">
   <div class="flex flex-wrap items-center gap-2 text-xs">
     <button type="button" class="chip chip-muted" data-seek="{{ seg.start }}" data-until="{{ seg.end }}" title="เล่นช่วงนี้">▶ {{ seg.start|floatformat:1 }}–{{ seg.end|floatformat:1 }} วิ</button>
-    <b>{{ seg.role_name }}</b><span class="text-muted">({{ seg.speaker }})</span>
+    {% if can_edit and s.status != "confirmed" %}<form hx-post="{% url 'interviews:segment_speaker' s.pk seg.pk %}" hx-target="#seg-{{ seg.pk }}" hx-swap="outerHTML" hx-trigger="change" class="inline-flex">
+      <select name="speaker" class="input input-xs" aria-label="ผู้พูดช่วงนี้">{% for label, name in speaker_options %}<option value="{{ label }}" {% if label == seg.speaker %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></form>
+    {% else %}<b>{{ seg.role_name }}</b><span class="text-muted">({{ seg.speaker }})</span>{% endif %}
+    {% if note %}<span class="chip chip-primary" role="status">{{ note }}</span>{% endif %}
     {% if seg.confidence is not None and seg.confidence < 0.7 %}<span class="chip chip-warning">ความมั่นใจต่ำ</span>{% endif %}
     {% if seg.text != seg.text_ai %}<span class="chip chip-primary" title="ต้นฉบับ AI: {{ seg.text_ai }}">แก้แล้ว {{ seg.edits.count }} ครั้ง</span>{% endif %}
     {% if seg.pk in uncovered %}<span class="chip chip-warning">ไม่อยู่ในคำตอบใด</span>{% endif %}

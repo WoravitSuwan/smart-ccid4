@@ -1,0 +1,11 @@
+<form id="narrative" hx-post="{% url 'interviews:narrative' s.pk %}" hx-target="#narrative" hx-swap="outerHTML" class="flex flex-col gap-2">
+  {% if s.statement_format == "narrative" %}<p class="text-xs text-muted">ข้อความนี้คือคำให้การที่จะลงใน Word (รูปแบบบรรยาย) · แก้ได้ทุกคำ ระบบตรวจตัวเลขและข้อความเทียบกับเสียงใหม่ทุกครั้งที่บันทึก</p>
+  {% else %}<p class="text-xs text-muted">ตอนนี้ใช้รูปแบบถาม–ตอบ เรื่องเล่านี้ลงในเอกสารสรุปเท่านั้น · เปลี่ยนเป็นรูปแบบบรรยายได้ด้านบน</p>{% endif %}
+  {% if draft.narrative_flags %}<ul class="flex flex-col gap-1">{% for f in draft.narrative_flags %}<li class="chip chip-warning self-start text-xs">{{ f }}</li>{% endfor %}</ul>
+  {% elif draft.narrative %}<p class="chip chip-success self-start text-xs">ตัวเลขและข้อความทั้งหมดหาต้นทางในเสียงพบ</p>{% endif %}
+  <textarea class="input py-2 narrative-text" name="narrative" rows="14" aria-label="คำให้การแบบเล่าเรื่อง" {% if not can_edit or draft.locked %}readonly{% endif %}>{{ draft.narrative }}</textarea>
+  {% if can_edit and not draft.locked %}<div class="flex flex-wrap items-center gap-3">
+    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="reviewed" {% if draft.narrative_reviewed %}checked{% endif %}> ฟังแล้ว ตรงกับเสียง</label>
+    <button class="btn btn-primary btn-sm">บันทึกเรื่องเล่า</button>
+    {% if saved %}<span class="chip chip-success text-xs" role="status">บันทึกแล้ว</span>{% endif %}</div>{% endif %}
+</form>
