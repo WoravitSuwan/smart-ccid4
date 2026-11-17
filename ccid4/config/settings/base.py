@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "intake",
     "summons",
     "interviews",
+    "cyber",
 ]
 
 MIDDLEWARE = [

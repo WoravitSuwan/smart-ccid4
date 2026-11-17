@@ -54,7 +54,10 @@
       </form>
       {% if DEMO_MODE %}<span class="chip chip-warning">ข้อมูลจำลอง</span>{% endif %}
       <span class="chip chip-primary chip-live" title="AI ทุกตัวรันบนเครื่องของหน่วยงาน"><svg class="w-4 h-4"><use href="#i-cpu"/></svg>AI ในเครื่อง</span>
-      <button type="button" class="btn btn-secondary btn-sm" aria-label="แจ้งเตือน"><svg class="w-5 h-5"><use href="#i-bell"/></svg></button>
+      <details class="relative bell" hx-get="{% url 'core:notifications' %}" hx-trigger="toggle once" hx-target="find .bell-list">
+        <summary class="btn btn-secondary btn-sm list-none cursor-pointer relative" aria-label="แจ้งเตือน{% if UNREAD %} ยังไม่อ่าน {{ UNREAD }} รายการ{% endif %}"><svg class="w-5 h-5"><use href="#i-bell"/></svg>{% if UNREAD %}<span class="bell-count">{{ UNREAD }}</span>{% endif %}</summary>
+        <div class="card bell-panel absolute right-0 mt-2 p-3 z-40 flex flex-col gap-2"><div class="bell-list"><p class="text-sm text-muted">กำลังโหลด…</p></div></div>
+      </details>
       <button type="button" class="btn btn-secondary btn-sm" @click="toggleTheme" aria-label="สลับธีมมืดหรือสว่าง"><svg class="w-5 h-5"><use href="#i-sun"/></svg></button>
       <details class="relative">
         <summary class="btn btn-secondary btn-sm list-none cursor-pointer">{{ user.display_name }}</summary>

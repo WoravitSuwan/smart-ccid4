@@ -116,7 +116,7 @@ function selectTab(root, name, focus) {
   ownTabs(root, '[role="tabpanel"]').forEach((p) => { p.hidden = p.dataset.panel !== name; });
   const field = root.querySelector(':scope > input[data-tab-field]') || document.querySelector(`input[data-tab-field="${root.dataset.tabs}"]`);
   if (field) field.value = name;
-  if (root.dataset.tabs === 'case' && history.replaceState) history.replaceState(null, '', `#${name}`);
+  if ((root.dataset.tabs === 'case' || root.hasAttribute('data-hash')) && history.replaceState) history.replaceState(null, '', `#${name}`);
 }
 
 document.addEventListener('click', (e) => {
@@ -141,7 +141,7 @@ document.addEventListener('keydown', (e) => {
 
 function initTabs(scope) {
   scope.querySelectorAll('[data-tabs]').forEach((root) => {
-    const wanted = root.dataset.tabs === 'case' ? (root.dataset.initial || location.hash.slice(1)) : '';
+    const wanted = (root.dataset.tabs === 'case' || root.hasAttribute('data-hash')) ? (root.dataset.initial || location.hash.slice(1)) : '';
     const tabs = ownTabs(root, '[role="tab"]').filter((t) => !t.disabled);
     const pick = tabs.find((t) => t.dataset.tab === wanted) || tabs.find((t) => t.getAttribute('aria-selected') === 'true') || tabs[0];
     if (pick) selectTab(root, pick.dataset.tab);

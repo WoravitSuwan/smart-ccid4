@@ -310,3 +310,38 @@ def summarize_interview(ctx, extra):
     segs = [Seg(s["id"], s["start"], s.get("end", s["start"]), s["role"], s["text"]) for s in ctx]
     pairs = build_pairs(segs)
     return {"points": summary.code_points(pairs, segs), "narrative": summary.code_narrative(pairs, segs)}
+
+
+SLIP_BANKS = ("กสิกรไทย", "กรุงเทพ", "กรุงไทย", "ไทยพาณิชย์", "กรุงศรี", "ทหารไทยธนชาต", "ttb", "ออมสิน", "ธ.ก.ส.", "ยูโอบี", "ซีไอเอ็มบี",
+              "เกียรตินาคิน", "แลนด์ แอนด์ เฮ้าส์", "พร้อมเพย์")  # fmt: skip
+
+
+def extract_slip(ctx, extra):
+    """Read the fields printed on a transfer slip (text from the PDF/OCR) with plain patterns; blanks when not found."""
+    text = to_arabic_digits(ctx if isinstance(ctx, str) else _all_text(ctx))
+    accounts = re.findall(r"(?:x{1,3}|\d{3})-\d-[\dx]{5}-[\dx]|\b\d{10,12}\b", text, re.I)
+    amount = re.search(r"(?:จำนวน(?:เงิน)?|amount)\s*:?\s*([\d,]+(?:\.\d{1,2})?)", text, re.I) or re.search(
+        r"([\d,]+\.\d{2})\s*(?:บาท|THB)", text
+    )
+    banks = [b for b in SLIP_BANKS if b in text]
+    when = ""
+    m = re.search(r"(\d{1,2})\s*(" + "|".join(MONTHS_ALL) + r")\s*(\d{2,4})(?:\s*[,-]?\s*(\d{1,2})[:.](\d{2}))?", text)
+    if m:
+        months = MONTHS_ALL
+        y = int(m[3])
+        y = y + 2500 if y < 100 else y
+        y = y - 543 if y > 2400 else y
+        when = f"{y:04d}-{months.index(m[2]) % 12 + 1:02d}-{int(m[1]):02d} {int(m[4] or 0):02d}:{int(m[5] or 0):02d}"
+    ref = re.search(r"(?:เลขที่รายการ|รหัสอ้างอิง|เลขอ้างอิง|ref(?:erence)?\.?(?:\s*no\.?)?)\s*:?\s*([A-Za-z0-9]{6,})", text, re.I)
+    names = re.findall(r"(?:นาย|นาง|นางสาว|น\.ส\.|บริษัท)\s*[ก-๙A-Za-z.]+(?:\s+[ก-๙A-Za-z.]+)?", text)
+    return {
+        "occurred_at": when, "amount": float(amount[1].replace(",", "")) if amount else 0,
+        "from_account": accounts[0] if len(accounts) > 1 else "", "from_bank": banks[0] if len(banks) > 1 else "",
+        "from_name": names[0] if len(names) > 1 else "", "to_account": accounts[-1] if accounts else "",
+        "to_bank": banks[-1] if banks else "", "to_name": names[-1] if names else "",
+        "reference": ref[1] if ref else "", "channel": "พร้อมเพย์" if "พร้อมเพย์" in text else ("โมบายแบงก์กิ้ง" if accounts else ""),
+    }  # fmt: skip
+
+
+MONTHS_ALL = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
+              "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]  # fmt: skip

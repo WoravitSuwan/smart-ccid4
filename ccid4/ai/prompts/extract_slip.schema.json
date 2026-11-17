@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "required": ["occurred_at", "amount", "from_account", "from_bank", "from_name", "to_account", "to_bank", "to_name", "reference", "channel"],
+  "properties": {
+    "occurred_at": {"type": "string", "maxLength": 20},
+    "amount": {"type": "number", "minimum": 0},
+    "from_account": {"type": "string", "maxLength": 40},
+    "from_bank": {"type": "string", "maxLength": 120},
+    "from_name": {"type": "string", "maxLength": 200},
+    "to_account": {"type": "string", "maxLength": 40},
+    "to_bank": {"type": "string", "maxLength": 120},
+    "to_name": {"type": "string", "maxLength": 200},
+    "reference": {"type": "string", "maxLength": 80},
+    "channel": {"type": "string", "maxLength": 60}
+  }
+}

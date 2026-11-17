@@ -30,6 +30,12 @@ def ensure_ready() -> None:
             call_command(
                 "import_dika", str(settings.BASE_DIR / "sample_data" / "dika_sample.json"), source="ข้อมูลจำลอง", verbosity=0
             )
+        from cyber.models import BankAccount
+
+        if not BankAccount.objects.exists():  # demo money flow (phase 9), also for previews seeded before it existed
+            log.info("preview: loading demo money flow")
+            call_command("seed_cyber", force=True, verbosity=0)
+        call_command("reindex_identifiers", missing=True, verbosity=0)  # cases made before the B4 index existed
     finally:
         with connection.cursor() as cur:
             cur.execute("SELECT pg_advisory_unlock(%s)", [LOCK])

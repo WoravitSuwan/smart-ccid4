@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}จับคู่คอลัมน์ · {{ case.label }}{% endblock %}
+{% block content %}
+<nav class="text-sm reveal"><a href="{% url 'cases:detail' case.pk %}">{{ case.label }}</a> › <a href="{% url 'cyber:case' case.pk %}">เส้นทางเงิน</a> › จับคู่คอลัมน์</nav>
+<div class="reveal"><h1>จับคู่คอลัมน์</h1><p class="text-muted">{{ name }} · {{ count }} แถว</p></div>
+<datalist id="bank-list">{% for b in banks %}<option value="{{ b }}">{% endfor %}</datalist>
+<form method="post" class="flex flex-col gap-4">{% csrf_token %}
+  <section class="card p-5 flex flex-col gap-3 reveal"><h2>คอลัมน์ในไฟล์ → ช่องของระบบ</h2>
+    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{% for key, label, required in targets %}
+      <label><span class="label">{{ label }}{% if required %} *{% endif %}</span>
+        <select class="input" name="map-{{ key }}"><option value="">— ไม่มี —</option>{% for i, h in headers %}<option value="{{ i }}" {% if guess|get_item:key == i %}selected{% endif %}>{{ h|default:"(ไม่มีชื่อ)" }}</option>{% endfor %}</select></label>{% endfor %}</div>
+  </section>
+  <section class="card p-5 flex flex-col gap-3 reveal"><h2>บัญชีต้นทางของ statement นี้</h2>
+    <p class="text-sm text-muted">ถ้าไฟล์ไม่มีคอลัมน์ "จากบัญชี" (เช่น statement ของบัญชีผู้เสียหายเอง) ใส่บัญชีนั้นที่นี่ ทุกแถวจะใช้เป็นต้นทาง</p>
+    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <label><span class="label">เลขบัญชี</span><input class="input" name="fixed_no" maxlength="40"></label>
+      <label><span class="label">ธนาคาร</span><input class="input" name="fixed_bank" list="bank-list" maxlength="120"></label>
+      <label><span class="label">ชื่อบัญชี</span><input class="input" name="fixed_name" maxlength="200"></label>
+      <label class="flex items-center gap-2 text-sm self-end min-h-[44px]"><input type="checkbox" name="fixed_victim" checked> เป็นบัญชีของผู้เสียหาย</label></div>
+  </section>
+  <section class="card p-5 flex flex-col gap-3 reveal"><h2>ตัวอย่าง 8 แถวแรก</h2>
+    <div class="overflow-x-auto rounded-card border border-border"><table class="tbl text-sm"><thead><tr>{% for i, h in headers %}<th>{{ h|default:"(ไม่มีชื่อ)" }}</th>{% endfor %}</tr></thead>
+      <tbody>{% for r in preview %}<tr>{% for c in r %}<td class="whitespace-nowrap">{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
+  </section>
+  <div class="flex gap-2"><button class="btn btn-primary">นำเข้า {{ count }} แถว</button><button class="btn btn-secondary" name="cancel" value="1" formnovalidate>ยกเลิก (ลบไฟล์)</button></div>
+</form>
+{% endblock %}

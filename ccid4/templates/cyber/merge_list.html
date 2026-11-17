@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}คำขอรวมสำนวน{% endblock %}
+{% block content %}
+<nav class="text-sm reveal"><a href="{% url 'cyber:network' %}">เครือข่ายคดี</a> › คำขอรวมสำนวน</nav>
+<h1 class="reveal">คำขอรวมสำนวน</h1>
+<section class="flex flex-col gap-3">
+  {% for p in proposals %}
+  <article class="card p-4 flex flex-col gap-2 reveal">
+    <div class="flex flex-wrap items-center gap-2"><b class="flex-1">{{ p.case.label }} ({{ p.case.owner.display_name }}) ↔ {{ p.other.label }} ({{ p.other.owner.display_name }})</b>
+      <span class="chip {% if p.status == 'approved' %}chip-success{% elif p.status == 'rejected' %}chip-muted{% else %}chip-warning{% endif %}">{{ p.get_status_display }}</span></div>
+    <p class="text-sm">{{ p.reason }}</p>
+    <p class="text-xs text-muted">เสนอโดย {{ p.proposed_by.display_name }} · {{ p.created_at|be_datetime }}{% if p.decided_by %} · พิจารณาโดย {{ p.decided_by.display_name }} {{ p.decided_at|be_datetime }}{% if p.decision_note %}: {{ p.decision_note }}{% endif %}{% endif %}</p>
+    {% if is_head and p.status == "pending" %}
+    <form method="post" action="{% url 'cyber:merge_decide' p.pk %}" class="flex flex-wrap items-end gap-2">{% csrf_token %}
+      <label class="flex-1 min-w-[220px]"><span class="label">ความเห็น</span><input class="input" name="note" maxlength="500"></label>
+      <button class="btn btn-primary btn-sm" name="decision" value="approve">เห็นชอบให้รวม</button>
+      <button class="btn btn-secondary btn-sm" name="decision" value="reject">ไม่รวม</button></form>
+    {% endif %}
+  </article>
+  {% empty %}<p class="empty-state text-sm">ยังไม่มีคำขอรวมสำนวน</p>{% endfor %}
+</section>
+{% endblock %}

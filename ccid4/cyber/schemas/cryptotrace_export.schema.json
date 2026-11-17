@@ -1,0 +1,50 @@
+{
+  "$id": "ccid4.cryptotrace/1",
+  "title": "CCID4 → CryptoTrace: กระเป๋าและธุรกรรมคริปโตของคดี",
+  "type": "object",
+  "required": ["schema", "exported_at", "case", "wallets", "transactions"],
+  "properties": {
+    "schema": {"type": "string", "enum": ["ccid4.cryptotrace/1"]},
+    "exported_at": {"type": "string", "maxLength": 40},
+    "case": {
+      "type": "object",
+      "required": ["ref", "offense", "unit", "reported_at"],
+      "properties": {
+        "ref": {"type": "string", "maxLength": 60},
+        "offense": {"type": "string", "maxLength": 400},
+        "unit": {"type": "string", "maxLength": 120},
+        "reported_at": {"type": "string", "maxLength": 10}
+      }
+    },
+    "wallets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["network", "address", "label", "role", "valid"],
+        "properties": {
+          "network": {"type": "string", "enum": ["btc", "evm", "tron"]},
+          "address": {"type": "string", "maxLength": 120},
+          "label": {"type": "string", "maxLength": 120},
+          "role": {"type": "string", "enum": ["victim", "suspect", "witness", "unknown"]},
+          "valid": {"type": "boolean"}
+        }
+      }
+    },
+    "transactions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["network", "tx_hash", "from", "to", "amount", "asset", "time"],
+        "properties": {
+          "network": {"type": "string", "enum": ["btc", "evm", "tron"]},
+          "tx_hash": {"type": "string", "maxLength": 100},
+          "from": {"type": ["string", "null"], "maxLength": 120},
+          "to": {"type": ["string", "null"], "maxLength": 120},
+          "amount": {"type": "string", "maxLength": 60},
+          "asset": {"type": "string", "maxLength": 20},
+          "time": {"type": ["string", "null"], "maxLength": 40}
+        }
+      }
+    }
+  }
+}

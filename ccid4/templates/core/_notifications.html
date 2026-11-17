@@ -1,0 +1,8 @@
+<div class="flex items-center gap-2 mb-1"><b class="flex-1">การแจ้งเตือน</b>
+  {% if items %}<button type="button" class="btn btn-secondary btn-sm" hx-post="{% url 'core:notifications_read_all' %}" hx-swap="none">อ่านทั้งหมดแล้ว</button>{% endif %}</div>
+<ul class="flex flex-col gap-1 max-h-[60vh] overflow-y-auto">
+  {% for n in items %}<li><a class="bell-item{% if not n.read_at %} unread{% endif %}" href="{% url 'core:notification_open' n.pk %}">
+    <span class="text-sm font-semibold">{{ n.title }}</span>{% if n.body %}<span class="text-xs text-muted">{{ n.body }}</span>{% endif %}
+    <span class="text-xs text-muted">{{ n.created_at|be_datetime }}</span></a></li>
+  {% empty %}<li class="empty-state text-sm">ยังไม่มีการแจ้งเตือน</li>{% endfor %}
+</ul>

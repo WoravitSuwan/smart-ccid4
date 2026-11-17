@@ -22,7 +22,7 @@ x-app: &app
 services:
   web:
     <<: *app
-    command: sh -c "python manage.py migrate --noinput && python manage.py seed_holidays && gunicorn config.wsgi --bind 0.0.0.0:8000 --workers 3 --timeout 300"
+    command: sh -c "python manage.py migrate --noinput && python manage.py reindex_identifiers --missing && python manage.py seed_holidays && gunicorn config.wsgi --bind 0.0.0.0:8000 --workers 3 --timeout 300"
     ports: ["127.0.0.1:8000:8000"]  # this machine only, not the network
   worker:  # ถอดเสียงทีละรายการ ใช้ทุกคอร์ของ CPU (เสียง 1 ชั่วโมงใช้เวลาหลายสิบนาที ดูความคืบหน้าในหน้า "ประมวลผล")
     <<: *app

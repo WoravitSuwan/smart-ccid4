@@ -11,6 +11,7 @@
       <span class="chip {% if case.status == 'closed' %}chip-success{% elif case.status == 'investigating' %}chip-primary{% else %}chip-warning{% endif %}">{{ case.get_status_display }}</span>
       <span class="chip chip-muted">{{ case.get_case_type_display }}</span>
       {% if not editable %}<span class="chip chip-muted"><svg class="w-4 h-4"><use href="#i-lock"/></svg>อ่านอย่างเดียว</span>{% endif %}
+      {% if linked_count %}<a class="link-badge" href="{% url 'cyber:network' %}?case={{ case.pk }}" title="มีเลขบัญชี/เบอร์โทร/ตัวระบุเดียวกับคดีอื่น">เชื่อมโยงกับคดีอื่น {{ linked_count }} คดี</a>{% endif %}
     </div>
     <p class="text-muted">{{ case.offense|default:"ยังไม่ระบุฐานความผิด" }}{% if case.title %} · {{ case.title }}{% endif %}</p>
     <p class="text-sm text-muted">พนักงานสอบสวน {{ case.owner.display_name }} · รับแจ้ง {{ case.reported_at|be_datetime }} · อัปเดต {{ case.updated_at|be_datetime }}</p>
@@ -73,6 +74,22 @@
             </details>{% endif %}{% endwith %}
           </section>
         </div>
+
+        {# ---------- เส้นทางเงิน (คดีออนไลน์) ---------- #}
+        {% if money %}
+        <div role="tabpanel" id="panel-money" data-panel="money" class="flex flex-col gap-4" hidden>
+          <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div class="card p-4"><span class="text-sm text-muted block">ยอดที่ผู้เสียหายโอนออก (บาท)</span><b class="stat-value">{{ money.total|floatformat:"2g" }}</b></div>
+            <div class="card p-4"><span class="text-sm text-muted block">บัญชีปลายทาง</span><b class="stat-value">{{ money.accounts }}</b>
+              {% if money.linked_accounts %}<span class="link-badge">พบในคดีอื่น {{ money.linked_accounts }} บัญชี</span>{% endif %}</div>
+            <div class="card p-4"><span class="text-sm text-muted block">ธุรกรรม</span><b class="stat-value">{{ money.transfers }}</b></div>
+            <div class="card p-4"><span class="text-sm text-muted block">บัญชีออนไลน์ · กระเป๋าคริปโต</span><b class="stat-value">{{ money.online }} · {{ money.wallets }}</b></div>
+          </div>
+          <p class="text-sm text-muted">ตารางธุรกรรม ทะเบียนบัญชีม้า หนังสือถึงธนาคารแบบชุด แผนภาพเส้นทางเงิน และกระเป๋าคริปโต อยู่ในหน้าเส้นทางเงิน · ยอดรวมผูกกับบัญชีทรัพย์ของผู้กล่าวหาอัตโนมัติ</p>
+          <div class="flex flex-wrap gap-2"><a class="btn btn-primary" href="{% url 'cyber:case' case.pk %}"><svg class="w-5 h-5"><use href="#i-share"/></svg>เปิดหน้าเส้นทางเงิน</a>
+            <a class="btn btn-secondary" href="{% url 'cyber:case' case.pk %}#flow">ดูแผนภาพ</a></div>
+        </div>
+        {% endif %}
 
         {# ---------- ผู้กล่าวหา ---------- #}
         <div role="tabpanel" id="panel-accuser" data-panel="accuser" class="flex flex-col gap-6" hidden>

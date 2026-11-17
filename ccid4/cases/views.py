@@ -162,7 +162,7 @@ def case_detail(request, pk):
             else:
                 messages.info(request, "ไม่มีข้อมูลที่เปลี่ยน")
             tab = request.POST.get("tab", "info")
-            return redirect(f"{case.get_absolute_url()}#{tab if tab in dict(TABS) else 'info'}")
+            return redirect(f"{case.get_absolute_url()}#{tab if tab in dict(TABS) or tab == 'money' else 'info'}")
         messages.error(request, "ยังบันทึกไม่ได้ ตรวจช่องที่มีกรอบสีแดงในแท็บที่มีจุดเตือน")
         status = 400
     else:
@@ -186,6 +186,29 @@ def case_detail(request, pk):
             df.fields["days"].max_value = limit
             df.fields["days"].widget.attrs["max"] = limit
             detention_forms.append((f.party, c, df))
+    from cyber import index as cyber_index
+    from cyber import money as cyber_money
+
+    links = cyber_index.links(case)
+    party_forms = [forms["accuser_form"], *forms["suspect_fs"].forms, *forms["witness_fs"].forms]
+    for f in party_forms:  # B4: "พบในคดีอื่น n คดี" next to the person's phone / citizen ID
+        cp = getattr(f, "party", None)
+        f.links = []
+        if cp:
+            for kind, label, value in (
+                ("phone", "เบอร์โทร", cp.person.phone),
+                ("citizen_id", "เลขบัตรประชาชน", cp.person.citizen_id),
+            ):
+                others = cyber_index.others_for(links, kind, value)
+                if others:
+                    f.links.append({"label": label, "cases": others})
+    tabs = TABS + ([("money", "เส้นทางเงิน")] if case.case_type == "online" else [])
+    money_summary = None
+    if case.case_type == "online":
+        rows = cyber_money.account_rows(case, links)
+        money_summary = {"total": cyber_money.total_loss(case), "accounts": sum(1 for r in rows if not r.account.is_victim),
+                         "transfers": case.transfers.count(), "linked_accounts": sum(1 for r in rows if r.other_cases),
+                         "online": case.online_accounts.count(), "wallets": case.crypto_wallets.count()}  # fmt: skip
     ctx = (
         forms
         | panel_context(case)
@@ -197,8 +220,10 @@ def case_detail(request, pk):
             "detention_forms": detention_forms,
             "case": case,
             "editable": editable,
-            "tabs": TABS,
+            "tabs": tabs,
             "soon_tabs": SOON_TABS,
+            "linked_count": cyber_index.linked_case_count(links),
+            "money": money_summary,
             "errors": errors,
             "first_error_tab": next((t for t, e in errors.items() if e), ""),
             "can_reveal": request.user.can("pii.reveal"),

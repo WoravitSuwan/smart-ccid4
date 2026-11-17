@@ -10,7 +10,7 @@ x-app: &app
 services:
   web:
     <<: *app
-    command: sh -c "python manage.py migrate --noinput && gunicorn config.wsgi --bind 0.0.0.0:8000 --workers 3 --timeout 120"
+    command: sh -c "python manage.py migrate --noinput && python manage.py reindex_identifiers --missing && gunicorn config.wsgi --bind 0.0.0.0:8000 --workers 3 --timeout 120"
   worker:
     <<: *app
     command: celery -A config worker -l info --concurrency 2
