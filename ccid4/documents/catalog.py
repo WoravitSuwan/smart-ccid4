@@ -32,19 +32,58 @@ class DocType:
     def path(self) -> Path:
         return LIBRARY / f"{self.key}.docx"
 
+    def upload(self):
+        """The active uploaded version (B11), or None when the built-in file is used."""
+        from .models import TemplateVersion
+
+        return TemplateVersion.objects.filter(key=self.key, active=True).first()
+
     def template_bytes(self) -> bytes:
+        tv = self.upload()
+        if tv:
+            with tv.file.open("rb") as f:
+                return f.read()
+        if not self.path.exists():
+            raise FileNotFoundError(f"ยังไม่มีไฟล์เทมเพลตของ {self.title}")
         return self.path.read_bytes()
 
     def template_version(self) -> str:
-        return hashlib.sha256(self.template_bytes()).hexdigest()[:12]
+        tv = self.upload()
+        return tv.label if tv else hashlib.sha256(self.path.read_bytes()).hexdigest()[:12]
+
+    def number_style(self) -> str:
+        tv = self.upload()
+        return tv.digits if tv else self.digits
 
     @property
     def per_item(self) -> bool:
         return bool(self.per)
 
 
-@lru_cache(maxsize=1)
 def load() -> tuple[list[str], dict[str, DocType]]:
+    """Built-in documents (manifest.yaml) + documents the unit added itself (B11)."""
+    groups, docs = load_builtin()
+    try:
+        from .models import CustomDocType, TemplateVersion
+
+        custom = list(CustomDocType.objects.filter(active=True))
+        maps = {t.key: t.mapping for t in TemplateVersion.objects.filter(key__in=[c.key for c in custom], active=True)}
+    except Exception:  # noqa: BLE001 - tables not migrated yet (first start)
+        return groups, docs
+    extra = {}
+    for c in custom:
+        # readiness of a unit-made document: every system field its template uses must have a value
+        reqs = tuple(tuple(sorted({"path": path, "label": f"{name} ({path})", "goto": ""}.items()))
+                     for name, path in maps.get(c.key, {}).items() if path and "." not in name)  # fmt: skip
+        if c.key not in maps:
+            reqs = ((("goto", ""), ("label", "ยังไม่ได้อัปโหลดไฟล์เทมเพลต"), ("path", "_ไม่มีเทมเพลต")),)
+        extra[c.key] = DocType(no=100 + c.pk, key=c.key, title=c.title, group=c.group if c.group in groups else groups[-1],
+                               per=c.per or None, digits="thai", requires=reqs, new=True)  # fmt: skip
+    return groups, docs | extra
+
+
+@lru_cache(maxsize=1)
+def load_builtin() -> tuple[list[str], dict[str, DocType]]:
     data = yaml.safe_load((LIBRARY / "manifest.yaml").read_text(encoding="utf-8"))
     docs = {}
     for d in data["documents"]:
@@ -61,10 +100,37 @@ def get(key: str) -> DocType:
 
 
 def apply_aliases(doc: DocType, values: dict) -> dict:
-    """Template placeholders whose names differ from the system names (manifest `fields`)."""
-    if not doc.fields:
+    """Template placeholders whose names differ from the system names (manifest `fields`, or the mapping of an upload)."""
+    return apply_aliases_for(doc.upload(), doc, values)
+
+
+def apply_aliases_for(tv, doc: DocType, values: dict) -> dict:
+    pairs = list(doc.fields) + ([(k, v) for k, v in tv.mapping.items() if v] if tv else [])
+    if not pairs:
         return values
-    return values | {name: lookup(values, path) for name, path in doc.fields}
+    out = dict(values)
+    for name, path in pairs:
+        if "." in name:  # a table-row placeholder {รายการ.ช่อง}: alias the whole list
+            src_list, _, src_field = path.partition(".")
+            dst_list, _, dst_field = name.partition(".")
+            rows = values.get(src_list)
+            if isinstance(rows, list):
+                merged = (
+                    out.get(dst_list) if isinstance(out.get(dst_list), list) and dst_list != src_list else [dict(r) for r in rows]
+                )
+                for i, r in enumerate(rows):
+                    if i < len(merged):
+                        merged[i][dst_field] = r.get(src_field, "")
+                out[dst_list] = merged
+        else:
+            out[name] = lookup(values, path)
+    return out
+
+
+def blanks(doc: DocType) -> set[str]:
+    """Placeholders the unit chose to leave empty (written in by hand)."""
+    tv = doc.upload()
+    return {k for k, v in tv.mapping.items() if not v} if tv else set()
 
 
 # ---------------------------------------------------------------- readiness
@@ -121,6 +187,8 @@ def goto_url(case, goto: str, item=None) -> str:
     kind, _, rest = goto.partition(":")
     if kind == "profile":
         return f"{reverse('accounts:profile')}#{rest}"
+    if kind == "evidence":
+        return reverse("evidence:case", args=[case.pk])
     base = reverse("cases:detail", args=[case.pk])
     if kind == "tab":
         tab, _, field_name = rest.partition(":")

@@ -158,6 +158,11 @@ def close_recording(session, user) -> Recording:
             rec.original.save(f"original-{digest[:12]}.webm", File(f), save=False)
         rec.save()  # the 16 kHz copy for the speech model is made by the worker (long recordings take a while)
     os.chmod(rec.original.path, 0o444)  # read-only on disk; the app never writes it again
+    from evidence.services import register_stored
+
+    register_stored(session.case, user, rec.original.name, digest, rec.size,
+                    f"เสียงสอบปากคำ{session.party.get_role_display()} {session.party.person.full_name}", "audio/webm",
+                    "ห้องสอบปากคำ (ไฟล์เสียงต้นฉบับ)", "interview")  # fmt: skip
     for c in session.chunks.all():
         c.file.delete(save=False)
     session.chunks.all().delete()

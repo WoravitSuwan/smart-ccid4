@@ -75,7 +75,9 @@ def build_one(job: DocumentJob, doc: catalog.DocType, obj=None) -> IssuedDocumen
     elif doc.per:
         kw["party"] = obj
     values = catalog.apply_aliases(doc, context.build(case, **kw))
-    data, missing = engine.fill(doc.template_bytes(), values, thai_digits=doc.digits == "thai")
+    data, missing = engine.fill(
+        doc.template_bytes(), values, thai_digits=doc.number_style() == "thai", allow_empty=catalog.blanks(doc)
+    )
     label = item_label(obj) if obj is not None else ""
     with transaction.atomic():
         filt = {"case": case, "key": doc.key, "party": kw.get("party"), "letter": kw.get("letter")}

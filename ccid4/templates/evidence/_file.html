@@ -1,0 +1,31 @@
+<div class="flex flex-col gap-3">
+  <div class="flex items-start gap-2"><b class="flex-1 break-all">{{ ev.title }}</b><span class="evidence-kind kind-{{ ev.kind }}">{{ ev.get_kind_display }}</span></div>
+  {% if ev.previewable %}
+    {% url 'evidence:view' case.pk ev.pk as url %}
+    {% if ev.kind == "image" %}<img src="{{ url }}" alt="{{ ev.title }}" class="evidence-preview">
+    {% elif ev.kind == "pdf" %}<iframe src="{{ url }}" title="{{ ev.title }}" class="evidence-preview evidence-pdf"></iframe>
+    {% elif ev.kind == "audio" %}<audio src="{{ url }}" controls preload="metadata" class="w-full"></audio>
+    {% elif ev.kind == "video" %}<video src="{{ url }}" controls preload="metadata" class="evidence-preview"></video>{% endif %}
+  {% else %}<p class="text-sm text-muted">ไฟล์ชนิดนี้เปิดดูในหน้าไม่ได้ ดาวน์โหลดพร้อมระบุเหตุผล</p>{% endif %}
+  <dl class="evidence-meta">
+    <dt>SHA-256</dt><dd><code class="text-xs break-all">{{ ev.sha256 }}</code></dd>
+    <dt>ไฟล์เดิม</dt><dd>{{ ev.original_name }} · {{ ev.size|filesizeformat }}</dd>
+    <dt>ได้มาจาก</dt><dd>{{ ev.source|default:"—" }}{% if ev.collected_at %} · {{ ev.collected_at|be_datetime }}{% endif %}</dd>
+    <dt>รับเข้า</dt><dd>{{ ev.uploaded_by.display_name }} · {{ ev.uploaded_at|be_datetime }}</dd>
+    {% if ev.withdrawn_at %}<dt>ถอนออก</dt><dd>{{ ev.withdrawn_at|be_datetime }} · {{ ev.withdrawn_reason }}</dd>{% endif %}
+  </dl>
+  <div class="flex flex-wrap gap-2">
+    <form method="post" action="{% url 'evidence:verify' case.pk ev.pk %}">{% csrf_token %}<button class="btn btn-secondary btn-sm"><svg class="w-4 h-4"><use href="#i-check"/></svg>ตรวจความครบถ้วน</button></form>
+  </div>
+  <form method="post" action="{% url 'evidence:download' case.pk ev.pk %}" class="flex flex-wrap items-end gap-2">{% csrf_token %}
+    <label class="flex-1 min-w-[160px]"><span class="label">เหตุผลที่ดาวน์โหลด *</span><input class="input" name="reason" required minlength="5" maxlength="300" placeholder="เช่น ส่งตรวจพิสูจน์"></label>
+    <button class="btn btn-secondary btn-sm">ดาวน์โหลด</button></form>
+  {% if editable and not ev.withdrawn_at %}<details><summary class="text-xs text-primary cursor-pointer">ถอนออกจากสำนวน</summary>
+    <form method="post" action="{% url 'evidence:withdraw' case.pk ev.pk %}" class="flex flex-wrap items-end gap-2 mt-2">{% csrf_token %}
+      <label class="flex-1"><span class="label">เหตุผล (ไฟล์และประวัติยังเก็บไว้)</span><input class="input" name="reason" required minlength="10" maxlength="300"></label>
+      <button class="btn btn-secondary btn-sm">ถอน</button></form></details>{% endif %}
+  <details open><summary class="text-sm font-semibold cursor-pointer">บันทึกการครอบครองของไฟล์นี้</summary>
+    <ol class="custody-list mt-2">{% for e in events %}<li class="custody-item act-{{ e.action }}"><span class="custody-dot" aria-hidden="true"></span>
+      <div class="flex flex-col"><span class="text-sm"><b>{{ e.get_action_display }}</b>{% if e.ok is not None %} · {% if e.ok %}ตรงกัน{% else %}<span class="text-danger">ไม่ตรง</span>{% endif %}{% endif %}</span>
+        <span class="text-xs text-muted">{{ e.at|be_datetime }} · {{ e.by.display_name }} · {{ e.reason }}</span></div></li>{% endfor %}</ol></details>
+</div>

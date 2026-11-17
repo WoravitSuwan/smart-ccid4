@@ -91,6 +91,18 @@
         </div>
         {% endif %}
 
+        {# ---------- พยานหลักฐาน/ของกลาง ---------- #}
+        <div role="tabpanel" id="panel-evidence" data-panel="evidence" class="flex flex-col gap-4" hidden>
+          <div class="grid gap-3 sm:grid-cols-3">
+            <div class="card p-4"><span class="text-sm text-muted block">ไฟล์พยานหลักฐาน</span><b class="stat-value">{{ evidence_summary.files }}</b></div>
+            <div class="card p-4"><span class="text-sm text-muted block">ของกลาง</span><b class="stat-value">{{ evidence_summary.exhibits }}</b></div>
+            <div class="card p-4"><span class="text-sm text-muted block">บันทึกการครอบครอง</span><b class="stat-value">{{ evidence_summary.events }}</b></div>
+          </div>
+          <p class="text-sm text-muted">ไฟล์รับเข้าแบบเขียนครั้งเดียวพร้อม SHA-256 · ดูภาพ PDF เสียง วิดีโอในหน้า · ทะเบียนของกลางผูกกับบัญชีของกลางและบันทึกตรวจยึด</p>
+          <div class="flex flex-wrap gap-2"><a class="btn btn-primary" href="{% url 'evidence:case' case.pk %}"><svg class="w-5 h-5"><use href="#i-lock"/></svg>เปิดหน้าพยานหลักฐาน</a>
+            <a class="btn btn-secondary" href="{% url 'evidence:case' case.pk %}#exhibits">ทะเบียนของกลาง</a></div>
+        </div>
+
         {# ---------- ผู้กล่าวหา ---------- #}
         <div role="tabpanel" id="panel-accuser" data-panel="accuser" class="flex flex-col gap-6" hidden>
           {% include "cases/_party.html" with form=accuser_form role="accuser" removable=False %}

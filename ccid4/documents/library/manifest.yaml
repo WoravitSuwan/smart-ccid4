@@ -69,7 +69,7 @@ documents:
   - {num: 17, key: property_lost, title: บัญชีทรัพย์ไม่ได้คืน, group: ทรัพย์และของกลาง, per: null, digits: thai,
      requires: [*accuser, {path: ทรัพย์ไม่ได้คืน, label: "ทรัพย์ที่สถานะ 'ไม่ได้คืน'", goto: "tab:accuser:prop-TOTAL_FORMS"}, *officer]}
   - {num: 18, key: exhibits, title: บัญชีของกลาง, group: ทรัพย์และของกลาง, per: null, digits: thai,
-     requires: [{path: ของกลาง, label: "รายการของกลาง (ทะเบียนของกลางเปิดในเฟส 10)", goto: ""}, *officer]}
+     requires: [*case_no, {path: ของกลาง, label: "รายการของกลาง (ทะเบียนของกลาง)", goto: "evidence"}, *officer]}
   - {num: 19, key: progress_notice, title: หนังสือแจ้งความคืบหน้า, group: รับแจ้ง, per: null, digits: thai,
      requires: [*accuser, *offense, *unit, *unit_address, *doc_prefix, *officer]}
   - {num: 20, key: investigator_log, title: บันทึกพนักงานสอบสวน, group: สรุปสำนวน, per: null, digits: thai,
@@ -85,4 +85,4 @@ documents:
   - {num: 25, key: data_request_letter, title: หนังสือขอข้อมูล (ธนาคาร/โทรศัพท์/แพลตฟอร์ม/CCTV), group: รับแจ้ง, per: letter, digits: thai, new: true,
      requires: [*offense, *unit, *unit_address, *officer]}
   - {num: 26, key: digital_seizure, title: บันทึกตรวจยึดพยานหลักฐานดิจิทัล, group: ทรัพย์และของกลาง, per: null, digits: arabic, new: true,
-     requires: [{path: ของกลาง, label: "รายการพยานหลักฐานดิจิทัล (เปิดในเฟส 10)", goto: ""}, *officer]}
+     requires: [{path: หลักฐานดิจิทัล, label: "พยานหลักฐานดิจิทัล (ไฟล์พร้อม SHA-256 หรือของกลางดิจิทัล)", goto: "evidence"}, *officer]}

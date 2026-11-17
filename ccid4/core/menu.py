@@ -29,6 +29,7 @@ MENU = [
     MenuItem("interviews", "ห้องสอบปากคำ", "interviews:index", "mic", new=True),
     MenuItem("network", "เครือข่ายคดี", "cyber:network", "share", new=True),
     MenuItem("profile", "ข้อมูลพื้นฐานของฉัน", "accounts:profile", "id"),
+    MenuItem("templates", "เทมเพลตเอกสาร", "doctemplates:index", "file", new=True, roles=("supervisor", "admin")),
     MenuItem("unit", "แดชบอร์ดหน่วยงาน", "dashboard:unit", "chart", new=True, roles=("supervisor", "commander", "admin")),
     MenuItem("settings", "ตั้งค่าระบบ", "core:settings", "settings", roles=("admin",)),
     MenuItem("help", "คู่มือ & แจ้งปัญหา", "core:help", "help"),

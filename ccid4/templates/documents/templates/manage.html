@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ doc.title }} · เทมเพลต{% endblock %}
+{% block content %}
+<nav class="text-sm reveal"><a href="{% url 'doctemplates:index' %}">เทมเพลตเอกสาร</a> › {{ doc.title }}</nav>
+<div class="flex flex-wrap items-end gap-3 reveal"><div class="flex-1"><h1>{{ doc.title }}</h1>
+  <p class="text-muted">กลุ่ม {{ doc.group }} · {% if doc.per %}ออกรายบุคคล/รายหนังสือ{% else %}ฉบับเดียวต่อคดี{% endif %} · ตัวเลข{% if doc.number_style == "thai" %}ไทย{% else %}อารบิก{% endif %}</p></div>
+  {% if builtin %}<a class="btn btn-secondary" href="{% url 'doctemplates:download_builtin' doc.key %}">ดาวน์โหลดไฟล์มาตรฐาน (ใช้เป็นต้นแบบ)</a>{% endif %}</div>
+
+<form method="post" action="{% url 'doctemplates:upload' doc.key %}" enctype="multipart/form-data" class="card glass glow-border p-5 flex flex-wrap items-end gap-3 reveal">{% csrf_token %}
+  <div class="w-full"><h2>อัปโหลดเวอร์ชันใหม่</h2>
+    <p class="text-sm text-muted">ไฟล์ .docx ที่พิมพ์ช่องในวงเล็บปีกกา เช่น <code>{คดี.เลขคดี}</code> <code>{ผู้กล่าวหา.ชื่อเต็ม}</code> · ตารางที่ทำซ้ำต่อรายการ ให้วางช่องแบบ <code>{ของกลาง.ชื่อ}</code> ในแถวเดียว · ช่องที่ชื่อไม่ตรงกับระบบ จับคู่ได้ในหน้าถัดไป</p></div>
+  <label class="flex-1 min-w-[240px]"><span class="label">ไฟล์ .docx *</span><input class="input py-2" type="file" name="file" accept=".docx" required></label>
+  <label class="flex-1 min-w-[240px]"><span class="label">เปลี่ยนอะไร</span><input class="input" name="note" maxlength="300" placeholder="เช่น ปรับตามแบบของ บก.สอท.4 ปี 2569"></label>
+  <button class="btn btn-primary">อัปโหลดและสแกนช่อง</button>
+</form>
+
+<section class="card p-5 flex flex-col gap-3 reveal"><div class="flex flex-wrap items-center gap-2"><h2 class="flex-1">เวอร์ชัน</h2>
+  {% if builtin %}<form method="post" action="{% url 'doctemplates:builtin' doc.key %}">{% csrf_token %}<button class="btn btn-secondary btn-sm">ใช้ไฟล์มาตรฐานของระบบ</button></form>{% endif %}</div>
+  {% if versions %}<ul class="flex flex-col gap-3">{% for tv in versions %}
+    <li class="card p-4 flex flex-col gap-2{% if tv.active %} glow-border{% endif %}">
+      <div class="flex flex-wrap items-center gap-2"><b>เวอร์ชัน {{ tv.version }}</b><code class="text-xs text-muted">{{ tv.label }}</code>
+        {% if tv.active %}<span class="chip chip-success text-xs">ใช้อยู่</span>{% endif %}
+        <span class="text-xs text-muted">{{ tv.uploaded_by.display_name }} · {{ tv.uploaded_at|be_datetime }}{% if tv.note %} · {{ tv.note }}{% endif %}</span></div>
+      <p class="text-sm">{{ tv.placeholders|length }} ช่อง: {% for p in tv.placeholders %}<code class="text-xs">{{ p }}</code>{% if not forloop.last %} {% endif %}{% endfor %}</p>
+      <div class="flex flex-wrap items-end gap-2">
+        <a class="btn btn-secondary btn-sm" href="{% url 'doctemplates:mapping' tv.pk %}">จับคู่ช่อง</a>
+        {% if not tv.active %}<form method="post" action="{% url 'doctemplates:activate' tv.pk %}">{% csrf_token %}<button class="btn btn-secondary btn-sm">เปิดใช้เวอร์ชันนี้</button></form>{% endif %}
+        <a class="btn btn-secondary btn-sm" href="{% url 'doctemplates:download' doc.key tv.pk %}">ดาวน์โหลด</a>
+        <form method="post" action="{% url 'doctemplates:try' tv.pk %}" class="flex items-end gap-2">{% csrf_token %}
+          <label><span class="label">ทดลองเติมกับคดี</span><select class="input min-h-[36px]" name="case">{% for c in cases %}<option value="{{ c.pk }}">{{ c.label }}</option>{% endfor %}</select></label>
+          <button class="btn btn-secondary btn-sm">ทดลอง</button></form>
+      </div></li>{% endfor %}</ul>
+  {% else %}<p class="empty-state text-sm">{% if builtin %}ยังใช้ไฟล์มาตรฐานของระบบ{% else %}ยังไม่มีไฟล์ อัปโหลดด้านบน{% endif %}</p>{% endif %}
+</section>
+{% endblock %}

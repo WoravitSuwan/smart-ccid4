@@ -7,6 +7,8 @@
     <p class="text-muted">{{ case.label }} · พร้อมออก <b class="text-text">{{ ready_count|thai_digits }}</b> จาก {{ total|thai_digits }} รายการ · เอกสารที่จางยังขาดข้อมูล กดที่ชื่อข้อมูลเพื่อไปกรอก</p></div>
   <label class="input flex items-center gap-2 max-w-sm"><svg class="w-5 h-5 text-muted"><use href="#i-search"/></svg><span class="sr-only">ค้นหาเอกสาร</span>
     <input type="search" class="flex-1 bg-transparent outline-none" placeholder="ค้นหาเอกสาร" data-doc-search></label>
+  <a class="btn btn-secondary" href="{% url 'documents:case_bundle' case.pk %}"><svg class="w-5 h-5"><use href="#i-book"/></svg>รวมสำนวนเป็น PDF เล่มเดียว</a>
+  {% if user.role == "admin" or user.role == "supervisor" %}<a class="btn btn-secondary" href="{% url 'doctemplates:index' %}">จัดการเทมเพลต</a>{% endif %}
 </div>
 
 {% if job %}<div id="job" class="reveal">{% include "documents/_job.html" %}</div>{% endif %}
