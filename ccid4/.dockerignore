@@ -1,0 +1,13 @@
+# never copy secrets, case data, audio or models into the image
+.env
+.env.*
+data/
+media/
+real_data/
+models/
+node_modules/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+staticfiles/

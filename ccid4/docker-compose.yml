@@ -26,14 +26,14 @@ services:
       ASR_DEVICE: cuda
     volumes:
       - data:/data
-      - ./models:/models:ro  # Whisper (CTranslate2) and pyannote models, downloaded once at install time
+      - models:/models  # Whisper (CTranslate2) and pyannote models: python manage.py setup_asr (once, at install time)
     deploy:
       resources:
         reservations:
           devices: [{driver: nvidia, count: 1, capabilities: [gpu]}]
   beat:
     <<: *app
-    command: celery -A config beat -l info
+    command: celery -A config beat -l info --schedule /data/celerybeat-schedule  # the code folder is read-only for the app user
   db:
     image: pgvector/pgvector:pg16
     environment:
@@ -65,6 +65,7 @@ services:
 
 volumes:
   data:
+  models:
   pg:
   redis:
   caddy:

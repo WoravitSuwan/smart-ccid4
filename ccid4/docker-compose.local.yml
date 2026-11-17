@@ -1,0 +1,49 @@
+# CCID4 บนเครื่องเดียว (โน้ตบุ๊ก/พีซีของพนักงานสอบสวน) สำหรับทดลองใช้งาน
+#   เปิดที่ http://localhost:8000 บนเครื่องนี้เท่านั้น (เบราว์เซอร์ยอมให้ใช้ไมค์กับ localhost โดยไม่ต้องมี HTTPS)
+#   ถอดเสียงด้วย CPU ในเครื่อง ไม่ส่งเสียงหรือข้อมูลออกนอกเครื่อง
+#   ติดตั้ง: scripts/install_local.sh (macOS/Linux) หรือ scripts/install_local.ps1 (Windows) — ดู docs/ติดตั้งบนเครื่องเพื่อทดสอบ.md
+name: ccid4-local
+
+x-app: &app
+  build:
+    context: .
+    args: {WITH_ASR: "true"}
+  image: ccid4-local:latest
+  env_file: .env
+  environment:
+    COOKIE_SECURE: "false"  # http://localhost (no TLS) on this one machine
+    CCID4_ASR_QUEUE: "false"
+  volumes:
+    - data:/data
+    - models:/models
+  depends_on: [db, redis]
+  restart: unless-stopped
+
+services:
+  web:
+    <<: *app
+    command: sh -c "python manage.py migrate --noinput && python manage.py seed_holidays && gunicorn config.wsgi --bind 0.0.0.0:8000 --workers 3 --timeout 300"
+    ports: ["127.0.0.1:8000:8000"]  # this machine only, not the network
+  worker:  # ถอดเสียงทีละรายการ ใช้ทุกคอร์ของ CPU (เสียง 1 ชั่วโมงใช้เวลาหลายสิบนาที ดูความคืบหน้าในหน้า "ประมวลผล")
+    <<: *app
+    command: celery -A config worker -l info --concurrency 1
+  beat:
+    <<: *app
+    command: celery -A config beat -l info --schedule /data/celerybeat-schedule
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: ccid4
+      POSTGRES_USER: ccid4
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?ตั้ง POSTGRES_PASSWORD ใน .env}
+    volumes:
+      - pg:/var/lib/postgresql/data
+    restart: unless-stopped
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+
+volumes:
+  data:
+  models:
+  pg:

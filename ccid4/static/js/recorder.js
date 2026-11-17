@@ -3,7 +3,8 @@
   const root = document.querySelector('[data-recorder]');
   if (!root) return;
   const $ = (s) => root.querySelector(s);
-  const csrf = () => document.querySelector('meta[name="csrf-token"]').content;
+  // read the cookie first: it is renewed if the officer had to sign in again in another tab
+  const csrf = () => (document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/) || [])[1] || document.querySelector('meta[name="csrf-token"]').content;
   const fmt = (t) => `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
   const state = {
     take: parseInt(root.dataset.take || '0', 10) + 1, // every page load starts a new take (new WebM header)
@@ -47,22 +48,34 @@
     body.append('take', state.take); body.append('seq', seq); body.append('seconds', seconds.toFixed(2)); body.append('blob', blob, `t${state.take}-${seq}.webm`);
     const send = async (attempt) => {
       try {
-        const r = await fetch(root.dataset.chunkUrl, { method: 'POST', body, headers: { 'X-CSRFToken': csrf() } });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const r = await fetch(root.dataset.chunkUrl, { method: 'POST', body, headers: { 'X-CSRFToken': csrf() }, redirect: 'manual' });
+        if (r.type === 'opaqueredirect') throw new Error('หมดเวลาเข้าสู่ระบบ — เปิดแท็บใหม่ เข้าสู่ระบบ แล้วระบบจะส่งต่อเอง ห้ามปิดหน้านี้');
+        if (!r.ok) {
+          const err = new Error(`HTTP ${r.status}`);
+          err.permanent = r.status === 400 || r.status === 403 || r.status === 404;
+          throw err;
+        }
         const s = await r.json();
         ui.uploadedText.textContent = `บันทึกขึ้นเซิร์ฟเวอร์แล้วถึงนาทีที่ ${fmt(s.seconds)}`;
         if (ui.close) ui.close.disabled = false;
       } catch (e) {
-        if (attempt < 8) {
-          ui.uploadedText.textContent = `ส่งท่อนที่ ${seq} ไม่สำเร็จ กำลังลองใหม่… (เสียงยังอยู่ในเครื่อง)`;
-          await new Promise((res) => setTimeout(res, Math.min(30000, 1000 * 2 ** attempt)));
-          return send(attempt + 1);
-        }
-        ui.uploadedText.textContent = 'ส่งเสียงขึ้นเซิร์ฟเวอร์ไม่ได้ ตรวจเครือข่าย แล้วเปิดหน้านี้ใหม่';
+        if (e.permanent) { ui.uploadedText.textContent = `เซิร์ฟเวอร์ไม่รับท่อนที่ ${seq}: ${e.message}`; return; }
+        // keep trying for as long as it takes (long interviews, server restart): the chunk stays in this tab's memory
+        ui.uploadedText.textContent = `ส่งท่อนที่ ${seq} ไม่สำเร็จ (${e.message}) กำลังลองใหม่ครั้งที่ ${attempt + 1}… เสียงยังอยู่ในเครื่อง ห้ามปิดหน้านี้`;
+        await new Promise((res) => setTimeout(res, Math.min(30000, 1000 * 2 ** attempt)));
+        return send(attempt + 1);
       }
     };
     state.queue = state.queue.then(() => send(0)).finally(() => { state.pending -= 1; });
   }
+
+  // keep the screen (and the recording) awake during long interviews
+  let wakeLock = null;
+  async function keepAwake() {
+    try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch (e) { /* not supported: ask the officer to turn off sleep */ }
+  }
+  function letSleep() { if (wakeLock) { wakeLock.release(); wakeLock = null; } }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && state.running) keepAwake(); });
 
   async function start() {
     try { await getStream(); } catch (e) { setState('ใช้ไมค์ไม่ได้ (ต้องเปิดผ่าน HTTPS และอนุญาตไมค์)', 'danger'); return; }
@@ -75,6 +88,7 @@
       state.lastChunkAt = now;
     };
     state.recorder.start(5000);
+    keepAwake();
     state.running = true; state.paused = false; state.startedAt = state.lastChunkAt = performance.now(); state.pausedFor = 0;
     ui.dot.classList.add('on'); setState('กำลังบันทึก', 'danger');
     ui.start.disabled = true; ui.pause.disabled = false; ui.stop.disabled = false; ui.markerAdd.disabled = false; if (ui.close) ui.close.disabled = true;
@@ -91,7 +105,7 @@
       state.recorder.stop();
     }).then(() => state.queue).then(() => {
       state.uploaded = total(); state.running = false; state.paused = false; state.take += 1; state.seq = 0;
-      ui.dot.classList.remove('on'); setState('หยุดแล้ว (บันทึกต่อได้)', 'muted');
+      ui.dot.classList.remove('on'); setState('หยุดแล้ว (บันทึกต่อได้)', 'muted'); letSleep();
       ui.start.disabled = false; ui.start.lastChild.textContent = 'บันทึกต่อ'; ui.pause.disabled = true; ui.stop.disabled = true; ui.markerAdd.disabled = true;
       if (ui.close) ui.close.disabled = false;
     });
@@ -120,5 +134,7 @@
   });
   window.addEventListener('beforeunload', (e) => { if (state.running || state.pending > 0) { e.preventDefault(); e.returnValue = ''; } });
   setInterval(() => { ui.timer.textContent = fmt(total()); }, 250);
+  // a paused interview sends no audio: keep the sign-in alive while this page is open
+  setInterval(() => { if (state.running || state.pending) fetch(root.dataset.statusUrl, { redirect: 'manual' }).catch(() => {}); }, 4 * 60 * 1000);
   ui.timer.textContent = fmt(total());
 })();

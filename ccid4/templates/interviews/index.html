@@ -4,6 +4,22 @@
 <div class="flex flex-wrap items-end gap-3 reveal"><div class="flex-1"><h1>ห้องสอบปากคำด้วยเสียง</h1>
   <p class="text-muted">เริ่มจากหน้าคดี → แท็บผู้กล่าวหา/ผู้ต้องหา/พยาน → ปุ่ม "สอบด้วยเสียง"</p></div>
   {% if user.role in "supervisor admin" %}<a class="btn btn-secondary" href="{% url 'interviews:settings' %}">ตั้งค่า</a>{% endif %}</div>
+{% if can_quick %}
+<form method="post" action="{% url 'interviews:quick_start' %}" class="card glass glow-border quick-card p-5 flex flex-col gap-4 reveal">{% csrf_token %}
+  <div class="flex flex-wrap items-center gap-3"><svg class="w-7 h-7 text-primary"><use href="#i-mic"/></svg>
+    <div class="flex-1"><h2>อัดเสียงผู้แจ้งความรายใหม่</h2>
+      <p class="text-sm text-muted">ระบบสร้างคดีรับแจ้ง (สถานะ “รับแจ้งใหม่”) + ผู้กล่าวหา + ห้องสอบ แล้วพาไปหน้าบันทึกเสียงทันที · ข้อมูลอื่นเติมทีหลังในหน้าคดี</p></div></div>
+  <div class="grid gap-3 md:grid-cols-2">
+    <label><span class="label">ชื่อ-นามสกุลผู้แจ้ง *</span><input class="input" name="name" required maxlength="200" placeholder="เช่น นางสาวสมใจ ใจดี" autocomplete="off"></label>
+    <label><span class="label">เบอร์โทรศัพท์</span><input class="input" name="phone" maxlength="40" inputmode="tel" autocomplete="off"></label>
+    <label class="md:col-span-2"><span class="label">เรื่องที่แจ้งโดยย่อ *</span><input class="input" name="title" required maxlength="300" placeholder="เช่น ถูกหลอกให้โอนเงินซื้อสินค้าออนไลน์"></label>
+    <label><span class="label">ประเภทคดี</span><select class="input" name="kind">{% for k, v in kinds %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+    <label><span class="label">สถานที่สอบปากคำ</span><input class="input" name="place" maxlength="200" value="ห้องสอบสวน {{ UNIT_SHORT }}"></label>
+  </div>
+  <div class="flex flex-wrap items-center gap-3"><button class="btn btn-primary"><svg class="w-5 h-5"><use href="#i-mic"/></svg>สร้างและเริ่มอัดเสียง</button>
+    <span class="text-xs text-muted">แจ้งผู้ให้ถ้อยคำก่อนเสมอว่ากำลังบันทึกเสียง · คำให้การรูปแบบบรรยาย (เล่าเรื่อง) เปลี่ยนเป็นถาม–ตอบได้ในหน้าตรวจ</span></div>
+</form>
+{% endif %}
 <section class="card p-5 reveal">
   {% if sessions %}<table class="tbl"><thead><tr><th>เมื่อ</th><th>คดี</th><th>ผู้ให้การ</th><th>สถานะ</th><th></th></tr></thead>
   <tbody>{% for s in sessions %}<tr><td class="whitespace-nowrap">{{ s.created_at|be_datetime }}</td><td><a href="{% url 'cases:detail' s.case.pk %}">{{ s.case.label }}</a></td>

@@ -17,9 +17,38 @@
     <span class="text-xs text-muted ml-auto">กดคำหรือป้ายเวลาเพื่อเล่นช่วงนั้น · ทุกการฟังบันทึกในประวัติการใช้งาน</span></div>
 </section>
 
+{% if can_edit and s.status != "confirmed" %}
+<form method="post" action="{% url 'interviews:statement_format' s.pk %}" class="card p-4 flex flex-wrap items-center gap-3 reveal">{% csrf_token %}
+  <span class="font-semibold">รูปแบบคำให้การที่จะออกเป็น Word</span>
+  <label class="format-option"><input type="radio" name="format" value="narrative" {% if s.statement_format == "narrative" %}checked{% endif %}> บรรยาย (เล่าเรื่อง) <span class="text-xs text-muted">เหมาะกับผู้แจ้งความ/พยาน</span></label>
+  <label class="format-option"><input type="radio" name="format" value="qa" {% if s.statement_format == "qa" %}checked{% endif %}> ถาม–ตอบ <span class="text-xs text-muted">เหมาะกับผู้ต้องหา</span></label>
+  <button class="btn btn-secondary btn-sm">ใช้รูปแบบนี้</button>
+</form>
+{% endif %}
+
+<section class="card p-5 flex flex-col gap-3 reveal" data-tabs>
+  <div class="flex flex-wrap items-center gap-2"><h2 class="flex-1">สรุปจากเสียง</h2>
+    <span class="text-xs text-muted">{% if draft.summary_source == "ai" %}AI ในเครื่องเรียบเรียง แล้วตรวจกับเสียงด้วยโค้ด{% else %}ระบบดึงจากคำพูดโดยตรง{% endif %}</span>
+    <a class="btn btn-secondary btn-sm" href="{% url 'interviews:summary' s.pk %}"><svg class="w-4 h-4"><use href="#i-file"/></svg>สรุปการสอบปากคำ (Word)</a></div>
+  <div class="tabbar" role="tablist" aria-label="สรุปจากเสียง">
+    <button type="button" class="tab" role="tab" data-tab="points">สรุปใจความสำคัญ</button>
+    <button type="button" class="tab" role="tab" data-tab="story">เล่าเรื่อง{% if s.statement_format == "narrative" %} (คำให้การ){% endif %}</button>
+    <button type="button" class="tab" role="tab" data-tab="words">คำที่พบบ่อย <span class="count">{{ draft.keywords|length }}</span></button>
+  </div>
+  <div data-panel="points" role="tabpanel">
+    <ul class="points">{% for p in draft.points %}<li>{{ p }}</li>{% empty %}<li class="text-muted">ยังไม่มีสรุป ลองกด “ร่างใหม่”</li>{% endfor %}</ul>
+  </div>
+  <div data-panel="story" role="tabpanel" hidden>{% include "interviews/_narrative.html" %}</div>
+  <div data-panel="words" role="tabpanel" hidden class="flex flex-col gap-3">
+    <div class="flex flex-wrap gap-2">{% for w, n in draft.keywords %}<button type="button" class="kw-chip" data-kw="{{ w }}" style="--kw-weight: {{ n }}">{{ w }} <b>{{ n }}</b></button>{% empty %}<span class="text-muted text-sm">ยังไม่มีคำที่พบบ่อย</span>{% endfor %}</div>
+    <p class="text-xs text-muted" data-kw-result aria-live="polite">กดคำเพื่อไฮไลต์ในข้อความถอดเสียง · นับจากคำพูดของผู้ให้การ ไม่นับคำลงท้าย/สรรพนาม</p>
+  </div>
+</section>
+
 <div class="grid gap-4 xl:grid-cols-2 items-start">
   <section class="card p-5 flex flex-col gap-3 reveal">
     <h2>ข้อความถอดเสียง</h2>
+    <p class="text-xs text-muted">ไม่มีโมเดลแยกผู้พูด: ระบบเดาจากประโยค (คำถาม/การแจ้งสิทธิ = พนักงานสอบสวน) · ผิดตรงไหนเปลี่ยนผู้พูดรายช่วงได้ แล้วกด “ร่างใหม่”</p>
     {% if can_edit %}<form method="post" action="{% url 'interviews:speakers' s.pk %}" class="flex flex-wrap items-end gap-2 p-3 rounded-btn bg-surface-2 border border-border">{% csrf_token %}
       {% for m in maps %}<label class="text-sm"><span class="label">{{ m.label }} คือ</span><select class="input min-h-[36px]" name="role-{{ m.label }}"><option value="">ไม่ระบุ</option>{% for k, v in role_choices %}<option value="{{ k }}" {% if m.role == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>{% endfor %}
       <button class="btn btn-secondary btn-sm">ใช้และร่างใหม่</button></form>{% endif %}
@@ -35,6 +64,7 @@
       {% if not rights_ok and s.is_suspect %}<p class="text-sm text-danger">ตรวจไม่พบการแจ้งสิทธิครบ ต้องฟังเองและระบุเหตุผลก่อนยืนยัน</p>{% endif %}
     </div>
     <div class="card p-5 flex flex-col gap-3 reveal">
+      {% if s.statement_format == "narrative" %}<p class="chip chip-muted self-start text-xs">รูปแบบบรรยาย: ถาม–ตอบด้านล่างไม่ลงใน Word ใช้ช่วยตรวจเท่านั้น</p>{% endif %}
       <div class="flex flex-wrap items-center gap-2"><h2 class="flex-1">คำให้การแบบถาม–ตอบ</h2><span class="text-sm text-muted">ตรวจแล้ว {{ reviewed }}/{{ pairs|length }}</span>
         {% if can_edit %}<form method="post" action="{% url 'interviews:redraft' s.pk %}" class="flex gap-1">{% csrf_token %}<select class="input min-h-[36px] text-sm" name="mode"><option value="close" {% if s.mode == 'close' %}selected{% endif %}>ใกล้คำพูด</option><option value="written" {% if s.mode == 'written' %}selected{% endif %}>ภาษาเขียน</option></select><button class="btn btn-secondary btn-sm">ร่างใหม่</button></form>{% endif %}</div>
       <ol class="flex flex-col gap-3">{% for p in pairs %}{% include "interviews/_pair.html" %}{% empty %}<li class="empty-state text-sm">ยังไม่มีคู่ถาม–ตอบ ตรวจว่ากำหนดผู้พูดถูกหรือไม่</li>{% endfor %}</ol>
@@ -45,13 +75,14 @@
       <p class="text-sm">โดย {{ s.confirmed_by.display_name }} · {{ s.confirmed_at|be_datetime }} · คำให้การของบุคคลนี้ในคดีถูกแทนที่แล้ว</p>
       {% for d in documents %}<div class="flex flex-wrap gap-2"><span class="text-xs text-muted w-full">{{ d.code }}</span>
         <a class="btn btn-primary btn-sm" href="{% url 'interviews:download' s.pk d.pk 'docx' %}">คำให้การ Word</a>{% if d.pdf %}<a class="btn btn-primary btn-sm" href="{% url 'interviews:download' s.pk d.pk 'pdf' %}">PDF</a>{% endif %}
-        <a class="btn btn-secondary btn-sm" href="{% url 'interviews:download' s.pk d.pk 'zip' %}">ชุดหลักฐาน ZIP</a></div>
+        <a class="btn btn-secondary btn-sm" href="{% url 'interviews:download' s.pk d.pk 'zip' %}">ชุดหลักฐาน ZIP</a>
+        <a class="btn btn-secondary btn-sm" href="{% url 'interviews:summary' s.pk %}">สรุปการสอบปากคำ Word</a></div>
       {% empty %}<p class="text-sm text-muted">กำลังสร้างเอกสาร… รีเฟรชหน้านี้</p>{% endfor %}
     </div>
     {% elif can_edit %}
     <form method="post" action="{% url 'interviews:confirm' s.pk %}" class="card p-5 flex flex-col gap-3 reveal">{% csrf_token %}
-      <h2>ยืนยันคำให้การ</h2>
-      {% for b in blockers %}<p class="chip chip-warning self-start">{{ b }}</p>{% endfor %}
+      <h2>ยืนยันคำให้การ ({{ s.get_statement_format_display }})</h2>
+      {% include "interviews/_blockers.html" %}
       {% if s.is_suspect and not rights_ok %}<label><span class="label">เหตุผลที่ยืนยัน แม้ระบบตรวจไม่พบการแจ้งสิทธิครบ (ฟังแล้วพบว่า…)</span><textarea class="input py-2" name="override" rows="2"></textarea></label>{% endif %}
       <button class="btn btn-primary self-start" data-confirm="ยืนยันแล้วร่างนี้จะถูกล็อกและแทนที่คำให้การของบุคคลนี้ในคดี ดำเนินการต่อ?">ยืนยันและสร้าง Word/PDF</button>
     </form>

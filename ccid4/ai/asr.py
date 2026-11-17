@@ -51,17 +51,27 @@ def duration(path: Path) -> float:
         return 0.0
 
 
-def transcribe(path: Path) -> list[dict]:
+def transcribe(path: Path, progress=None) -> list[dict]:
+    """progress(seconds_done, seconds_total) is called as the model moves through a long recording."""
     if not available():
-        raise AIError("ยังไม่ได้เปิดใช้การถอดเสียงในเครื่อง (ASR_BACKEND=whisper, ASR_MODEL) · นำเข้าข้อความถอดเสียงแทนได้")
+        raise AIError("ยังไม่ได้เปิดใช้การถอดเสียงในเครื่อง (ASR_BACKEND=whisper, ASR_MODEL) · นำเข้าข้อความถอดเสียงแทน")
     from faster_whisper import WhisperModel
 
-    model = WhisperModel(settings.ASR_MODEL, device=settings.ASR_DEVICE, compute_type="auto")
-    segments, _ = model.transcribe(
-        str(path), language="th", vad_filter=True, word_timestamps=True, condition_on_previous_text=False
+    model = WhisperModel(settings.ASR_MODEL, device=settings.ASR_DEVICE, compute_type=settings.ASR_COMPUTE_TYPE,
+                         cpu_threads=settings.ASR_CPU_THREADS)  # fmt: skip
+    segments, info = model.transcribe(
+        str(path),
+        language="th",
+        beam_size=settings.ASR_BEAM_SIZE,
+        vad_filter=True,
+        word_timestamps=True,
+        condition_on_previous_text=False,
     )
+    total = float(getattr(info, "duration", 0) or 0)
     out = []
-    for s in segments:
+    for s in segments:  # a generator: the model works while we iterate
+        if progress:
+            progress(float(s.end), total)
         text = s.text.strip()
         if not text:
             continue
@@ -113,7 +123,8 @@ def repeated(text: str) -> bool:
 # ---------------------------------------------------------------- import a transcript made elsewhere (on-prem)
 _TS = r"(\d{1,2}):(\d{2})(?::(\d{2}))?(?:[.,](\d{1,3}))?"
 _ARROW = re.compile(_TS + r"\s*-->\s*" + _TS)
-_LINE = re.compile(r"^\s*\[?" + _TS + r"\]?\s+([A-Za-z]+\d*|[ก-๙]+)\s*[:：]?\s+(.+)$")
+# "[00:05] S2: ข้อความ" · "00:05 S2 ข้อความ" · "[00:05] ผู้แจ้ง: ข้อความ" · "[00:05] ข้อความ" (no label: guessed later)
+_LINE = re.compile(r"^\s*\[?" + _TS + r"\]?\s+(?:([A-Za-z]+\d*)\s*[:：]?\s+|([ก-๙]{1,20})\s*[:：]\s*)?(.+)$")
 
 
 def _secs(a, b, c, ms) -> float:
@@ -125,7 +136,7 @@ def parse_transcript(text: str) -> list[dict]:
     text = (text or "").strip().lstrip("﻿")
     if not text:
         return []
-    if text[0] in "[{":
+    if text[0] == "{" or (text[0] == "[" and not _LINE.match(text.splitlines()[0])):
         try:
             data = json.loads(text)
             items = data["segments"] if isinstance(data, dict) else data
@@ -155,7 +166,7 @@ def parse_transcript(text: str) -> list[dict]:
         if m:
             g = m.groups()
             start = _secs(*g[:4])
-            out.append({"start": start, "end": start, "text": g[5].strip(), "speaker": g[4], "words": []})
+            out.append({"start": start, "end": start, "text": g[6].strip(), "speaker": g[4] or g[5] or "S1", "words": []})
         elif out:
             out[-1]["text"] += " " + line.strip()
     for i, seg in enumerate(out):

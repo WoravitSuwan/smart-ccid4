@@ -6,6 +6,7 @@
 <nav class="text-sm reveal"><a href="{% url 'cases:detail' s.case.pk %}">{{ s.case.label }}</a> › สอบด้วยเสียง</nav>
 <div class="flex flex-wrap items-end gap-3 reveal"><div class="flex-1"><h1>บันทึกเสียงสอบปากคำ</h1>
   <p class="text-muted">{{ s.party.get_role_display }} {{ s.party.person.full_name }} · {{ s.place }} · {% for p in participants %}{{ p.get_role_display }} {{ p.name }}{% if not forloop.last %} · {% endif %}{% endfor %}</p></div></div>
+{% if DEMO_MODE %}<div class="card demo-warning p-4 text-sm reveal" role="alert"><b>ระบบสาธิต</b> — ห้ามบันทึกเสียงหรือข้อมูลของผู้แจ้งจริงในระบบนี้ ใช้ระบบที่ติดตั้งในเครื่องของหน่วยงานเท่านั้น</div>{% endif %}
 <div class="grid gap-4 xl:grid-cols-[1fr_22rem] items-start"
      data-recorder data-chunk-url="{% url 'interviews:chunk' s.pk %}" data-status-url="{% url 'interviews:status' s.pk %}"
      data-marker-url="{% url 'interviews:marker' s.pk %}" data-uploaded="{{ status.seconds }}" data-take="{{ status.take }}">
@@ -35,7 +36,7 @@
       <span class="text-xs text-muted">ปิดแล้วไฟล์เสียงถูกล็อก คำนวณ SHA-256 และแก้ไม่ได้อีก</span>
     </form>
     {% endif %}
-    <p class="text-xs text-muted">ถ้าปิดแท็บหรือเน็ตหลุด ท่อนที่ส่งขึ้นแล้วไม่หาย เปิดหน้านี้ใหม่แล้วกด "บันทึกต่อ" · เบราว์เซอร์ใช้ไมค์ได้เฉพาะ HTTPS ภายในหน่วย</p>
+    <p class="text-xs text-muted">อัดยาวได้เป็นชั่วโมง: ส่งขึ้นเซิร์ฟเวอร์ทุก 5 วินาที หน้าจอไม่ดับระหว่างอัด (ถ้าเบราว์เซอร์รองรับ) · ถ้าปิดแท็บหรือเน็ตหลุด ท่อนที่ส่งขึ้นแล้วไม่หาย เปิดหน้านี้ใหม่แล้วกด "บันทึกต่อ" · ตั้งเครื่องไม่ให้พักหน้าจอ/ปิดฝาระหว่างอัด · ไมค์ใช้ได้เฉพาะ https:// หรือ http://localhost</p>
   </section>
   <aside class="flex flex-col gap-4">
     {% if s.is_suspect %}
