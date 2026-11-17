@@ -1,9 +1,13 @@
 # CCID4 on the unit's own server. Nothing here talks to the internet at run time.
 x-app: &app
-  build: .
+  build:
+    context: .
+    args:
+      WITH_ASR: "${CCID4_WITH_ASR:-false}"  # true = ถอดเสียงด้วย CPU บนเครื่องนี้ (ดู docs/คู่มือติดตั้งและใช้งาน.md)
   env_file: .env
   volumes:
     - data:/data
+    - models:/models
   depends_on: [db, redis]
   restart: unless-stopped
 
