@@ -5,7 +5,9 @@
   {% if form.links %}<div class="flex flex-wrap gap-2">{% for l in form.links %}<a class="link-badge" href="{% url 'cyber:network' %}?case={{ case.pk }}" title="{% for c in l.cases %}{{ c.label }} ({{ c.owner.display_name }}){% if not forloop.last %} · {% endif %}{% endfor %}">{{ l.label }}นี้พบในคดีอื่น {{ l.cases|length }} คดี</a>{% endfor %}</div>{% endif %}
 
   <section class="flex flex-col gap-3">
-    <h3 class="section-title">ข้อมูลส่วนตัว</h3>
+    <div class="flex flex-wrap items-center gap-2"><h3 class="section-title flex-1">ข้อมูลส่วนตัว</h3>
+      {% if editable %}<button type="button" class="btn btn-secondary btn-sm" data-card-read="{{ form.prefix }}"><svg class="w-4 h-4"><use href="#i-id"/></svg>อ่านบัตรประชาชน</button>
+      <label class="btn btn-secondary btn-sm cursor-pointer"><svg class="w-4 h-4"><use href="#i-file"/></svg>อ่านจากภาพบัตร<input type="file" accept="image/*,.pdf" class="sr-only" data-card-ocr="{{ form.prefix }}"></label>{% endif %}</div>
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {% for f in form.personal_fields %}{% if f.name == "citizen_id" %}<div class="sm:col-span-2 xl:col-span-1">{% include "cases/_citizen_id.html" %}</div>{% else %}{% include "partials/field.html" %}{% endif %}{% endfor %}
     </div>

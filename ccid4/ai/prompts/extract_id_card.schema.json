@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "required": ["title", "first_name", "last_name", "citizen_id", "birth_date", "house_no", "moo", "soi", "road", "tambon", "amphoe", "province"],
+  "properties": {
+    "title": {"type": "string", "maxLength": 40},
+    "first_name": {"type": "string", "maxLength": 120},
+    "last_name": {"type": "string", "maxLength": 120},
+    "citizen_id": {"type": "string", "maxLength": 20},
+    "birth_date": {"type": "string", "maxLength": 10},
+    "house_no": {"type": "string", "maxLength": 40},
+    "moo": {"type": "string", "maxLength": 20},
+    "soi": {"type": "string", "maxLength": 120},
+    "road": {"type": "string", "maxLength": 120},
+    "tambon": {"type": "string", "maxLength": 120},
+    "amphoe": {"type": "string", "maxLength": 120},
+    "province": {"type": "string", "maxLength": 120}
+  }
+}

@@ -233,6 +233,9 @@ def process_submission(sub: IntakeSubmission) -> IntakeSubmission:
             timezone.now(),
         )
         sub.save()
+        from .tracking import create as create_tracking
+
+        create_tracking(case, None, token=sub.track_token, reference=sub.reference)  # the link the citizen already has
         how = "เจ้าหน้าที่กรอกแทนผู้แจ้ง" if sub.staff_id else IntakeSubmission.Mode(sub.mode).label
         log(owner, "create", "case", case.pk, f"ตั้งคดีจากการแจ้งความออนไลน์ เลขอ้างอิง {sub.reference} ({how})")
         log_action(case, owner, f"รับแจ้งความออนไลน์ เลขอ้างอิง {sub.reference} ({how})", reason="ข้อมูลแยกลงแท็บโดย AI – ตรวจทานทุกช่อง")

@@ -116,3 +116,26 @@ class ArrestImport(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+
+
+class TrackingLink(models.Model):
+    """ลิงก์ติดตามสถานะของผู้แจ้ง (B8): token สุ่ม · หมดอายุได้ · ยกเลิกได้ · เห็นเฉพาะสถานะและข้อความที่พนักงานสอบสวนเผยแพร่."""
+
+    case = models.ForeignKey("cases.Case", on_delete=models.CASCADE, related_name="tracking_links", verbose_name="คดี")
+    token = models.CharField(max_length=40, unique=True, default=new_token)
+    reference = models.CharField("เลขอ้างอิงที่ผู้แจ้งเห็น", max_length=30)
+    expires_at = models.DateTimeField("หมดอายุ")
+    revoked_at = models.DateTimeField("ยกเลิกเมื่อ", null=True, blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "ลิงก์ติดตามของผู้แจ้ง"
+        verbose_name_plural = "ลิงก์ติดตามของผู้แจ้ง"
+        ordering = ["-created_at"]
+
+    @property
+    def active(self) -> bool:
+        from django.utils import timezone
+
+        return self.revoked_at is None and self.expires_at > timezone.now()

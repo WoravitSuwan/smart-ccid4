@@ -64,10 +64,13 @@ def test_styleguide_shows_both_themes(client_inv):
 
 @pytest.mark.django_db
 def test_menu_marks_unbuilt_items(client, make_user):
+    from core.menu import MenuItem
+
+    assert MenuItem("x", "ยังไม่มี", "nowhere:page", "home").url() is None  # shown as "เร็ว ๆ นี้"
     client.force_login(make_user(role="supervisor"))
     html = client.get("/").content.decode()
-    assert "ภาพรวม" in html and "เร็ว ๆ นี้" in html  # แดชบอร์ดหน่วยงาน arrives in phase 11
-    assert 'href="/cyber/network/"' in html  # เครือข่ายคดี is built (phase 9)
+    assert "ภาพรวม" in html and "เร็ว ๆ นี้" not in html  # every menu item is built (phase 11)
+    assert 'href="/cyber/network/"' in html and 'href="/dashboard/"' in html
 
 
 def test_thai_formatting():

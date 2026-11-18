@@ -102,3 +102,43 @@ def save_case(
 
     sync_rule_tasks(case)  # A4.1: recompute tasks and deadlines on every save
     return summary
+
+
+@transaction.atomic
+def transfer_case(user, case: Case, new_owner, reason: str) -> None:
+    """โอนคดี (หัวหน้างานสอบสวน): เปลี่ยนเจ้าของ · ลงบันทึกพนักงานสอบสวนและ AuditLog · แจ้งเจ้าของเดิมและเจ้าของใหม่ (B8)."""
+    from django.core.exceptions import PermissionDenied, ValidationError
+    from django.urls import reverse
+
+    from core.notify import notify
+    from deadlines.services import log_action
+
+    if not user.can("case.transfer"):
+        raise PermissionDenied
+    if len((reason or "").strip()) < 5:
+        raise ValidationError("ระบุเหตุผลการโอนคดี")
+    if new_owner is None or not new_owner.is_active or new_owner.role not in ("investigator", "supervisor"):
+        raise ValidationError("เลือกพนักงานสอบสวนที่จะรับโอน")
+    if new_owner.pk == case.owner_id:
+        raise ValidationError("คดีเป็นของพนักงานสอบสวนคนนี้อยู่แล้ว")
+    old = case.owner
+    case.owner = new_owner
+    case.save(update_fields=["owner", "updated_at"])
+    case.shared_with.remove(new_owner)
+    log(user, "edit", "case", case.pk, f"โอนคดี {case} จาก {old.display_name} ไป {new_owner.display_name}: {reason}")
+    log_action(case, user, f"โอนคดีจาก {old.display_name} ไป {new_owner.display_name}", reason=reason.strip()[:300])
+    url = reverse("cases:detail", args=[case.pk])
+    notify(
+        [new_owner],
+        "case_transfer",
+        f"รับโอนคดี {case.label}",
+        f"จาก {old.display_name} โดย {user.display_name}: {reason[:200]}",
+        url,
+    )
+    notify(
+        [old],
+        "case_transfer",
+        f"คดี {case.label} ถูกโอนไป {new_owner.display_name}",
+        f"โดย {user.display_name}: {reason[:200]}",
+        url,
+    )

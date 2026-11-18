@@ -1,13 +1,61 @@
 {% extends "base.html" %}
 {% block title %}ภาพรวม{% endblock %}
 {% block content %}
-<div class="reveal"><h1>ภาพรวม</h1>
-<p class="text-muted">สวัสดี {{ user.display_name }} · {{ user.get_role_display }}</p></div>
-<section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="สรุป">
-  <div class="card p-4"><span class="text-muted text-sm">คดีที่มีกำหนดเวลาใน 7 วัน</span><b class="block text-3xl">—</b></div>
-  <div class="card p-4"><span class="text-muted text-sm">เลยกำหนด</span><b class="block text-3xl">—</b></div>
-  <div class="card p-4"><span class="text-muted text-sm">สิ่งที่ต้องทำวันนี้</span><b class="block text-3xl">—</b></div>
-  <div class="card p-4"><span class="text-muted text-sm">ร่างจาก AI รอตรวจ</span><b class="block text-3xl">—</b></div>
+<div class="flex flex-wrap items-end gap-3 reveal"><div class="flex-1"><h1>ภาพรวม</h1>
+  <p class="text-muted">สวัสดี {{ user.display_name }} · {{ user.get_role_display }}</p></div>
+  {% if user.role == "supervisor" or user.role == "commander" or user.role == "admin" %}<a class="btn btn-secondary" href="{% url 'dashboard:unit' %}"><svg class="w-5 h-5"><use href="#i-chart"/></svg>แดชบอร์ดหน่วยงาน</a>{% endif %}
+</div>
+
+{% if user.role != "admin" %}
+<section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="สรุปงานของฉัน">
+  <a class="card card-hover glow-border p-4 flex items-center gap-4 no-underline text-text reveal" href="#week">
+    <span class="stat-icon"><svg class="w-5 h-5"><use href="#i-clock"/></svg></span>
+    <span><span class="text-sm text-muted block">กำหนดเวลาใน 7 วัน</span><b class="stat-value" x-data="countUp" data-value="{{ week|length }}">{{ week|length }}</b></span></a>
+  <a class="card card-hover p-4 flex items-center gap-4 no-underline text-text reveal {% if overdue %}stat-danger{% endif %}" href="#overdue">
+    <span class="stat-icon"><svg class="w-5 h-5"><use href="#i-bell"/></svg></span>
+    <span><span class="text-sm text-muted block">เลยกำหนด</span><b class="stat-value" x-data="countUp" data-value="{{ overdue|length }}">{{ overdue|length }}</b>
+      {% if overdue %}<span class="chip chip-danger text-xs">ต้องทำทันที</span>{% endif %}</span></a>
+  <a class="card card-hover p-4 flex items-center gap-4 no-underline text-text reveal" href="#today">
+    <span class="stat-icon"><svg class="w-5 h-5"><use href="#i-check"/></svg></span>
+    <span><span class="text-sm text-muted block">สิ่งที่ต้องทำวันนี้</span><b class="stat-value" x-data="countUp" data-value="{{ todo_count }}">{{ todo_count }}</b>
+      <span class="text-xs text-muted block">กำหนดวันนี้ {{ today|length }} · งานค้าง {{ tasks|length }}</span></span></a>
+  <a class="card card-hover p-4 flex items-center gap-4 no-underline text-text reveal" href="#review">
+    <span class="stat-icon"><span class="ai-badge">AI</span></span>
+    <span><span class="text-sm text-muted block">ร่างจาก AI รอตรวจ</span><b class="stat-value" x-data="countUp" data-value="{{ review_count }}">{{ review_count }}</b></span></a>
 </section>
-<p class="text-sm text-muted">ข้อมูลในการ์ดจะแสดงเมื่อมีโมดูลคดีและกำหนดเวลา</p>
+
+<div class="grid gap-4 xl:grid-cols-2 items-start">
+  <section id="overdue" class="card p-5 flex flex-col gap-3 reveal"><h2>เลยกำหนด</h2>
+    {% if overdue %}<ul class="dash-list">{% for c, it in overdue|slice:":10" %}<li><a href="{% url 'cases:detail' c.pk %}"><b>{{ c.label }}</b> · {{ it.deadline.short|default:it.deadline.label }}</a>
+      <span class="chip chip-danger text-xs">{{ it.status.text }}</span></li>{% endfor %}</ul>
+      {% if overdue|length > 10 %}<p class="text-sm text-muted">และอีก {{ overdue|length|add:"-10" }} รายการ · ดูในหน้าคดีแต่ละคดี</p>{% endif %}
+    {% else %}<p class="empty-state text-sm">ไม่มีรายการเลยกำหนด</p>{% endif %}</section>
+  <section id="week" class="card p-5 flex flex-col gap-3 reveal"><h2>กำหนดเวลาใน 7 วัน</h2>
+    {% if week %}<ul class="dash-list">{% for c, it in week|slice:":10" %}<li><a href="{% url 'cases:detail' c.pk %}"><b>{{ c.label }}</b> · {{ it.deadline.short|default:it.deadline.label }}</a>
+      <span class="chip chip-{{ it.status.tone }} text-xs">{{ it.status.text }}</span></li>{% endfor %}</ul>
+      {% if week|length > 10 %}<p class="text-sm text-muted">และอีก {{ week|length|add:"-10" }} รายการ</p>{% endif %}
+    {% else %}<p class="empty-state text-sm">ไม่มีกำหนดเวลาใน 7 วัน</p>{% endif %}</section>
+  <section id="today" class="card p-5 flex flex-col gap-3 reveal"><h2>สิ่งที่ต้องทำ</h2>
+    {% if today or tasks %}<ul class="dash-list">
+      {% for c, it in today %}<li><a href="{% url 'cases:detail' c.pk %}"><b>{{ c.label }}</b> · {{ it.deadline.label }}</a><span class="chip chip-warning text-xs">ครบวันนี้</span></li>{% endfor %}
+      {% for t in tasks %}<li><a href="{% url 'cases:detail' t.case.pk %}#investigator"><b>{{ t.case.label }}</b> · {{ t.title }}</a><span class="text-xs text-muted">{{ t.get_source_display }}</span></li>{% endfor %}
+    </ul>{% else %}<p class="empty-state text-sm">ไม่มีงานค้าง</p>{% endif %}</section>
+  <section id="review" class="card p-5 flex flex-col gap-3 reveal"><h2>ร่างจาก AI รอตรวจ</h2>
+    {% if drafts or reviews %}<ul class="dash-list">
+      {% for s in drafts %}<li><a href="{% url 'cases:detail' s.party.case.pk %}"><b>{{ s.party.case.label }}</b> · คำให้การ{{ s.party.get_role_display }} {{ s.party.person.full_name }}</a><span class="ai-badge">รอตรวจ</span></li>{% endfor %}
+      {% for r in reviews %}<li><a href="{% url 'interviews:review' r.pk %}"><b>{{ r.case.label }}</b> · คำให้การจากเสียง {{ r.party.person.full_name }}</a><span class="ai-badge">รอตรวจ</span></li>{% endfor %}
+    </ul>{% else %}<p class="empty-state text-sm">ไม่มีร่างที่รอตรวจ</p>{% endif %}</section>
+  <section class="card p-5 flex flex-col gap-3 reveal xl:col-span-2"><h2>คดีไม่มีความเคลื่อนไหวเกิน 30 วัน <span class="count">{{ stale_count }}</span></h2>
+    {% if stale %}<ul class="dash-list">{% for c in stale %}<li><a href="{% url 'cases:detail' c.pk %}"><b>{{ c.label }}</b> · {{ c.offense|default:c.title|default:"ยังไม่ระบุ" }}</a>
+      <span class="text-xs text-muted">อัปเดตล่าสุด {{ c.updated_at|be_date }}</span></li>{% endfor %}</ul>
+    {% else %}<p class="empty-state text-sm">ทุกคดีมีความเคลื่อนไหวภายใน 30 วัน</p>{% endif %}</section>
+</div>
+{% endif %}
+
+<form method="post" action="{% url 'dashboard:digest' %}" class="card glass p-4 flex flex-wrap items-end gap-3 reveal">{% csrf_token %}
+  <div class="w-full"><b>สรุปรายวันทางอีเมล</b> <span class="text-xs text-muted">ส่งทุกเช้าผ่านเซิร์ฟเวอร์อีเมลภายในหน่วย (ถ้าผู้ดูแลเปิดใช้) · มีเฉพาะจำนวนและเลขคดี ไม่มีข้อมูลบุคคล</span></div>
+  <label class="flex-1 min-w-[220px]"><span class="label">อีเมลในระบบของหน่วย</span><input class="input" type="email" name="email" value="{{ digest.email|default:user.email }}" maxlength="254"></label>
+  <label class="flex items-center gap-2 text-sm min-h-[44px]"><input type="checkbox" name="enabled" {% if digest.enabled %}checked{% endif %}> รับสรุปรายวัน</label>
+  <button class="btn btn-secondary btn-sm">บันทึก</button>
+</form>
 {% endblock %}

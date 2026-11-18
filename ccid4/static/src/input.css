@@ -400,6 +400,24 @@
   .exhibit-prosecutor { color: var(--accent-ink); border-color: color-mix(in srgb, var(--accent) 45%, transparent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
   .exhibit-returned { color: var(--success); border-color: color-mix(in srgb, var(--success) 45%, transparent); background: color-mix(in srgb, var(--success) 12%, transparent); }
   .exhibit-forfeited { color: var(--text-muted); border-color: var(--border); background: var(--surface-2); }
+  /* ---------- แดชบอร์ดและกราฟ (B7) — สีจาก token เท่านั้น ---------- */
+  .chart { width: 100%; height: auto; overflow: visible; font-family: inherit; }
+  .chart-bar { fill: var(--primary); transition: opacity .15s; }
+  .chart-grid { stroke: var(--border); stroke-width: 1; opacity: .6; }
+  .chart-base { stroke: var(--text-muted); stroke-width: 1; opacity: .7; }
+  .chart-axis { fill: var(--text-muted); font-size: 11px; }
+  .chart-label { fill: var(--text); font-size: 12px; }
+  .chart-value { fill: var(--text); font-size: 12px; font-weight: 600; }
+  .chart-hit { fill: transparent; cursor: default; outline: none; }
+  .chart-hit.on, .chart-hit:focus-visible { fill: var(--primary-soft); }
+  .chart-tip { position: fixed; z-index: 60; pointer-events: none; padding: .35rem .6rem; border-radius: 8px; font-size: .8rem; font-weight: 600;
+    color: var(--text); background: var(--surface); border: 1px solid var(--border); box-shadow: 0 8px 24px color-mix(in srgb, var(--bg) 60%, transparent); }
+  .dash-list { display: flex; flex-direction: column; gap: .35rem; }
+  .dash-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; padding: .5rem .7rem; border-radius: 10px;
+    background: var(--surface-2); border: 1px solid var(--border); }
+  .dash-list a { color: var(--text); text-decoration: none; }
+  .dash-list a:hover b { color: var(--primary); }
+  .stat-danger { border-color: color-mix(in srgb, var(--danger) 55%, var(--border)); }
   /* ---------- กระดิ่ง ---------- */
   .bell-panel { width: min(24rem, 90vw); }
   .bell-count { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 999px; font-size: 11px; line-height: 18px;

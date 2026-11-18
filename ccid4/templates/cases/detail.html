@@ -1,5 +1,7 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}คดี {{ case.label }}{% endblock %}
+{% block head %}<script src="{% static 'js/cardreader.js' %}" defer></script>{% endblock %}
 {% block content %}
 <nav class="text-sm reveal" aria-label="เส้นทาง"><a href="{% url 'cases:list' %}">คดีของฉัน</a> › {{ case.label }}</nav>
 
@@ -17,6 +19,12 @@
     <p class="text-sm text-muted">พนักงานสอบสวน {{ case.owner.display_name }} · รับแจ้ง {{ case.reported_at|be_datetime }} · อัปเดต {{ case.updated_at|be_datetime }}</p>
   </div>
   <div class="relative z-10 flex flex-col items-end gap-2">
+    {% if transfer_to %}<details class="relative"><summary class="btn btn-secondary btn-sm list-none cursor-pointer">โอนคดี</summary>
+      <form method="post" action="{% url 'cases:transfer' case.pk %}" class="card absolute right-0 mt-2 p-4 w-80 z-30 flex flex-col gap-2">{% csrf_token %}
+        <label><span class="label">โอนให้</span><select class="input" name="owner" required>{% for u in transfer_to %}<option value="{{ u.pk }}">{{ u.display_name }}{% if u.position %} · {{ u.position }}{% endif %}</option>{% endfor %}</select></label>
+        <label><span class="label">เหตุผล *</span><input class="input" name="reason" required minlength="5" maxlength="300"></label>
+        <button class="btn btn-primary btn-sm self-start">ยืนยันโอนคดี</button>
+        <p class="text-xs text-muted">เจ้าของเดิมและเจ้าของใหม่ได้รับแจ้งเตือน และลงบันทึกพนักงานสอบสวน</p></form></details>{% endif %}
     {% with d=case.nearest_deadline %}
       {% if d %}{% include "deadlines/_chip.html" %}
       {% else %}<span class="chip chip-muted"><svg class="w-4 h-4"><use href="#i-clock"/></svg>ยังไม่มีกำหนดเวลาที่ต้องติดตาม</span>{% endif %}
@@ -205,6 +213,48 @@
   {% include "cases/_side_panel.html" %}
 </div>
 
+{% if editable %}
+<section class="card p-5 flex flex-col gap-3 reveal" aria-labelledby="track-h">
+  <div class="flex flex-wrap items-center gap-2"><h2 id="track-h" class="flex-1">หน้าติดตามสถานะสำหรับผู้แจ้ง</h2>
+    {% if tracking_link %}<span class="chip chip-success text-xs">ใช้ได้ถึง {{ tracking_link.expires_at|be_date }}</span>{% else %}<span class="chip chip-muted text-xs">ยังไม่มีลิงก์</span>{% endif %}</div>
+  <p class="text-sm text-muted">ผู้แจ้งเห็นเฉพาะสถานะ และรายการในบันทึกพนักงานสอบสวนที่กด "ให้ผู้แจ้งเห็น" หรือข้อความที่เผยแพร่จากที่นี่ ไม่เห็นข้อมูลอื่นของคดี</p>
+  <div class="grid gap-4 lg:grid-cols-[auto_1fr] items-start">
+    {% if tracking_link %}<img src="{% url 'intake:tracking_qr' case.pk %}" alt="QR ลิงก์ติดตามของผู้แจ้ง" width="168" height="168" class="rounded-btn border border-border bg-surface-2">{% endif %}
+    <div class="flex flex-col gap-3">
+      {% if tracking_link %}<p class="text-sm">ลิงก์: <code class="text-xs break-all">{{ request.scheme }}://{{ request.get_host }}/t/{{ tracking_link.token }}/</code> · เลขอ้างอิง {{ tracking_link.reference }}</p>{% endif %}
+      <div class="flex flex-wrap items-end gap-2">
+        <form method="post" action="{% url 'intake:tracking_new' case.pk %}" class="flex items-end gap-2">{% csrf_token %}
+          <label><span class="label">อายุลิงก์</span><select class="input min-h-[36px]" name="days"><option value="30">30 วัน</option><option value="90">90 วัน</option><option value="180">180 วัน</option><option value="365" selected>1 ปี</option></select></label>
+          <button class="btn btn-secondary btn-sm">{% if tracking_link %}สร้างลิงก์ใหม่ (ยกเลิกลิงก์เดิม){% else %}สร้างลิงก์ติดตาม{% endif %}</button></form>
+        {% if tracking_link %}<form method="post" action="{% url 'intake:tracking_revoke' case.pk %}">{% csrf_token %}<button class="btn btn-secondary btn-sm" data-confirm="ยกเลิกลิงก์นี้? ผู้แจ้งจะเปิดไม่ได้อีก">ยกเลิกลิงก์</button></form>{% endif %}
+      </div>
+      <form method="post" action="{% url 'intake:tracking_message' case.pk %}" class="flex flex-wrap items-end gap-2">{% csrf_token %}
+        <label class="flex-1 min-w-[260px]"><span class="label">แจ้งความคืบหน้าให้ผู้แจ้ง</span><input class="input" name="text" maxlength="300" minlength="5" required placeholder="เช่น ได้รับข้อมูลบัญชีจากธนาคารแล้ว อยู่ระหว่างติดตามตัวผู้กระทำผิด"></label>
+        <button class="btn btn-primary btn-sm">เผยแพร่</button></form>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if editable %}
+<dialog id="card-dialog" class="modal modal-wide" aria-labelledby="card-title" data-agent="{{ CARD_AGENT_URL }}"
+        data-ocr-url="{% url 'cases:card_ocr' case.pk %}" data-audit-url="{% url 'cases:card_audit' case.pk %}">
+  <div class="flex flex-col gap-4">
+    <div class="flex items-start gap-3"><span class="stat-icon"><svg class="w-5 h-5"><use href="#i-id"/></svg></span>
+      <div class="flex-1"><h2 id="card-title">ตรวจทานข้อมูลจากบัตรประชาชน</h2><p class="text-sm text-muted" data-card-source></p></div>
+      <button type="button" class="btn btn-secondary btn-sm" data-dialog-close aria-label="ปิด">✕</button></div>
+    <p class="text-sm" data-card-status role="status"></p>
+    <div class="grid gap-4 sm:grid-cols-[auto_1fr] items-start" data-card-body hidden>
+      <img data-card-photo alt="ภาพจากบัตร" width="120" class="rounded-btn border border-border" hidden>
+      <div class="flex flex-col gap-2"><div data-card-warn class="flex flex-col gap-1"></div>
+        <table class="tbl text-sm"><thead><tr><th>ใช้</th><th>ช่อง</th><th>ข้อมูลจากบัตร</th></tr></thead><tbody data-card-rows></tbody></table></div>
+    </div>
+    <div class="flex gap-2 justify-end"><button type="button" class="btn btn-secondary" data-dialog-close>ยกเลิก</button>
+      <button type="button" class="btn btn-primary" data-card-apply disabled>ใช้ข้อมูลที่เลือก</button></div>
+    <p class="text-xs text-muted">ตรวจทุกช่องเทียบกับบัตรก่อนกด · ระบบเติมลงฟอร์มเท่านั้น ต้องกด "บันทึก" อีกครั้ง · การใช้ข้อมูลจากบัตรถูกบันทึกในประวัติการใช้งาน</p>
+  </div>
+</dialog>
+{% endif %}
 <form id="dika-form" hidden></form>
 {% if editable %}
 <form id="task-add-form" method="post" action="{% url 'deadlines:task_add' case.pk %}" hidden>{% csrf_token %}<input type="hidden" name="back" value="investigator"></form>

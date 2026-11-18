@@ -6,7 +6,12 @@ from django.views.decorators.http import require_POST
 
 @login_required
 def home(request):
-    return render(request, "core/home.html", {"active": "home"})
+    from dashboard.models import DigestSetting
+    from dashboard.services import personal
+
+    ctx = personal(request.user) if request.user.role != "admin" else {}
+    digest = DigestSetting.objects.filter(user=request.user).first()
+    return render(request, "core/home.html", ctx | {"digest": digest, "active": "home"})
 
 
 @login_required
