@@ -2,9 +2,9 @@
 #   คลิกขวาที่เมนู Start > Terminal (หรือ PowerShell) แล้วพิมพ์:
 #   cd โฟลเดอร์ที่แตกไฟล์ ccid4 ไว้
 #   powershell -ExecutionPolicy Bypass -File scripts\install_local.ps1
-#   (เติม large-v3 ท้ายคำสั่งถ้าต้องการโมเดลที่แม่นกว่าแต่ช้ากว่า)
+#   โมเดลเริ่มต้น typhoon-turbo (ภาษาไทยโดยเฉพาะ) · เติม typhoon-large ท้ายคำสั่งถ้าต้องการแม่นกว่าแต่ช้ากว่า 3-4 เท่า
 # รันซ้ำได้ ไม่ลบข้อมูลเดิม
-param([string]$Model = "large-v3-turbo")
+param([string]$Model = "typhoon-turbo")
 $ErrorActionPreference = "Continue"  # native docker output on stderr must not stop the script; exit codes are checked
 Set-Location (Join-Path $PSScriptRoot "..")
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -50,7 +50,8 @@ if (-not (Test-Path .env)) {
 Say "สร้างโปรแกรม (ครั้งแรกประมาณ 10-20 นาที ขึ้นกับอินเทอร์เน็ต)"
 Dc build
 
-Say "ดาวน์โหลดโมเดลถอดเสียง $Model (ครั้งเดียว ประมาณ 1-3 GB)"
+Say "เตรียมโมเดลถอดเสียง $Model (ครั้งแรก: ดาวน์โหลดและแปลง ประมาณ 2-4 GB ใช้ 15-30 นาที · ครั้งต่อไปข้ามได้ทันที)"
+& docker @Compose stop worker *> $null  # free memory for the one-time conversion (a running transcription restarts later)
 Dc up -d db redis
 $out = & docker @Compose run --rm -T -e HF_HUB_OFFLINE=0 worker python manage.py setup_asr --model $Model
 $out | ForEach-Object { Write-Host $_ }

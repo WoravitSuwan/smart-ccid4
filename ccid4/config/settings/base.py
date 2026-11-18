@@ -175,6 +175,7 @@ ASR_MODEL = env("ASR_MODEL", default="")  # path to a CTranslate2 Typhoon Whispe
 ASR_DEVICE = env("ASR_DEVICE", default="auto")  # cuda | cpu | auto
 ASR_COMPUTE_TYPE = env("ASR_COMPUTE_TYPE", default="auto")  # auto | int8 (CPU) | float16 (GPU)
 ASR_BEAM_SIZE = env.int("ASR_BEAM_SIZE", default=0)  # 0 = auto: 1 on CPU (about 2x faster), 5 on GPU
+ASR_THAI_ONLY = env.bool("ASR_THAI_ONLY", default=True)  # suppress tokens of other scripts (Cyrillic, accented Latin, CJK...)
 ASR_CPU_THREADS = env.int("ASR_CPU_THREADS", default=0)  # 0 = every physical core (faster-whisper alone uses 4)
 DIARIZATION_MODEL = env("DIARIZATION_MODEL", default="")  # local pyannote pipeline folder; empty = officer labels speakers
 FFMPEG_BIN = env("CCID4_FFMPEG", default="ffmpeg")

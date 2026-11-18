@@ -80,7 +80,9 @@ def read(data: bytes, content_type: str) -> str:
     if content_type not in IMAGE_TYPES:
         raise AIError("รองรับเฉพาะ JPG PNG HEIC WEBP และ PDF")
     if settings.OCR_BACKEND != "ollama" or not settings.OCR_MODEL:
-        raise AIError("ยังไม่ได้เปิดใช้ OCR ภาพของหน่วย (OCR_BACKEND=ollama, OCR_MODEL) · ระหว่างนี้ใช้ PDF ที่มีข้อความ หรือกรอกเอง")
+        raise AIError(
+            "ยังไม่ได้เปิดใช้ OCR ภาพของหน่วย (OCR_BACKEND=ollama, OCR_MODEL) · ระหว่างนี้ใช้ PDF ที่มีข้อความ หรือกรอกเอง"
+        )
     payload = {
         "model": settings.OCR_MODEL,
         "prompt": OCR_PROMPT,

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # ติดตั้ง CCID4 บนเครื่องนี้เพื่อทดลองใช้งานจริง (macOS / Linux / Git Bash บน Windows)
-#   bash scripts/install_local.sh                 # โมเดลถอดเสียง large-v3-turbo (เร็ว เหมาะกับ CPU)
-#   bash scripts/install_local.sh large-v3        # แม่นกว่า ช้ากว่า
+#   bash scripts/install_local.sh                 # โมเดลถอดเสียง typhoon-turbo (ภาษาไทยโดยเฉพาะ เร็ว เหมาะกับ CPU)
+#   bash scripts/install_local.sh typhoon-large   # แม่นกว่า ช้ากว่า 3–4 เท่า
 # รันซ้ำได้ ไม่ลบข้อมูลเดิม
 set -euo pipefail
 cd "$(dirname "$0")/.."
-MODEL="${1:-large-v3-turbo}"
+MODEL="${1:-typhoon-turbo}"
 DC=(docker compose -f docker-compose.local.yml)
 
 say() { printf '\n\033[1;36m▶ %s\033[0m\n' "$*"; }
@@ -37,7 +37,8 @@ fi
 say "สร้างโปรแกรม (ครั้งแรกประมาณ 10–20 นาที ขึ้นกับอินเทอร์เน็ต)"
 "${DC[@]}" build
 
-say "ดาวน์โหลดโมเดลถอดเสียง $MODEL (ครั้งเดียว ประมาณ 1–3 GB)"
+say "เตรียมโมเดลถอดเสียง $MODEL (ครั้งแรก: ดาวน์โหลดและแปลง ประมาณ 2–4 GB ใช้ 15–30 นาที · ครั้งต่อไปข้ามได้ทันที)"
+"${DC[@]}" stop worker >/dev/null 2>&1 || true  # free memory for the one-time conversion
 "${DC[@]}" up -d db redis
 OUT=$("${DC[@]}" run --rm -T -e HF_HUB_OFFLINE=0 worker python manage.py setup_asr --model "$MODEL" | tee /dev/stderr)
 MODEL_PATH=$(printf '%s\n' "$OUT" | sed -n 's/^ASR_MODEL=//p' | tail -1 | tr -d '\r')

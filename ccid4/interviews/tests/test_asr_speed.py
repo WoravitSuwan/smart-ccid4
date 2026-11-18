@@ -6,6 +6,7 @@ import subprocess
 import sys
 import types
 from datetime import timedelta
+from pathlib import Path
 
 import pytest
 from django.core.management import call_command
@@ -185,3 +186,125 @@ def test_real_model_runs_the_whole_pipeline(recorded, settings):  # noqa: F811
     s = services.process(recorded.pk)
     steps = {st["key"]: st["state"] for st in s.progress}
     assert s.error == "" and steps["asr"] == "done" and s.status == InterviewSession.Status.REVIEW, (s.error, s.progress)
+
+
+# ---------------------------------------------------------------- Thai only: other scripts are never written
+THAI = "ผู้แจ้งโอนเงิน ๑๒๓ บาท"
+
+
+@pytest.mark.parametrize("text", [THAI, "Shopee OTP 40,000", "“คำพูด” …"])
+def test_thai_and_english_tokens_are_never_suppressed(text):
+    raw = text.encode()
+    assert not asr.foreign_bytes(raw)
+    for cut in range(1, len(raw)):  # every way a tokenizer could split it into byte pieces
+        assert not asr.foreign_bytes(raw[:cut]) and not asr.foreign_bytes(raw[cut:])
+
+
+@pytest.mark.parametrize("text", ["änder", "Trans41ано", "ق", "ישמ", "ς", "日本語", "नमस्ते"])
+def test_other_scripts_are_suppressed(text):
+    raw = text.encode()
+    assert asr.foreign_bytes(raw)
+    assert any(asr.foreign_bytes(raw[i : i + 2]) for i in range(len(raw) - 1))  # even as two-byte pieces
+
+
+def test_foreign_token_ids_reads_byte_level_vocabulary():
+    to_piece = {b: c for c, b in asr._byte_decoder().items()}
+    pieces = [b"\xe0\xb8\x81", b" Shopee", "ано".encode(), b"\xe0\xb8", b"\xd0", "é".encode(), b"\xe2\x80"]
+
+    class Tok:
+        def token_to_id(self, t):
+            return len(pieces) if t == "<|endoftext|>" else None
+
+        def id_to_token(self, i):
+            return "".join(to_piece[b] for b in pieces[i])
+
+    asr._FOREIGN.pop("test", None)
+    assert asr.foreign_token_ids(Tok(), "test") == [2, 4, 5]
+
+
+def test_transcribe_suppresses_other_scripts(settings, monkeypatch, tmp_path):
+    seen = {}
+
+    class Model:
+        hf_tokenizer = object()
+
+        def __init__(self, path, **kw):
+            pass
+
+        def transcribe(self, audio, **kw):
+            seen.update(kw)
+            return iter([]), types.SimpleNamespace(duration=1.0)
+
+    monkeypatch.setitem(sys.modules, "faster_whisper", types.SimpleNamespace(WhisperModel=Model))
+    monkeypatch.setattr(asr, "load_audio", lambda path: [0.0] * 16000)
+    monkeypatch.setattr(asr, "foreign_token_ids", lambda tok, key: [7, 8])
+    settings.ASR_BACKEND, settings.ASR_MODEL, settings.ASR_DEVICE, settings.ASR_THAI_ONLY = "whisper", str(tmp_path), "cpu", True
+    asr.transcribe(tmp_path / "a.flac")
+    assert seen["suppress_tokens"] == [-1, 7, 8]
+    settings.ASR_THAI_ONLY = False
+    asr.transcribe(tmp_path / "a.flac")
+    assert seen["suppress_tokens"] == [-1]
+
+
+# ---------------------------------------------------------------- Typhoon: official Thai weights converted on this machine
+def test_typhoon_is_converted_with_temporary_tools(monkeypatch, tmp_path):
+    from interviews.management.commands import setup_asr
+
+    calls, converted = [], []
+    monkeypatch.setitem(sys.modules, "torch", None)  # not in the image: must be installed for the conversion only
+    monkeypatch.setattr(setup_asr.subprocess, "run", lambda cmd, **kw: calls.append(cmd))
+
+    class Converter:
+        def __init__(self, repo, **kw):
+            converted.append((repo, kw))
+
+        def convert(self, out, **kw):
+            Path(out).mkdir(parents=True)
+            (Path(out) / "model.bin").write_bytes(b"x")
+
+    monkeypatch.setitem(sys.modules, "ctranslate2.converters", types.SimpleNamespace(TransformersConverter=Converter))
+    monkeypatch.setattr(setup_asr.Command, "tokenizer_files", staticmethod(lambda repo, folder: None))
+    monkeypatch.setattr(setup_asr.Command, "verify_model", lambda self, target: None)
+    call_command("setup_asr", model="typhoon-turbo", out=str(tmp_path))
+    assert any("download.pytorch.org/whl/cpu" in c for c in calls[0]) and "torch" in calls[0]
+    assert setup_asr.TRANSFORMERS in calls[1]
+    assert converted == [("typhoon-ai/typhoon-whisper-turbo", {"load_as_float16": True, "low_cpu_mem_usage": True})]
+    assert (tmp_path / "asr" / "typhoon-turbo" / "model.bin").exists()
+    assert not (tmp_path / "asr" / "typhoon-turbo.partial").exists()
+
+
+# ---------------------------------------------------------------- re-transcribe from the review page · honest numbers
+@pytest.mark.django_db
+def test_review_can_be_transcribed_again(recorded, client_inv, investigator, django_capture_on_commit_callbacks):  # noqa: F811
+    from .test_interviews import MULE
+
+    services.import_transcript(recorded, investigator, MULE)
+    recorded.refresh_from_db()
+    assert recorded.status == InterviewSession.Status.REVIEW and services.can_restart(recorded)
+    page = client_inv.get(reverse("interviews:review", args=[recorded.pk])).content.decode()
+    assert "ถอดเสียงใหม่จากไฟล์ต้นฉบับ" in page
+    with django_capture_on_commit_callbacks(execute=True):
+        client_inv.post(reverse("interviews:reprocess", args=[recorded.pk]))
+    recorded.refresh_from_db()
+    assert recorded.status != InterviewSession.Status.REVIEW
+    assert AuditLog.objects.filter(detail__contains="ถอดเสียงใหม่จากหน้าตรวจ").exists()
+
+
+@pytest.mark.django_db
+def test_time_left_waits_for_enough_audio(recorded, monkeypatch):  # noqa: F811
+    recorded.progress = [{"key": "asr", "label": "ถอดเสียง", "state": "running", "note": ""}]
+    clock = iter([100.0, 150.0])
+    monkeypatch.setattr(services.time, "monotonic", lambda: next(clock))
+    report = services.asr_progress(recorded, 380)
+    report(0, 380)
+    report(2, 380)  # the first section ended at 2 s after 50 s of work: not a basis for "158 minutes"
+    assert "กำลังคำนวณเวลาที่เหลือ" in recorded.progress[0]["note"] and "เหลือประมาณ" not in recorded.progress[0]["note"]
+
+
+@pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg not installed")
+def test_duration_of_browser_webm_without_header(tmp_path):
+    clip = tmp_path / "browser.webm"
+    with open(clip, "wb") as out:  # written to a pipe: no duration in the header, like MediaRecorder files
+        subprocess.run(["ffmpeg", "-loglevel", "error", "-f", "lavfi", "-i", "sine=duration=3", "-c:a", "libopus", "-f", "webm", "pipe:1"],
+                       stdout=out, check=True)  # fmt: skip
+    assert abs(asr.duration(clip) - 3.0) < 0.2

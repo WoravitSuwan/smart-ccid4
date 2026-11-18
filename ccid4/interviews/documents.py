@@ -254,7 +254,9 @@ def generate(session_id: int, user_id: int) -> InterviewDocument:
     template = template_bytes()
     narrative = session.statement_format == "narrative"
     if narrative and "เรื่องเล่า" not in engine.find_placeholders(template):
-        raise ValueError("แบบฟอร์มคำให้การที่อัปโหลดไม่มีช่อง {เรื่องเล่า} จึงออกคำให้การแบบบรรยายไม่ได้ — เพิ่มช่องนี้ในแบบฟอร์ม")
+        raise ValueError(
+            "แบบฟอร์มคำให้การที่อัปโหลดไม่มีช่อง {เรื่องเล่า} จึงออกคำให้การแบบบรรยายไม่ได้ — เพิ่มช่องนี้ในแบบฟอร์ม"
+        )
     data, missing = engine.fill(template, values(session, draft, code), thai_digits=False, allow_empty=OPTIONAL,
                                 drop_empty_rows={"qa"} if narrative else ())  # fmt: skip
     if missing:

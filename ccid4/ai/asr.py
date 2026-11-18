@@ -43,12 +43,23 @@ def to_flac(src: Path, dst: Path) -> Path:
 
 
 def duration(path: Path) -> float:
+    """Seconds of sound in the file. Browser WebM carries no duration header, so it is measured by decoding."""
     try:
         out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", str(path)],
                              capture_output=True, text=True, timeout=60, check=False)  # fmt: skip
         return float(out.stdout.strip())
     except (ValueError, OSError, subprocess.SubprocessError):
-        return 0.0
+        pass
+    try:
+        out = subprocess.run([settings.FFMPEG_BIN, "-nostdin", "-hide_banner", "-i", str(path), "-f", "null", "-"],
+                             capture_output=True, text=True, timeout=3600, check=False)  # fmt: skip
+        times = re.findall(r"time=(\d+):(\d+):(\d+(?:\.\d+)?)", out.stderr)
+        if times:
+            h, m, sec = times[-1]
+            return int(h) * 3600 + int(m) * 60 + float(sec)
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return 0.0
 
 
 SAMPLE_RATE = 16000
@@ -66,6 +77,62 @@ def load_audio(path: Path):
                           "-f", "s16le", "-ac", "1", "-ar", str(SAMPLE_RATE), "-"],
                          capture_output=True, check=True, timeout=3600)  # fmt: skip
     return np.frombuffer(out.stdout, dtype=np.int16).astype(np.float32) / 32768.0
+
+
+# ---------------------------------------------------------------- keep the text in Thai (and English loanwords)
+# Whisper is multilingual and on Thai speech it sometimes drifts into other scripts mid-sentence
+# ("ข้าฯ ก็ Ganz ไม่สมัคร", Cyrillic, Arabic, Hebrew...). Tokens that can only belong to another script are suppressed.
+_EXTRA_OK = set("\u2018\u2019\u201c\u201d\u2026\u2013\u2014\u00a0")
+
+
+def foreign_bytes(raw: bytes) -> bool:
+    """True when a token can only be (part of) a script other than Thai or ASCII. Never true for a token of Thai text."""
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        text = None
+    if text is not None:
+        return any(not (ch.isascii() or "\u0e00" <= ch <= "\u0e7f" or ch in _EXTRA_OK) for ch in text)
+    for i, b in enumerate(raw):  # a piece of a multi-byte character: Thai letters are E0 B8 xx / E0 B9 xx in UTF-8
+        if b == 0xE2 and (i + 1 == len(raw) or raw[i + 1] in (0x80, 0x81)):  # punctuation “ ” … – —
+            continue
+        if 0xC0 <= b <= 0xDF or b >= 0xE1:  # 2-byte scripts (accented Latin, Cyrillic, Greek, Hebrew, Arabic) or CJK, emoji...
+            return True
+        if b == 0xE0 and i + 1 < len(raw) and raw[i + 1] not in (0xB8, 0xB9):  # Devanagari, Bengali, Tamil...
+            return True
+    return False
+
+
+def _byte_decoder() -> dict[str, int]:
+    """GPT-2 byte-level BPE writes each raw byte as a printable character in tokenizer.json; this maps it back."""
+    bs = [*range(ord("!"), ord("~") + 1), *range(ord("¡"), ord("¬") + 1), *range(ord("®"), ord("ÿ") + 1)]
+    cs, n = bs[:], 0
+    for b in range(256):
+        if b not in bs:
+            bs.append(b)
+            cs.append(256 + n)
+            n += 1
+    return {chr(c): b for b, c in zip(bs, cs, strict=True)}
+
+
+_FOREIGN: dict[str, list[int]] = {}
+
+
+def foreign_token_ids(tokenizer, key: str = "") -> list[int]:
+    """Ids of text tokens (below <|endoftext|>) that only another script could use; cached per model."""
+    if key in _FOREIGN:
+        return _FOREIGN[key]
+    decode, ids = _byte_decoder(), []
+    for i in range(tokenizer.token_to_id("<|endoftext|>") or 0):
+        piece = tokenizer.id_to_token(i)
+        try:
+            raw = bytes(decode[c] for c in piece or "")
+        except KeyError:
+            continue
+        if raw and foreign_bytes(raw):
+            ids.append(i)
+    _FOREIGN[key] = ids
+    return ids
 
 
 def physical_cores(cpuinfo: str = "/proc/cpuinfo") -> int:
@@ -112,6 +179,12 @@ def beam_size() -> int:
     return settings.ASR_BEAM_SIZE or (5 if on_gpu() else 1)
 
 
+def model_label() -> str:
+    """Model folder name and settings, e.g. "typhoon-turbo · CPU 4 แกน · beam 1"."""
+    name = Path(settings.ASR_MODEL).name if settings.ASR_MODEL else "ยังไม่ได้ตั้งโมเดล"
+    return f"{name} · {profile()}"
+
+
 def profile() -> str:
     """ข้อความสั้นสำหรับหน้า "ประมวลผล" ว่าเครื่องถอดเสียงตั้งค่าไว้อย่างไร."""
     if on_gpu():
@@ -127,9 +200,14 @@ def transcribe(path: Path, progress=None) -> list[dict]:
 
     model = WhisperModel(settings.ASR_MODEL, device=settings.ASR_DEVICE, compute_type=settings.ASR_COMPUTE_TYPE,
                          cpu_threads=cpu_threads())  # fmt: skip
+    suppress = [-1]  # Whisper's default: non-speech symbols
+    tokenizer = getattr(model, "hf_tokenizer", None)
+    if settings.ASR_THAI_ONLY and tokenizer is not None:
+        suppress += foreign_token_ids(tokenizer, settings.ASR_MODEL)
     segments, info = model.transcribe(
         load_audio(path),
         language="th",
+        suppress_tokens=suppress,
         beam_size=beam_size(),
         vad_filter=True,
         word_timestamps=True,

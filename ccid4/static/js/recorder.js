@@ -198,7 +198,12 @@
   }
   function pause() {
     if (!state.recorder) return;
-    if (state.paused) { state.recorder.resume(); state.paused = false; state.resumedAt = performance.now(); state.pausedFor += performance.now() - state.pauseStart; ui.pause.textContent = 'พัก'; setState('กำลังบันทึก', 'danger'); ui.dot.classList.add('on'); }
+    if (state.paused) {
+      state.recorder.resume(); state.paused = false; state.resumedAt = performance.now();
+      const pausedMs = performance.now() - state.pauseStart;
+      state.pausedFor += pausedMs;
+      state.lastChunkAt += pausedMs; // the next chunk's length must not include the pause (no sound was recorded)
+      ui.pause.textContent = 'พัก'; setState('กำลังบันทึก', 'danger'); ui.dot.classList.add('on'); }
     else { state.recorder.pause(); state.paused = true; state.pauseStart = performance.now(); ui.pause.textContent = 'บันทึกต่อ'; setState('พักการบันทึก', 'warning'); ui.dot.classList.remove('on'); }
   }
   function stop() {
