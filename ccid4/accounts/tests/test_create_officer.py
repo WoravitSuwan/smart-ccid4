@@ -85,18 +85,23 @@ def test_repair_drops_leftovers_of_backspace():
     assert cmd.repair_console_text(garbled) == "ญะวิญชาญ"
 
 
+def test_iutf8_value_is_known_on_every_python():
+    termios = pytest.importorskip("termios")
+    assert cmd._iutf8(termios) == 0o40000  # Python 3.12 (the container) has no termios.IUTF8
+
+
 def test_utf8_line_editing_turns_on_iutf8_and_restores(monkeypatch):
     termios = pytest.importorskip("termios")
     pty = pytest.importorskip("pty")
     leader, follower = pty.openpty()
     try:
         attrs = termios.tcgetattr(follower)
-        attrs[0] &= ~termios.IUTF8
+        attrs[0] &= ~cmd._iutf8(termios)
         termios.tcsetattr(follower, termios.TCSANOW, attrs)
         monkeypatch.setattr("sys.stdin", open(follower, closefd=False))
         with cmd.utf8_line_editing():
-            assert termios.tcgetattr(follower)[0] & termios.IUTF8
-        assert not termios.tcgetattr(follower)[0] & termios.IUTF8
+            assert termios.tcgetattr(follower)[0] & cmd._iutf8(termios)
+        assert not termios.tcgetattr(follower)[0] & cmd._iutf8(termios)
     finally:
         os.close(leader)
         os.close(follower)

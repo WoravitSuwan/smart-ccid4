@@ -43,39 +43,48 @@ def repair_console_text(value: str) -> str:
     return raw.decode("cp874", "replace")
 
 
+def _iutf8(termios) -> int:
+    """ค่า IUTF8 (Python ก่อน 3.13 ไม่มีค่าคงที่นี้ใน termios แต่ Linux/macOS ใช้ค่าเดียวกัน)."""
+    return getattr(termios, "IUTF8", 0o40000 if sys.platform.startswith(("linux", "darwin")) else 0)
+
+
 @contextlib.contextmanager
 def utf8_line_editing():
-    """เปิด IUTF8 ให้ Backspace ลบอักษรไทยทีละตัวอักษร ไม่ใช่ทีละไบต์ (คืนค่าเดิมเมื่อเสร็จ)."""
+    """เปิด IUTF8 ให้ Backspace ลบอักษรไทยทีละตัวอักษร ไม่ใช่ทีละไบต์ (คืนค่าเดิมเมื่อเสร็จ).
+
+    เป็นตัวช่วยเท่านั้น: ทำไม่ได้ก็ข้ามไป ห้ามทำให้การสร้างบัญชีล้ม (เศษไบต์ยังถูกตัดใน repair_console_text).
+    """
+    restore, opened = [], []
     try:
         import termios
-    except ImportError:  # Windows without a container
-        yield
-        return
-    restore, opened = [], []
-    for source in ("stdin", "/dev/tty"):  # input() reads stdin, getpass() reads /dev/tty
-        try:
-            if source == "stdin":
-                fd = sys.stdin.fileno()
-            else:
-                fd = os.open(source, os.O_RDWR | os.O_NOCTTY)
-                opened.append(fd)
-            attrs = termios.tcgetattr(fd)
-        except (OSError, ValueError, AttributeError, termios.error):
-            continue
-        if not attrs[0] & termios.IUTF8:
-            changed = list(attrs)
-            changed[0] |= termios.IUTF8
-            with contextlib.suppress(termios.error):
-                termios.tcsetattr(fd, termios.TCSANOW, changed)
-                restore.append((fd, attrs))
+
+        flag = _iutf8(termios)
+        for source in ("stdin", "/dev/tty") if flag else ():  # input() reads stdin, getpass() reads /dev/tty
+            try:
+                if source == "stdin":
+                    fd = sys.stdin.fileno()
+                else:
+                    fd = os.open(source, os.O_RDWR | os.O_NOCTTY)
+                    opened.append(fd)
+                attrs = termios.tcgetattr(fd)
+                if not attrs[0] & flag:
+                    changed = list(attrs)
+                    changed[0] |= flag
+                    termios.tcsetattr(fd, termios.TCSANOW, changed)
+                    restore.append((fd, attrs))
+            except (OSError, ValueError, AttributeError, termios.error):
+                continue
+    except Exception:  # noqa: BLE001 - optional nicety, never block account creation
+        restore = []
     try:
         yield
     finally:
         for fd, attrs in reversed(restore):
-            with contextlib.suppress(termios.error, OSError):
+            with contextlib.suppress(Exception):
                 termios.tcsetattr(fd, termios.TCSANOW, attrs)
         for fd in opened:
-            os.close(fd)
+            with contextlib.suppress(OSError):
+                os.close(fd)
 
 
 def text_problem(value: str) -> str | None:
