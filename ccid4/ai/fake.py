@@ -345,3 +345,26 @@ def extract_slip(ctx, extra):
 
 MONTHS_ALL = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
               "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]  # fmt: skip
+
+
+def extract_id_card(ctx, extra):
+    """Pick the printed fields of a Thai ID card out of OCR text with plain patterns; blanks when not found."""
+    text = to_arabic_digits(ctx if isinstance(ctx, str) else _all_text(ctx))
+    flat = re.sub(r"\s+", " ", text)
+    cid = re.search(r"\b(\d)[\s-]?(\d{4})[\s-]?(\d{5})[\s-]?(\d{2})[\s-]?(\d)\b", flat)
+    name = re.search(r"ชื่อตัวและชื่อสกุล\s*(นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.)?\s*([ก-๙]+)\s+([ก-๙]+)", flat)
+    born = re.search(r"เกิดวันที่\s*(\d{1,2})\s*(" + "|".join(MONTHS_ALL) + r")\s*(\d{4})", flat)
+    when = ""
+    if born:
+        y = int(born[3]) - 543 if int(born[3]) > 2400 else int(born[3])
+        when = f"{y:04d}-{MONTHS_ALL.index(born[2]) % 12 + 1:02d}-{int(born[1]):02d}"
+    addr = re.search(r"ที่อยู่\s*(.+?)(?:วันออกบัตร|$)", flat)
+    a = addr[1] if addr else ""
+    grab = lambda rx: (re.search(rx, a)[1].strip() if re.search(rx, a) else "")  # noqa: E731
+    return {
+        "title": (name[1] or "") if name else "", "first_name": name[2] if name else "", "last_name": name[3] if name else "",
+        "citizen_id": "".join(cid.groups()) if cid else "", "birth_date": when,
+        "house_no": grab(r"^([\d/]+)"), "moo": grab(r"(?:หมู่ที่|ม\.)\s*(\d+)"), "soi": grab(r"(?:ซอย|ซ\.)\s*(\S+)"),
+        "road": grab(r"(?:ถนน|ถ\.)\s*(\S+)"), "tambon": grab(r"(?:ตำบล|แขวง|ต\.)\s*(\S+)"),
+        "amphoe": grab(r"(?:อำเภอ|เขต|อ\.)\s*(\S+)"), "province": grab(r"(?:จังหวัด|จ\.)\s*(\S+)"),
+    }  # fmt: skip

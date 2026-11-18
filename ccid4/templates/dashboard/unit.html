@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}แดชบอร์ดหน่วยงาน{% endblock %}
+{% block head %}<script src="{% static 'js/charts.js' %}" defer></script>{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-end gap-3 reveal">
+  <div class="flex-1"><h1>แดชบอร์ดหน่วยงาน</h1>
+    <p class="text-muted">{% if user.role == "supervisor" %}คดีในกลุ่มงาน{% else %}ทุกคดีของหน่วย{% endif %} · เดือน {{ month_label }}</p></div>
+  <form method="get" class="flex items-end gap-2"><label><span class="label">เดือน</span><input class="input" type="month" name="month" value="{{ month_value }}"></label><button class="btn btn-secondary">ดู</button></form>
+  <a class="btn btn-secondary" href="{% url 'dashboard:export' 'xlsx' %}?month={{ month_value }}">รายงาน Excel</a>
+  {% if pdf_available %}<a class="btn btn-secondary" href="{% url 'dashboard:export' 'pdf' %}?month={{ month_value }}">รายงาน PDF</a>{% endif %}
+</div>
+
+<section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="ตัวเลขสำคัญ">
+  <div class="card glow-border p-4 reveal"><span class="text-sm text-muted block">คดีที่ยังไม่เสร็จ</span><b class="stat-value" x-data="countUp" data-value="{{ open }}">{{ open }}</b>
+    <span class="text-xs text-muted block">จากทั้งหมด {{ total }} คดี</span></div>
+  <div class="card p-4 reveal"><span class="text-sm text-muted block">รับแจ้งในเดือน</span><b class="stat-value" x-data="countUp" data-value="{{ received_month }}">{{ received_month }}</b>
+    <span class="text-xs text-muted block">{% for k, v in by_type %}{{ k }} {{ v }}{% if not forloop.last %} · {% endif %}{% endfor %}</span></div>
+  <div class="card p-4 reveal {% if overdue %}stat-danger{% endif %}"><span class="text-sm text-muted block">กำหนดเวลาที่เลยแล้ว</span><b class="stat-value" x-data="countUp" data-value="{{ overdue }}">{{ overdue }}</b>
+    <span class="text-xs text-muted block">ใน {{ overdue_cases }} คดี</span>{% if overdue %}<span class="chip chip-danger text-xs">ต้องติดตาม</span>{% endif %}</div>
+  <div class="card p-4 reveal"><span class="text-sm text-muted block">ความเสียหาย คดีรับแจ้งในเดือน (บาท)</span><b class="stat-value">{{ damage_month|floatformat:"0g" }}</b>
+    <span class="text-xs text-muted block">ทุกคดีในขอบเขต {{ damage_all|floatformat:"0g" }} บาท</span></div>
+</section>
+
+<div class="grid gap-4 xl:grid-cols-2 items-start">
+  <section class="card p-5 flex flex-col gap-2 reveal" aria-labelledby="h-monthly">
+    <h2 id="h-monthly">คดีรับแจ้งรายเดือน</h2><p class="text-xs text-muted">12 เดือนถึง{{ month_label }} · ชี้ที่แท่งเพื่อดูจำนวน</p>
+    {% with c=monthly_chart %}
+    <svg class="chart" viewBox="0 0 {{ c.w }} {{ c.h }}" role="img" aria-label="จำนวนคดีรับแจ้งรายเดือน 12 เดือน">
+      {% for t in c.ticks %}<line class="chart-grid" x1="{{ c.left }}" x2="{{ c.right }}" y1="{{ t.y }}" y2="{{ t.y }}"/><text class="chart-axis" x="{{ c.left|add:'-6' }}" y="{{ t.y }}" text-anchor="end" dominant-baseline="middle">{{ t.text }}</text>{% endfor %}
+      {% for b in c.bars %}
+        {% if b.path %}<path class="chart-bar" d="{{ b.path }}"/>{% endif %}
+        {% if b.show_value %}<text class="chart-value" x="{{ b.cx }}" y="{{ b.top|add:'-6' }}" text-anchor="middle">{{ b.text }}</text>{% endif %}
+        <text class="chart-axis" x="{{ b.cx }}" y="{{ c.label_y }}" text-anchor="middle">{{ b.label }}</text>
+        <rect class="chart-hit" x="{{ b.hit_x }}" y="{{ c.plot_top }}" width="{{ b.hit_w }}" height="{{ c.hit_h }}" data-tip="{{ b.label }}: {{ b.value }} คดี" tabindex="0"><title>{{ b.label }}: {{ b.value }} คดี</title></rect>
+      {% endfor %}
+      <line class="chart-base" x1="{{ c.left }}" x2="{{ c.right }}" y1="{{ c.base_y }}" y2="{{ c.base_y }}"/>
+    </svg>{% endwith %}
+    <details><summary class="text-xs text-primary cursor-pointer">ดูเป็นตาราง</summary>
+      <table class="tbl text-sm mt-2"><thead><tr><th>เดือน</th><th class="text-right">คดี</th></tr></thead>
+        <tbody>{% for label, n, m in monthly %}<tr><td>{{ label }}</td><td class="text-right tabular-nums">{{ n }}</td></tr>{% endfor %}</tbody></table></details>
+  </section>
+
+  <section class="card p-5 flex flex-col gap-2 reveal" aria-labelledby="h-offense">
+    <h2 id="h-offense">ฐานความผิดที่พบมาก</h2><p class="text-xs text-muted">{{ offense_scope }} · 10 อันดับ</p>
+    {% if offenses %}{% with c=offense_chart %}
+    <svg class="chart" viewBox="0 0 {{ c.w }} {{ c.h }}" role="img" aria-label="จำนวนคดีตามฐานความผิด">
+      {% for r in c.rows %}
+        <text class="chart-label" x="{{ c.label_w|add:'-8' }}" y="{{ r.mid }}" text-anchor="end" dominant-baseline="middle">{{ r.short }}</text>
+        {% if r.path %}<path class="chart-bar" d="{{ r.path }}"/>{% endif %}
+        <text class="chart-value" x="{{ r.tip }}" y="{{ r.mid }}" dominant-baseline="middle">{{ r.value }}</text>
+        <rect class="chart-hit" x="0" y="{{ r.y|add:'-4' }}" width="{{ c.w }}" height="{{ r.bh|add:'8' }}" data-tip="{{ r.label }}: {{ r.value }} คดี" tabindex="0"><title>{{ r.label }}: {{ r.value }} คดี</title></rect>
+      {% endfor %}
+    </svg>{% endwith %}{% else %}<p class="empty-state text-sm">ยังไม่มีคดี</p>{% endif %}
+  </section>
+</div>
+
+<section class="card p-5 flex flex-col gap-3 reveal"><h2>รายพนักงานสอบสวน</h2>
+  <div class="overflow-x-auto rounded-card border border-border"><table class="tbl">
+    <thead><tr><th>พนักงานสอบสวน</th><th class="text-right">ยังไม่เสร็จ</th><th class="text-right">เสร็จสิ้น</th><th class="text-right">รับแจ้งในเดือน</th><th class="text-right">ครบใน 7 วัน</th><th class="text-right">เลยกำหนด</th></tr></thead>
+    <tbody>{% for o in officers %}<tr><td>{{ o.name }}</td><td class="text-right tabular-nums">{{ o.open }}</td><td class="text-right tabular-nums">{{ o.closed }}</td>
+      <td class="text-right tabular-nums">{{ o.received }}</td><td class="text-right tabular-nums">{{ o.week }}</td>
+      <td class="text-right">{% if o.overdue %}<span class="chip chip-danger text-xs">เลยกำหนด {{ o.overdue }}</span>{% else %}<span class="text-muted">0</span>{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="6" class="text-muted">ยังไม่มีคดี</td></tr>{% endfor %}</tbody></table></div>
+</section>
+
+<section class="card p-5 flex flex-col gap-3 reveal"><h2>บัญชีม้าที่พบซ้ำหลายคดี</h2>
+  <p class="text-xs text-muted">เลขบัญชีแสดงแบบปิดบัง · ดูความเชื่อมโยงรายคดีที่เมนูเครือข่ายคดี</p>
+  {% if mules %}<div class="overflow-x-auto rounded-card border border-border"><table class="tbl">
+    <thead><tr><th>เลขบัญชี</th><th>ธนาคาร</th><th class="text-right">พบในคดี</th><th class="text-right">ยอดรับรวม (บาท)</th><th>สถานะในแต่ละคดี</th></tr></thead>
+    <tbody>{% for m in mules %}<tr><td class="font-mono text-sm">{{ m.masked }}</td><td>{{ m.banks }}</td><td class="text-right"><span class="link-badge">{{ m.cases }} คดี</span></td>
+      <td class="text-right tabular-nums">{{ m.received|floatformat:"2g" }}</td><td class="text-xs">{{ m.status }}</td></tr>{% endfor %}</tbody></table></div>
+  {% else %}<p class="empty-state text-sm">ยังไม่พบบัญชีที่ใช้ในหลายคดี</p>{% endif %}
+</section>
+{% endblock %}

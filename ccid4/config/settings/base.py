@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "interviews",
     "cyber",
     "evidence",
+    "dashboard",
 ]
 
 MIDDLEWARE = [
@@ -132,9 +133,32 @@ CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_EAGER", default=False)
 CELERY_TIMEZONE = TIME_ZONE
 # With a GPU worker (docker compose --profile gpu) send audio processing to its own queue.
 CELERY_TASK_ROUTES = {"interviews.tasks.process_task": {"queue": "asr"}} if env.bool("CCID4_ASR_QUEUE", default=False) else {}
+from celery.schedules import crontab  # noqa: E402
+
 CELERY_BEAT_SCHEDULE = {
     "intake-pending": {"task": "intake.tasks.process_pending", "schedule": 60.0},
+    "deadline-alerts": {"task": "dashboard.tasks.deadline_alerts", "schedule": 3600.0},  # B8: 3 วัน · 1 วัน · ครบวัน · เลยกำหนด
+    "daily-digest": {"task": "dashboard.tasks.daily_digest", "schedule": crontab(hour=7, minute=17)},
 }
+
+# B8: สรุปรายวันทางอีเมลผ่าน SMTP ภายในหน่วย (ปิดไว้จนกว่าผู้ดูแลจะเปิด)
+DAILY_DIGEST = env.bool("CCID4_DAILY_DIGEST", default=False)
+CCID4_SITE_URL = env("CCID4_SITE_URL", default="")
+EMAIL_BACKEND = env(
+    "EMAIL_BACKEND",
+    default="django.core.mail.backends.smtp.EmailBackend" if DAILY_DIGEST else "django.core.mail.backends.console.EmailBackend",
+)
+EMAIL_HOST = env("EMAIL_HOST", default="localhost")
+EMAIL_PORT = env.int("EMAIL_PORT", default=25)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=False)
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="ccid4@localhost")
+# ช่องทางภายนอก (LINE/แชต/webhook) ส่งข้อมูลออกนอกเครือข่าย: ปิดไว้ · เปิดได้เมื่อได้รับอนุมัติ เช่น CCID4_EXTERNAL_CHANNELS=webhook
+EXTERNAL_CHANNELS = env.list("CCID4_EXTERNAL_CHANNELS", default=[])
+EXTERNAL_WEBHOOK_URL = env("CCID4_WEBHOOK_URL", default="")
+# B9: card-agent บนเครื่องผู้ใช้ (WebSocket ที่ 127.0.0.1 เท่านั้น)
+CARD_AGENT_URL = env("CCID4_CARD_AGENT_URL", default="ws://127.0.0.1:8765")
 
 UNIT_NAME = env("CCID4_UNIT_NAME", default="กองกำกับการ 1 กองบังคับการตำรวจสืบสวนสอบสวนอาชญากรรมทางเทคโนโลยี 4")
 UNIT_SHORT = env("CCID4_UNIT_SHORT", default="กก.1 บก.สอท.4")

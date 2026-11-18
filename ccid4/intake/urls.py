@@ -13,5 +13,9 @@ urlpatterns = [
     path("files/<int:file_id>/", views.intake_file, name="file"),
     path("import/", views.import_upload, name="import_upload"),
     path("import/<int:pk>/", views.import_review, name="import_review"),
+    path("case/<int:pk>/tracking/new/", views.tracking_new, name="tracking_new"),
+    path("case/<int:pk>/tracking/revoke/", views.tracking_revoke, name="tracking_revoke"),
+    path("case/<int:pk>/tracking/message/", views.tracking_message, name="tracking_message"),
+    path("case/<int:pk>/tracking/qr.png", views.tracking_qr, name="tracking_qr"),
     path("import/<int:pk>/file/", views.import_file, name="import_file"),
 ]

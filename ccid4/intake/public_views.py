@@ -184,5 +184,21 @@ def done(request, track):
 
 
 def track(request, track):
-    sub = get_object_or_404(IntakeSubmission.objects.select_related("case"), track_token=track)
-    return render(request, "intake/public/track.html", {"sub": sub, "steps": services.track_status(sub)})
+    from . import tracking
+
+    obj, case, state = tracking.resolve(track)
+    if state == "missing":
+        raise Http404
+    if state == "expired":
+        return render(request, "intake/public/track.html", {"expired": True, "reference": obj.reference}, status=410)
+    if isinstance(obj, IntakeSubmission):
+        steps, reference = services.track_status(obj), obj.reference
+    else:
+        steps, reference = tracking.steps(case, obj.created_at), obj.reference
+    resp = render(
+        request,
+        "intake/public/track.html",
+        {"steps": steps, "reference": reference, "expires_at": getattr(obj, "expires_at", None)},
+    )
+    resp["X-Robots-Tag"] = "noindex, nofollow"
+    return resp

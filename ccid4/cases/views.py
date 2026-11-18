@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -138,6 +138,27 @@ def tab_errors(forms) -> dict:
     }
 
 
+def tracking_current(case):
+    from intake.tracking import current
+
+    return current(case)
+
+
+def transfer_candidates(user, case):
+    from accounts.models import User
+
+    if not user.can("case.transfer"):
+        return []
+    qs = (
+        User.objects.filter(is_active=True, role__in=("investigator", "supervisor"))
+        .exclude(pk=case.owner_id)
+        .order_by("first_name")
+    )
+    if user.unit_group:
+        qs = qs.filter(unit_group=user.unit_group)
+    return list(qs)
+
+
 @login_required
 def case_detail(request, pk):
     base = get_case(request.user, pk)
@@ -227,6 +248,8 @@ def case_detail(request, pk):
             "linked_count": cyber_index.linked_case_count(links),
             "money": money_summary,
             "evidence_summary": evidence_summary,
+            "tracking_link": tracking_current(case),
+            "transfer_to": transfer_candidates(request.user, case),
             "errors": errors,
             "first_error_tab": next((t for t, e in errors.items() if e), ""),
             "can_reveal": request.user.can("pii.reveal"),
@@ -291,3 +314,70 @@ def case_timeline(request, pk):
         return resp
     log(request.user, "view", "case", case.pk, f"เปิด Timeline คดี {case}")
     return render(request, "cases/timeline.html", {"case": case, "items": items, "kinds": KIND_LABELS, "active": "cases"})
+
+
+@login_required
+@require_POST
+def transfer(request, pk):
+    from accounts.models import User
+
+    case = get_case(request.user, pk)
+    new_owner = User.objects.filter(pk=request.POST.get("owner") or 0).first()
+    try:
+        services.transfer_case(request.user, case, new_owner, request.POST.get("reason", ""))
+        messages.success(request, f"โอนคดีให้ {new_owner.display_name} แล้ว แจ้งเตือนเจ้าของเดิมและเจ้าของใหม่ทางกระดิ่ง")
+    except ValidationError as e:
+        messages.error(request, " ".join(e.messages))
+    if not Case.objects.visible_to(request.user).filter(pk=case.pk).exists():
+        return redirect("cases:list")
+    return redirect(case.get_absolute_url())
+
+
+# ---------------------------------------------------------------- B9: บัตรประชาชน (card-agent หรือภาพบัตร) → ตรวจทาน → เติมฟอร์ม
+@login_required
+@require_POST
+def card_ocr(request, pk):
+    from django.http import JsonResponse
+
+    from ai import llm, ocr
+
+    case = get_case(request.user, pk)
+    if not can_edit(request.user, case):
+        raise PermissionDenied
+    up = request.FILES.get("image")
+    if not up or up.size > 10 * 1024 * 1024:
+        return JsonResponse({"error": "เลือกภาพบัตร (ไม่เกิน 10 MB)"}, status=400)
+    try:
+        text = ocr.read(up.read(), up.content_type or "")
+        data = llm.complete_json("extract_id_card", text, user=request.user, case=case)
+    except llm.AIError as e:
+        return JsonResponse({"error": str(e)}, status=422)
+    from card_agent.thai_id import valid_cid
+
+    data["cid_valid"] = valid_cid(data.get("citizen_id", ""))
+    log(request.user, "ai", "person", case.pk, f"อ่านภาพบัตรประชาชนด้วย OCR ในเครื่อง คดี {case} (รอตรวจทาน)")
+    return JsonResponse({"data": data, "source": "ocr"})
+
+
+@login_required
+@require_POST
+def card_audit(request, pk):
+    """The officer accepted card data into the form (B9: both ways are written to the audit log)."""
+    from django.http import HttpResponse
+
+    from core import thai
+
+    case = get_case(request.user, pk)
+    if not can_edit(request.user, case):
+        raise PermissionDenied
+    source = "เครื่องอ่านบัตร" if request.POST.get("source") == "reader" else "ภาพบัตร (OCR)"
+    who = request.POST.get("name", "")[:200]
+    cid = thai.mask_citizen_id(request.POST.get("cid", ""))
+    log(
+        request.user,
+        "import",
+        "person",
+        case.pk,
+        f"เติมข้อมูลบุคคลจากบัตรประชาชน ({source}) {who} เลขบัตร {cid} คดี {case} · ตรวจทานแล้ว รอกดบันทึก",
+    )
+    return HttpResponse(status=204)

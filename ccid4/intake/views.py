@@ -2,6 +2,7 @@ import io
 
 import segno
 from django import forms
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -228,3 +229,78 @@ def import_file(request, pk):
     resp["Content-Security-Policy"] = "frame-ancestors 'self'"
     resp["X-Frame-Options"] = "SAMEORIGIN"
     return resp
+
+
+# ---------------------------------------------------------------- B8: ลิงก์ติดตามสถานะของผู้แจ้ง (จากหน้าคดี)
+def _tracking_case(request, pk):
+    from cases.views import can_edit, get_case
+
+    case = get_case(request.user, pk)
+    if not can_edit(request.user, case):
+        raise PermissionDenied
+    return case
+
+
+@login_required
+@require_POST
+def tracking_new(request, pk):
+    from django.core.exceptions import ValidationError
+
+    from . import tracking
+
+    case = _tracking_case(request, pk)
+    try:
+        tracking.create(case, request.user, int(request.POST.get("days") or tracking.DEFAULT_DAYS))
+        messages.success(request, "สร้างลิงก์ติดตามแล้ว ส่ง QR หรือลิงก์ให้ผู้แจ้ง (ลิงก์เดิมถูกยกเลิก)")
+    except (ValidationError, ValueError) as e:
+        messages.error(request, " ".join(getattr(e, "messages", [str(e)])))
+    return redirect(f"{case.get_absolute_url()}#investigator")
+
+
+@login_required
+@require_POST
+def tracking_revoke(request, pk):
+    from . import tracking
+
+    case = _tracking_case(request, pk)
+    t = tracking.current(case)
+    if t:
+        tracking.revoke(t, request.user)
+        messages.success(request, "ยกเลิกลิงก์ติดตามแล้ว ผู้แจ้งเปิดลิงก์เดิมไม่ได้อีก")
+    return redirect(f"{case.get_absolute_url()}#investigator")
+
+
+@login_required
+@require_POST
+def tracking_message(request, pk):
+    from django.core.exceptions import ValidationError
+
+    from . import tracking
+
+    case = _tracking_case(request, pk)
+    try:
+        tracking.publish_message(case, request.user, request.POST.get("text", ""))
+        messages.success(request, "เผยแพร่ข้อความให้ผู้แจ้งเห็นแล้ว (บันทึกในบันทึกพนักงานสอบสวน)")
+    except ValidationError as e:
+        messages.error(request, " ".join(e.messages))
+    return redirect(f"{case.get_absolute_url()}#investigator")
+
+
+@login_required
+def tracking_qr(request, pk):
+    from cases.views import get_case
+
+    from . import tracking
+
+    case = get_case(request.user, pk)
+    t = tracking.current(case)
+    if not t:
+        raise PermissionDenied
+    url = (
+        request.build_absolute_uri(f"/t/{t.token}/")
+        if not settings.PUBLIC_BASE_URL
+        else f"{settings.PUBLIC_BASE_URL.rstrip('/')}/t/{t.token}/"
+    )
+    buf = io.BytesIO()
+    segno.make(url, error="m").save(buf, kind="png", scale=8, border=3, dark="#0E1A2E")
+    return HttpResponse(buf.getvalue(), content_type="image/png")
