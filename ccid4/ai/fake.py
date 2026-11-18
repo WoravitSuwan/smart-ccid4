@@ -33,7 +33,9 @@ DEFAULT_CHARGE = {
 def _all_text(ctx) -> str:
     case = ctx.get("คดี", {})
     acc = ctx.get("ผู้กล่าวหา") or {}
-    return " ".join(str(x) for x in (case.get("เรื่อง"), case.get("พฤติการณ์"), case.get("ฐานความผิดเดิม"), acc.get("คำให้การ")) if x)
+    return " ".join(
+        str(x) for x in (case.get("เรื่อง"), case.get("พฤติการณ์"), case.get("ฐานความผิดเดิม"), acc.get("คำให้การ")) if x
+    )
 
 
 def analyze_charges(ctx, extra):
@@ -42,7 +44,9 @@ def analyze_charges(ctx, extra):
     out = dict(hit or DEFAULT_CHARGE)
     place = ctx.get("คดี", {}).get("สถานที่เกิดเหตุ") or ""
     out["jurisdiction"] = f"ศาลที่มีเขตอำนาจเหนือท้องที่เกิดเหตุ ({place})" if place else "ศาลที่มีเขตอำนาจเหนือท้องที่เกิดเหตุ"
-    out["reasoning"] = "พบถ้อยคำในข้อมูลคดีที่ตรงกับองค์ประกอบความผิดนี้" if hit else "ข้อมูลยังไม่ชัด เสนอฐานความผิดทั่วไปไว้ก่อน ควรตรวจทาน"
+    out["reasoning"] = (
+        "พบถ้อยคำในข้อมูลคดีที่ตรงกับองค์ประกอบความผิดนี้" if hit else "ข้อมูลยังไม่ชัด เสนอฐานความผิดทั่วไปไว้ก่อน ควรตรวจทาน"
+    )
     return out
 
 
@@ -52,7 +56,10 @@ def summarize_case(ctx, extra):
     parts = []
     when = " ".join(
         x
-        for x in (case.get("วันเกิดเหตุ") and f"เมื่อวันที่ {case['วันเกิดเหตุ']}", case.get("เวลาเกิดเหตุ") and f"เวลา {case['เวลาเกิดเหตุ']}")
+        for x in (
+            case.get("วันเกิดเหตุ") and f"เมื่อวันที่ {case['วันเกิดเหตุ']}",
+            case.get("เวลาเกิดเหตุ") and f"เวลา {case['เวลาเกิดเหตุ']}",
+        )
         if x
     )
     where = f"ที่ {case['สถานที่เกิดเหตุ']}" if case.get("สถานที่เกิดเหตุ") else ""
@@ -211,7 +218,9 @@ def extract_intake(ctx, extra):
     amount = txt("loss", "amount")
     out["damage_amount"] = float(amount) if re.fullmatch(r"\d+(\.\d+)?", amount or "") else _money(loss)
     if loss.strip():
-        out["properties"] = [{"name": (txt("loss", "items") or txt("loss") or "เงินที่เสียหาย")[:200], "value": out["damage_amount"]}]
+        out["properties"] = [
+            {"name": (txt("loss", "items") or txt("loss") or "เงินที่เสียหาย")[:200], "value": out["damage_amount"]}
+        ]
     acc_text = txt("accounts", "accounts") or txt("accounts")
     for line in acc_text.split("\n"):
         m = ACCOUNT.search(line)
@@ -332,7 +341,9 @@ def extract_slip(ctx, extra):
         y = y + 2500 if y < 100 else y
         y = y - 543 if y > 2400 else y
         when = f"{y:04d}-{months.index(m[2]) % 12 + 1:02d}-{int(m[1]):02d} {int(m[4] or 0):02d}:{int(m[5] or 0):02d}"
-    ref = re.search(r"(?:เลขที่รายการ|รหัสอ้างอิง|เลขอ้างอิง|ref(?:erence)?\.?(?:\s*no\.?)?)\s*:?\s*([A-Za-z0-9]{6,})", text, re.I)
+    ref = re.search(
+        r"(?:เลขที่รายการ|รหัสอ้างอิง|เลขอ้างอิง|ref(?:erence)?\.?(?:\s*no\.?)?)\s*:?\s*([A-Za-z0-9]{6,})", text, re.I
+    )
     names = re.findall(r"(?:นาย|นาง|นางสาว|น\.ส\.|บริษัท)\s*[ก-๙A-Za-z.]+(?:\s+[ก-๙A-Za-z.]+)?", text)
     return {
         "occurred_at": when, "amount": float(amount[1].replace(",", "")) if amount else 0,

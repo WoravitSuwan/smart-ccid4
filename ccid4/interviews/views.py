@@ -250,6 +250,7 @@ def review_ctx(request, s):
         "s": s, "rec": s.recording, "segments": segments, "draft": draft, "pairs": pairs, "maps": s.speaker_maps.all(),
         "role_choices": Participant.Role.choices, "rights": s.rights.all(), "rights_ok": rights_ok,
         "uncovered": set(draft.uncovered) if draft else set(), "blockers": services.blockers(s), "can_edit": services.can_edit(request.user, s),
+        "asr_profile": services.asr.model_label(),
         "reviewed": sum(1 for p in pairs if p.reviewed), "markers": s.markers.all(), "documents": s.documents.all(), "active": "interviews",
         "speaker_options": speaker_options(s),
     }  # fmt: skip

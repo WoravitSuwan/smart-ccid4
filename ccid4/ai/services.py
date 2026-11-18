@@ -65,7 +65,13 @@ def confirm_statement(st: Statement, user) -> None:
     st.confirmed_by, st.confirmed_at = user, timezone.now()
     st.save(update_fields=["confirmed_by", "confirmed_at"])
     cp = st.party
-    log(user, "confirm", "statement", st.pk, f"ยืนยันคำให้การ{cp.get_role_display()} {cp.person} ฉบับที่ {st.version} คดี {cp.case}")
+    log(
+        user,
+        "confirm",
+        "statement",
+        st.pk,
+        f"ยืนยันคำให้การ{cp.get_role_display()} {cp.person} ฉบับที่ {st.version} คดี {cp.case}",
+    )
     log_action(cp.case, user, f"ตรวจและยืนยันคำให้การ{cp.get_role_display()} {cp.person.full_name} ฉบับที่ {st.version}")
 
 

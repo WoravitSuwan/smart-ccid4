@@ -18,6 +18,13 @@
 </section>
 
 {% if can_edit and s.status != "confirmed" %}
+<details class="card p-4 reveal">
+  <summary class="cursor-pointer font-semibold">ถอดเสียงใหม่จากไฟล์ต้นฉบับ <span class="text-xs text-muted font-normal">เช่น หลังเปลี่ยนเป็นโมเดลภาษาไทยที่แม่นกว่า · ตอนนี้ใช้ {{ asr_profile }}</span></summary>
+  <form method="post" action="{% url 'interviews:reprocess' s.pk %}" class="flex flex-wrap items-center gap-3 mt-3">{% csrf_token %}
+    <span class="text-sm text-danger">ข้อความที่ถอดไว้ คำที่แก้ และร่างคำให้การรอบนี้จะถูกแทนด้วยผลใหม่ · ไฟล์เสียงต้นฉบับไม่เปลี่ยน</span>
+    <button class="btn btn-secondary btn-sm">ถอดเสียงใหม่</button>
+  </form>
+</details>
 <form method="post" action="{% url 'interviews:statement_format' s.pk %}" class="card p-4 flex flex-wrap items-center gap-3 reveal">{% csrf_token %}
   <span class="font-semibold">รูปแบบคำให้การที่จะออกเป็น Word</span>
   <label class="format-option"><input type="radio" name="format" value="narrative" {% if s.statement_format == "narrative" %}checked{% endif %}> บรรยาย (เล่าเรื่อง) <span class="text-xs text-muted">เหมาะกับผู้แจ้งความ/พยาน</span></label>

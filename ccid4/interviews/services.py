@@ -214,10 +214,10 @@ def minutes_without_progress(session) -> int | None:
 
 
 def can_restart(session) -> bool:
-    """Stuck while processing, or failed earlier (status back to transcript with an error, no segments yet)."""
+    """Stuck while processing, failed earlier, or in review (re-transcribe, e.g. with a better Thai model)."""
     if not hasattr(session, "recording"):
         return False
-    if session.status == InterviewSession.Status.PROCESSING:
+    if session.status in (InterviewSession.Status.PROCESSING, InterviewSession.Status.REVIEW):
         return True
     return session.status == InterviewSession.Status.TRANSCRIPT and bool(session.error) and not session.segments.exists()
 
@@ -226,7 +226,10 @@ def restart_processing(session, user) -> None:
     if not can_restart(session):
         raise ValidationError("เริ่มถอดเสียงใหม่ได้เฉพาะเสียงที่ปิดการบันทึกแล้วและประมวลผลค้างหรือไม่สำเร็จ")
     minutes = minutes_without_progress(session)
-    why = f"ไม่มีความคืบหน้า {minutes} นาที" if minutes is not None else "รอบก่อนไม่สำเร็จ"
+    if session.status == InterviewSession.Status.REVIEW:
+        why = f"ถอดเสียงใหม่จากหน้าตรวจด้วย {asr.model_label()}"
+    else:
+        why = f"ไม่มีความคืบหน้า {minutes} นาที" if minutes is not None else "รอบก่อนไม่สำเร็จ"
     log(user, "edit", "interview", session.pk, f"เริ่มประมวลผลเสียงใหม่ ({why})")
     start_job(session)
 
@@ -280,7 +283,7 @@ def _process(session) -> InterviewSession:
         return session
     try:
         set_step(
-            session, "asr", "running", f"เสียงยาว {thai.mmss(rec.duration)} · กำลังโหลดโมเดลและตัดช่วงเงียบ ({asr.profile()})"
+            session, "asr", "running", f"เสียงยาว {thai.mmss(rec.duration)} · กำลังโหลดโมเดลและตัดช่วงเงียบ ({asr.model_label()})"
         )
         segs = asr.transcribe(audio, progress=asr_progress(session, rec.duration))
         set_step(session, "asr", "done", f"{len(segs)} ช่วงพูด")
@@ -336,9 +339,11 @@ def asr_progress(session, duration: float):
         if total:
             note += f" ({min(99, int(done / total * 100))}%)"
         spent = now - started[0]
-        if done > 0 and total > done and spent > 20:
+        if done >= 60 and total > done:  # the model works 30 s at a time: earlier guesses swing wildly
             left = (total - done) * spent / done
             note += f" · เหลือประมาณ {max(1, round(left / 60))} นาที"
+        elif total > done:
+            note += " · กำลังคำนวณเวลาที่เหลือ"
         set_step(session, "asr", "running", f"{note} · {profile}")
 
     return report
