@@ -11,7 +11,6 @@
 
 from __future__ import annotations
 
-import importlib
 import os
 import re
 import shutil
@@ -34,9 +33,31 @@ ALIASES = {  # MIT licence; Typhoon = official Thai fine-tunes by SCB 10X, conve
 }
 NEEDS_CONVERSION = {"typhoon-ai/typhoon-whisper-turbo", "typhoon-ai/typhoon-whisper-large-v3"}  # transformers weights only
 # converting needs torch + transformers once; they go to a temporary folder of this one-off container, not the image
-CONVERTER_LIBS = Path(tempfile.gettempdir()) / "ccid4-convert-libs"
+CONVERTER_LIBS = Path(os.environ.get("CCID4_CONVERTER_LIBS") or Path(tempfile.gettempdir()) / "ccid4-convert-libs")
 TORCH_CPU_INDEX = "https://download.pytorch.org/whl/cpu"
 TRANSFORMERS = "transformers==5.23.0"  # tested with ctranslate2 4.9.0
+
+
+# Runs in its own Python (see convert): argv = libs folder ("" = none), repo, output folder, quantization.
+CONVERT_SCRIPT = """
+import sys
+from pathlib import Path
+libs, repo, out, quantization = sys.argv[1:5]
+if libs:
+    sys.path.append(libs)  # after the image's own packages: only what is missing comes from there
+from ctranslate2.converters import TransformersConverter
+from transformers import AutoFeatureExtractor, AutoTokenizer
+
+# float16 while loading halves the memory needed (a laptop gives Docker ~4 GB); int8 weights load fast on CPU
+TransformersConverter(repo, load_as_float16=True, low_cpu_mem_usage=True).convert(out, quantization=quantization, force=True)
+# faster-whisper needs the model's own tokenizer.json and preprocessor_config.json (128 mel bins for v3/turbo);
+# without them it silently falls back to whisper-tiny's, which shifts language ids and breaks the audio features
+folder = Path(out)
+if not (folder / "tokenizer.json").exists():
+    AutoTokenizer.from_pretrained(repo).backend_tokenizer.save(str(folder / "tokenizer.json"))
+if not (folder / "preprocessor_config.json").exists():
+    AutoFeatureExtractor.from_pretrained(repo).to_json_file(str(folder / "preprocessor_config.json"))
+"""
 
 
 class Command(BaseCommand):
@@ -85,15 +106,20 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("พร้อมใช้งาน ตั้งค่าใน .env แล้วเปิดระบบใหม่:"))
         self.stdout.write(f"ASR_BACKEND=whisper\nASR_MODEL={target}")
 
-    def converter_libs(self) -> None:
-        """torch + transformers for the one-time conversion (CPU build, ~300 MB) in a temporary folder."""
+    def converter_libs(self) -> Path | None:
+        """torch + transformers for the one-time conversion (CPU build, ~300 MB) in a temporary folder.
+
+        Returns the folder to add to the converting process' path, or None when this Python already has them.
+        """
         try:
             import torch  # noqa: F401
             import transformers  # noqa: F401
 
-            return
+            return None
         except ImportError:
             pass
+        if (CONVERTER_LIBS / "torch").is_dir() and (CONVERTER_LIBS / "transformers").is_dir():
+            return CONVERTER_LIBS  # installed by an earlier attempt in this container
         self.stdout.write(
             "ติดตั้งเครื่องมือแปลงโมเดลชั่วคราว (torch + transformers ประมาณ 300 MB ครั้งเดียว ลบทิ้งเองเมื่อเสร็จ)"
         )
@@ -110,48 +136,33 @@ class Command(BaseCommand):
         ]
         try:
             subprocess.run([*pip, "--index-url", TORCH_CPU_INDEX, "torch"], check=True)
-            subprocess.run([*pip, TRANSFORMERS], check=True)
+            subprocess.run([*pip, "--upgrade", TRANSFORMERS], check=True)
         except (subprocess.CalledProcessError, OSError) as e:
             raise CommandError(
                 "ติดตั้งเครื่องมือแปลงโมเดลไม่สำเร็จ — เครื่องนี้ต้องเข้าถึง download.pytorch.org และ pypi.org ได้ แล้วรันคำสั่งเดิมอีกครั้ง"
             ) from e
-        sys.path.append(str(CONVERTER_LIBS))  # after the image's own packages: only what is missing comes from here
-        importlib.invalidate_caches()
+        return CONVERTER_LIBS
 
     def convert(self, repo: str, target: Path, quantization: str) -> None:
         try:
-            from ctranslate2.converters import TransformersConverter
+            import ctranslate2  # noqa: F401
         except ImportError as e:
             raise CommandError("ไม่พบ ctranslate2 — สร้าง image ด้วย WITH_ASR=true ก่อน") from e
-        self.converter_libs()
+        libs = self.converter_libs()
         partial = target.with_name(target.name + ".partial")
         shutil.rmtree(partial, ignore_errors=True)
         self.stdout.write(f"กำลังดาวน์โหลดและแปลง {repo} → {target} (ครั้งเดียว ใช้เวลาหลายนาที)")
-        try:
-            # float16 while loading halves the memory needed (a laptop gives Docker ~4 GB); int8 weights load fast on CPU
-            TransformersConverter(repo, load_as_float16=True, low_cpu_mem_usage=True).convert(
-                str(partial), quantization=quantization, force=True
-            )
-            self.tokenizer_files(repo, partial)
-        except Exception as e:  # network, memory, wrong name: say what to do instead of a traceback
+        # A fresh Python: ctranslate2's converter checks for torch when it is first imported, so torch must be
+        # reachable before that import (in this process ctranslate2 may already be loaded without it).
+        # It also gives the memory back before the model is loaded for the check.
+        proc = subprocess.run([sys.executable, "-c", CONVERT_SCRIPT, str(libs or ""), repo, str(partial), quantization],
+                              env={**os.environ, "HF_HUB_OFFLINE": "0", "TRANSFORMERS_OFFLINE": "0"}, check=False)  # fmt: skip
+        if proc.returncode != 0 or not (partial / "model.bin").exists():
             shutil.rmtree(partial, ignore_errors=True)
-            raise CommandError(
-                f"แปลง {repo} ไม่สำเร็จ ({type(e).__name__}: {str(e)[:200]}) — ตรวจอินเทอร์เน็ต "
-                "หรือหน่วยความจำของ Docker (ปิดโปรแกรมอื่นแล้วลองใหม่)"
-            ) from e
+            why = "หน่วยความจำของ Docker ไม่พอ (ปิดโปรแกรมอื่นแล้วลองใหม่)" if proc.returncode in (-9, 137) else "ดูข้อความด้านบน"
+            raise CommandError(f"แปลง {repo} ไม่สำเร็จ (รหัส {proc.returncode}) — {why} แล้วรันคำสั่งเดิมอีกครั้ง")
         shutil.rmtree(target, ignore_errors=True)
         partial.rename(target)
-
-    @staticmethod
-    def tokenizer_files(repo: str, folder: Path) -> None:
-        """faster-whisper needs the model's own tokenizer.json and preprocessor_config.json (128 mel bins for v3/turbo);
-        without them it silently falls back to whisper-tiny's, which shifts language ids and breaks the audio features."""
-        from transformers import AutoFeatureExtractor, AutoTokenizer
-
-        if not (folder / "tokenizer.json").exists():
-            AutoTokenizer.from_pretrained(repo).backend_tokenizer.save(str(folder / "tokenizer.json"))
-        if not (folder / "preprocessor_config.json").exists():
-            AutoFeatureExtractor.from_pretrained(repo).to_json_file(str(folder / "preprocessor_config.json"))
 
     def verify_model(self, target: Path) -> None:
         """Load the model and transcribe 2 seconds of sound, the same way the worker does (catches broken installs)."""

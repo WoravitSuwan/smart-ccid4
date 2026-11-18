@@ -248,29 +248,50 @@ def test_transcribe_suppresses_other_scripts(settings, monkeypatch, tmp_path):
 
 # ---------------------------------------------------------------- Typhoon: official Thai weights converted on this machine
 def test_typhoon_is_converted_with_temporary_tools(monkeypatch, tmp_path):
+    """torch is installed after ctranslate2 may already be loaded, so the conversion runs in a fresh Python."""
     from interviews.management.commands import setup_asr
 
-    calls, converted = [], []
+    calls = []
     monkeypatch.setitem(sys.modules, "torch", None)  # not in the image: must be installed for the conversion only
-    monkeypatch.setattr(setup_asr.subprocess, "run", lambda cmd, **kw: calls.append(cmd))
+    monkeypatch.setitem(sys.modules, "ctranslate2", types.SimpleNamespace())  # in the image (faster-whisper)
+    monkeypatch.setattr(setup_asr, "CONVERTER_LIBS", tmp_path / "libs")
 
-    class Converter:
-        def __init__(self, repo, **kw):
-            converted.append((repo, kw))
+    def run(cmd, **kw):
+        calls.append(cmd)
+        if "-c" in cmd:  # the converting Python: libs, repo, output folder, quantization
+            libs, repo, out = cmd[3], cmd[4], Path(cmd[5])
+            assert libs == str(tmp_path / "libs") and repo == "typhoon-ai/typhoon-whisper-turbo"
+            assert kw["env"]["HF_HUB_OFFLINE"] == "0"
+            out.mkdir(parents=True)
+            (out / "model.bin").write_bytes(b"x")
+        return subprocess.CompletedProcess(cmd, 0)
 
-        def convert(self, out, **kw):
-            Path(out).mkdir(parents=True)
-            (Path(out) / "model.bin").write_bytes(b"x")
-
-    monkeypatch.setitem(sys.modules, "ctranslate2.converters", types.SimpleNamespace(TransformersConverter=Converter))
-    monkeypatch.setattr(setup_asr.Command, "tokenizer_files", staticmethod(lambda repo, folder: None))
+    monkeypatch.setattr(setup_asr.subprocess, "run", run)
     monkeypatch.setattr(setup_asr.Command, "verify_model", lambda self, target: None)
     call_command("setup_asr", model="typhoon-turbo", out=str(tmp_path))
-    assert any("download.pytorch.org/whl/cpu" in c for c in calls[0]) and "torch" in calls[0]
-    assert setup_asr.TRANSFORMERS in calls[1]
-    assert converted == [("typhoon-ai/typhoon-whisper-turbo", {"load_as_float16": True, "low_cpu_mem_usage": True})]
+    assert TORCH_INDEX in calls[0] and "torch" in calls[0] and setup_asr.TRANSFORMERS in calls[1]
+    script = calls[2][2]
+    assert script.index("sys.path.append(libs)") < script.index("from ctranslate2.converters import")
+    assert "load_as_float16=True" in script and "low_cpu_mem_usage=True" in script
     assert (tmp_path / "asr" / "typhoon-turbo" / "model.bin").exists()
     assert not (tmp_path / "asr" / "typhoon-turbo.partial").exists()
+
+
+def test_conversion_out_of_memory_is_explained(monkeypatch, tmp_path):
+    from interviews.management.commands import setup_asr
+
+    monkeypatch.setattr(setup_asr, "CONVERTER_LIBS", tmp_path / "libs")
+    (tmp_path / "libs" / "torch").mkdir(parents=True)  # already installed by an earlier attempt: no pip
+    (tmp_path / "libs" / "transformers").mkdir()
+    monkeypatch.setitem(sys.modules, "torch", None)
+    monkeypatch.setitem(sys.modules, "ctranslate2", types.SimpleNamespace())
+    monkeypatch.setattr(setup_asr.subprocess, "run", lambda cmd, **kw: subprocess.CompletedProcess(cmd, -9))
+    with pytest.raises(CommandError, match="หน่วยความจำ"):
+        call_command("setup_asr", model="typhoon-turbo", out=str(tmp_path))
+    assert not (tmp_path / "asr" / "typhoon-turbo").exists()
+
+
+TORCH_INDEX = "https://download.pytorch.org/whl/cpu"
 
 
 # ---------------------------------------------------------------- re-transcribe from the review page · honest numbers
