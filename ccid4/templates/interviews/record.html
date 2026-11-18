@@ -17,6 +17,25 @@
       <span class="chip chip-muted" data-rec-state role="status">พร้อมบันทึก</span>
     </div>
     <div class="level-meter" aria-hidden="true"><span data-level></span></div>
+    {% if can_edit %}
+    <div class="flex flex-wrap items-end gap-3">
+      <label class="flex-1 min-w-[220px]"><span class="label">ไมโครโฟน</span>
+        <select class="input" data-mic-select><option value="">ไมค์หลักของเครื่อง</option></select></label>
+      <p class="text-xs text-muted flex-1 min-w-[220px]" data-mic-name aria-live="polite">กด "ทดสอบไมค์ 5 วินาที" แล้วพูดใส่ไมค์ ระบบจะบอกว่าได้ยินเสียงหรือไม่ (โน้ตบุ๊กมักมีไมค์หลายตัว เลือกได้ที่ช่องนี้)</p>
+    </div>
+    <div data-mic-help hidden>
+      <div class="card demo-warning p-4 text-sm flex flex-col gap-2" role="alert">
+        <b data-mic-help-reason>ไม่ได้ยินเสียงจากไมค์</b>
+        <ol class="list-decimal pl-5 flex flex-col gap-1">
+          <li>เลือกไมค์ตัวอื่นในช่อง "ไมโครโฟน" แล้วกดทดสอบใหม่ เช่น ไมค์ในตัวเครื่อง ไมค์หูฟัง หรือไมค์กล้อง</li>
+          <li>ดูว่าไม่ได้กดปุ่มปิดไมค์ (รูปไมค์ขีดฆ่า มักอยู่ที่ F4 หรือ F8 หรือบนสายหูฟัง)</li>
+          <li>Windows: Settings → Privacy &amp; security → Microphone → เปิด "Microphone access" และ "Let desktop apps access your microphone"</li>
+          <li>Windows: Settings → System → Sound → Input → เลือกไมค์ตัวที่ใช้ พูดแล้วดูว่าแถบทดสอบขยับ และ Input volume ไม่เป็น 0</li>
+          <li>ปิดโปรแกรมอื่นที่ใช้ไมค์อยู่ เช่น Zoom, Teams, LINE แล้วโหลดหน้านี้ใหม่</li>
+        </ol>
+      </div>
+    </div>
+    {% endif %}
     <p class="text-sm" data-uploaded-text>{% if status.seconds %}บันทึกขึ้นเซิร์ฟเวอร์แล้ว {{ status.seconds|floatformat:0 }} วินาที · กด "บันทึกต่อ" เพื่ออัดต่อจากเดิม{% else %}ยังไม่มีเสียงบนเซิร์ฟเวอร์{% endif %}</p>
     {% if can_edit %}
     <div class="flex flex-wrap gap-2">

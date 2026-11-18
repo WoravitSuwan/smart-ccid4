@@ -14,6 +14,7 @@ urlpatterns = [
     path("<int:pk>/marker/", views.marker, name="marker"),
     path("<int:pk>/close/", views.close, name="close"),
     path("<int:pk>/process/", views.process_page, name="process"),
+    path("<int:pk>/reprocess/", views.reprocess, name="reprocess"),
     path("<int:pk>/transcript/", views.import_transcript, name="import_transcript"),
     path("<int:pk>/audio/", views.audio, name="audio"),
     path("<int:pk>/review/", views.review, name="review"),

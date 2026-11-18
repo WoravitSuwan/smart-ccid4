@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import tempfile
 import time
+import uuid
 from pathlib import Path
 
 from django.conf import settings
@@ -83,7 +84,9 @@ def start(user, party, place: str, people: list[tuple[str, str, str]]) -> Interv
     for role, name, language in people:
         if name.strip() and role in Participant.Role.values:
             Participant.objects.create(session=s, role=role, name=name.strip()[:200], language=language.strip()[:60])
-    log(user, "create", "interview", s.pk, f"สร้างการสอบปากคำด้วยเสียง {party.get_role_display()} {party.person} คดี {party.case}")
+    log(
+        user, "create", "interview", s.pk, f"สร้างการสอบปากคำด้วยเสียง {party.get_role_display()} {party.person} คดี {party.case}"
+    )
     return s
 
 
@@ -166,16 +169,53 @@ def close_recording(session, user) -> Recording:
     for c in session.chunks.all():
         c.file.delete(save=False)
     session.chunks.all().delete()
-    session.status = InterviewSession.Status.PROCESSING
-    session.progress = [
-        {"key": k, "label": label, "state": "done" if k == "merge" else "waiting", "note": ""} for k, label in STEPS
-    ]
-    session.save(update_fields=["status", "progress"])
     log(user, "edit", "interview", session.pk, f"ปิดการบันทึกเสียง ยาว {rec.duration:.0f} วินาที SHA-256 {digest}")
+    start_job(session)
+    return rec
+
+
+def start_job(session) -> str:
+    """Queue the speech pipeline. A new job id makes any older run of this session stop at its next step."""
+    session.status = InterviewSession.Status.PROCESSING
+    session.error = ""
+    session.job = uuid.uuid4().hex
+    now = timezone.now().isoformat(timespec="seconds")
+    session.progress = [
+        {"key": k, "label": label, "state": "done" if k == "merge" else "waiting", "note": "", "at": now} for k, label in STEPS
+    ]
+    session.save(update_fields=["status", "error", "job", "progress"])
     from .tasks import process_task
 
-    transaction.on_commit(lambda: process_task.delay(session.pk))
-    return rec
+    job = session.job
+    transaction.on_commit(lambda: process_task.delay(session.pk, job))
+    return job
+
+
+STALL_MINUTES = 5  # no progress for this long while "processing": the worker probably stopped
+
+
+def minutes_without_progress(session) -> int | None:
+    """Minutes since the pipeline last reported anything (None when it is not processing)."""
+    if session.status != InterviewSession.Status.PROCESSING:
+        return None
+    stamps = [st.get("at") for st in session.progress or [] if st.get("at")]
+    last = max(stamps) if stamps else None
+    if last:
+        from datetime import datetime
+
+        last_at = datetime.fromisoformat(last)
+    else:  # processed by an older version that kept no timestamps
+        rec = getattr(session, "recording", None)
+        last_at = rec.closed_at if rec else session.created_at
+    return max(0, int((timezone.now() - last_at).total_seconds() // 60))
+
+
+def restart_processing(session, user) -> None:
+    if session.status != InterviewSession.Status.PROCESSING or not hasattr(session, "recording"):
+        raise ValidationError("เริ่มถอดเสียงใหม่ได้เฉพาะเสียงที่ปิดการบันทึกแล้วและยังประมวลผลไม่เสร็จ")
+    minutes = minutes_without_progress(session)
+    log(user, "edit", "interview", session.pk, f"เริ่มประมวลผลเสียงใหม่ (ไม่มีความคืบหน้า {minutes} นาที)")
+    start_job(session)
 
 
 def integrity_ok(rec: Recording) -> bool:
@@ -183,15 +223,31 @@ def integrity_ok(rec: Recording) -> bool:
 
 
 # ---------------------------------------------------------------- pipeline
+class Superseded(Exception):
+    """The officer started this session's processing again: this older run stops quietly."""
+
+
 def set_step(session, key, state, note=""):
+    if session.job and not InterviewSession.objects.filter(pk=session.pk, job=session.job).exists():
+        raise Superseded
+    now = timezone.now().isoformat(timespec="seconds")
     for step in session.progress:
         if step["key"] == key:
-            step["state"], step["note"] = state, note
+            step["state"], step["note"], step["at"] = state, note, now
     session.save(update_fields=["progress"])
 
 
-def process(session_id: int) -> InterviewSession:
+def process(session_id: int, job: str | None = None) -> InterviewSession:
     session = InterviewSession.objects.select_related("party", "recording").get(pk=session_id)
+    if job and session.job != job:
+        return session  # a newer run was started after this one was queued
+    try:
+        return _process(session)
+    except Superseded:
+        return session
+
+
+def _process(session) -> InterviewSession:
     rec = session.recording
     if not rec.for_asr:
         with tempfile.TemporaryDirectory(prefix="ccid4-asr-") as tmp:
@@ -210,12 +266,16 @@ def process(session_id: int) -> InterviewSession:
         session.save(update_fields=["status"])
         return session
     try:
-        set_step(session, "asr", "running", f"เสียงยาว {thai.mmss(rec.duration)} · เริ่มถอดเสียง")
+        set_step(
+            session, "asr", "running", f"เสียงยาว {thai.mmss(rec.duration)} · กำลังโหลดโมเดลและตัดช่วงเงียบ ({asr.profile()})"
+        )
         segs = asr.transcribe(audio, progress=asr_progress(session, rec.duration))
         set_step(session, "asr", "done", f"{len(segs)} ช่วงพูด")
         set_step(session, "diarize", "running")
         turns = asr.diarize(audio)
-        set_step(session, "diarize", "done" if turns else "skipped", "" if turns else "ไม่มีโมเดลแยกผู้พูด · กำหนดผู้พูดเองในหน้าตรวจ")
+        set_step(
+            session, "diarize", "done" if turns else "skipped", "" if turns else "ไม่มีโมเดลแยกผู้พูด · กำหนดผู้พูดเองในหน้าตรวจ"
+        )
         segs = asr.assign_speakers(segs, turns)
         if not turns:  # no speaker model: questions and procedure → officer, the rest → the person giving the statement
             for seg in segs:
@@ -231,17 +291,31 @@ def process(session_id: int) -> InterviewSession:
 
 
 def asr_progress(session, duration: float):
-    """Report ถอดเสียงแล้ว mm:ss / mm:ss (xx%) at most every 10 seconds of wall time."""
+    """Report ถอดเสียงแล้ว mm:ss จาก mm:ss (xx%) · เหลือประมาณ N นาที, at most every 10 seconds of wall time."""
     last = [0.0]
+    started = [None]  # wall time when decoding began (after the model loaded)
+    profile = asr.profile()
 
     def report(done: float, total: float):
         total = total or duration
         now = time.monotonic()
+        if started[0] is None:
+            started[0] = now
+            set_step(session, "asr", "running",
+                     f"เริ่มถอดเสียง {thai.mmss(total)} ({profile}) · ช่วงแรกอาจใช้เวลาสักครู่")  # fmt: skip
+            last[0] = now
+            return
         if now - last[0] < 10:
             return
         last[0] = now
-        pct = f" ({min(99, int(done / total * 100))}%)" if total else ""
-        set_step(session, "asr", "running", f"ถอดเสียงแล้ว {thai.mmss(done)} จาก {thai.mmss(total)}{pct}")
+        note = f"ถอดเสียงแล้ว {thai.mmss(done)} จาก {thai.mmss(total)}"
+        if total:
+            note += f" ({min(99, int(done / total * 100))}%)"
+        spent = now - started[0]
+        if done > 0 and total > done and spent > 20:
+            left = (total - done) * spent / done
+            note += f" · เหลือประมาณ {max(1, round(left / 60))} นาที"
+        set_step(session, "asr", "running", f"{note} · {profile}")
 
     return report
 
@@ -336,7 +410,10 @@ def build_draft(session, user=None) -> StatementDraft:
     flagged = sum(1 for p in pairs if p.flags)
     set_step(session, "draft", "done", f"{len(pairs)} คู่ ({'AI' if source == 'ai' else 'จับคู่ตามคำพูด'})")
     set_step(
-        session, "verify", "done" if not flagged else "warning", f"ติดธง {flagged} คู่ · ช่วงที่ไม่อยู่ในคำตอบ {len(draft.uncovered)}"
+        session,
+        "verify",
+        "done" if not flagged else "warning",
+        f"ติดธง {flagged} คู่ · ช่วงที่ไม่อยู่ในคำตอบ {len(draft.uncovered)}",
     )
     return draft
 

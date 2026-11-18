@@ -148,9 +148,24 @@ def process_page(request, pk):
         if request.headers.get("HX-Request"):
             return HttpResponse(status=204, headers={"HX-Redirect": f"/interviews/{s.pk}/review/"})
         return redirect("interviews:review", pk=s.pk)
-    ctx = {"s": s, "rec": getattr(s, "recording", None), "demo": settings.DEMO_MODE, "active": "interviews"}
+    idle = services.minutes_without_progress(s)
+    ctx = {"s": s, "rec": getattr(s, "recording", None), "demo": settings.DEMO_MODE, "active": "interviews",
+           "idle": idle, "stalled": idle is not None and idle >= services.STALL_MINUTES,
+           "can_edit": services.can_edit(request.user, s)}  # fmt: skip
     tpl = "interviews/_progress.html" if request.headers.get("HX-Request") else "interviews/process.html"
     return render(request, tpl, ctx)
+
+
+@login_required
+@require_POST
+def reprocess(request, pk):
+    s = session_for(request, pk, edit=True)
+    try:
+        services.restart_processing(s, request.user)
+        messages.success(request, "เริ่มถอดเสียงใหม่แล้ว")
+    except ValidationError as e:
+        messages.error(request, " ".join(e.messages))
+    return redirect("interviews:process", pk=s.pk)
 
 
 @login_required
@@ -420,7 +435,9 @@ def settings_page(request):
             default_storage.save(documents.CUSTOM_TEMPLATE, ContentFile(data))
             unknown = [n for n in names if n not in documents.PLACEHOLDERS and not n.startswith("qa.")]
             log(request.user, "edit", "interview_settings", "", "อัปโหลดแบบฟอร์มคำให้การจากเสียง")
-            messages.success(request, "ใช้แบบฟอร์มใหม่แล้ว" + (f" · ตัวแทนที่ระบบไม่รู้จัก: {', '.join(unknown)}" if unknown else ""))
+            messages.success(
+                request, "ใช้แบบฟอร์มใหม่แล้ว" + (f" · ตัวแทนที่ระบบไม่รู้จัก: {', '.join(unknown)}" if unknown else "")
+            )
         else:
             conf.rights_script = request.POST.get("rights_script", conf.rights_script)
             conf.retention_days = int(request.POST.get("retention_days") or conf.retention_days)

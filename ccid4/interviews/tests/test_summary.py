@@ -92,7 +92,9 @@ def test_engine_drops_an_empty_repeat_table_and_splits_story_paragraphs():
 def complainant(investigator, tmp_path, django_capture_on_commit_callbacks):
     if not HAS_FFMPEG:
         pytest.skip("ffmpeg not installed")
-    s = services.quick_start(investigator, "นางสาวทดลอง ใจดี", "0800000000", "online", "ถูกหลอกซื้อโทรศัพท์ออนไลน์", "ห้องสอบสวน 2")
+    s = services.quick_start(
+        investigator, "นางสาวทดลอง ใจดี", "0800000000", "online", "ถูกหลอกซื้อโทรศัพท์ออนไลน์", "ห้องสอบสวน 2"
+    )
     services.add_chunk(s, investigator, 1, 1, tone(tmp_path / "a.webm", 5), 5)
     with django_capture_on_commit_callbacks(execute=True):
         services.close_recording(s, investigator)
@@ -167,7 +169,14 @@ def test_quick_start_screen(client_inv):
 @pytest.mark.django_db
 def test_review_screen_summary_story_and_words(complainant, client_inv, investigator):
     html = client_inv.get(reverse("interviews:review", args=[complainant.pk])).content.decode()
-    for text in ("สรุปใจความสำคัญ", "เล่าเรื่อง", "คำที่พบบ่อย", 'data-kw="ผู้ขาย"', "บรรยาย (เล่าเรื่อง)", "ร่างโดย AI – รอตรวจ"):
+    for text in (
+        "สรุปใจความสำคัญ",
+        "เล่าเรื่อง",
+        "คำที่พบบ่อย",
+        'data-kw="ผู้ขาย"',
+        "บรรยาย (เล่าเรื่อง)",
+        "ร่างโดย AI – รอตรวจ",
+    ):
         assert text in html
     draft = services.current_draft(complainant)
     r = client_inv.post(
@@ -192,7 +201,10 @@ def test_demo_warning_on_the_recording_page(client_inv, investigator, settings):
     settings.DEMO_MODE = True
     assert "ห้ามบันทึกเสียงหรือข้อมูลของผู้แจ้งจริง" in client_inv.get(reverse("interviews:record", args=[s.pk])).content.decode()
     settings.DEMO_MODE = False
-    assert "ห้ามบันทึกเสียงหรือข้อมูลของผู้แจ้งจริง" not in client_inv.get(reverse("interviews:record", args=[s.pk])).content.decode()
+    assert (
+        "ห้ามบันทึกเสียงหรือข้อมูลของผู้แจ้งจริง"
+        not in client_inv.get(reverse("interviews:record", args=[s.pk])).content.decode()
+    )
 
 
 # ---------------------------------------------------------------- long recordings: progress while the model works
@@ -226,6 +238,6 @@ def test_transcribe_reports_progress_and_uses_the_cpu_settings(monkeypatch, sett
     ticks = []
     out = asr.transcribe(tmp_path / "a.flac", progress=lambda done, total: ticks.append((done, total)))
     assert [s["text"] for s in out] == ["สวัสดีครับ", "ตอนท้าย"] and out[1]["words"][0]["s"] == 1800
-    assert ticks == [(30.0, 3600.0), (1830.0, 3600.0)]
+    assert ticks == [(0.0, 3600.0), (30.0, 3600.0), (1830.0, 3600.0)]  # 0 = model ready, decoding starts
     assert seen["init"] == ("/models/asr/large-v3-turbo", {"device": "cpu", "compute_type": "int8", "cpu_threads": 4})
     assert seen["kw"]["beam_size"] == 1 and seen["kw"]["language"] == "th" and seen["kw"]["vad_filter"]

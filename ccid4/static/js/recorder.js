@@ -16,29 +16,131 @@
     uploadedText: $('[data-uploaded-text]'), start: $('[data-rec-start]'), pause: $('[data-rec-pause]'), stop: $('[data-rec-stop]'),
     close: $('[data-rec-close]'), test: $('[data-mic-test]'), testAudio: $('[data-test-audio]'), markerAdd: $('[data-marker-add]'),
     markerNote: $('[data-marker-note]'), markers: $('[data-markers]'),
+    micSelect: $('[data-mic-select]'), micName: $('[data-mic-name]'), help: $('[data-mic-help]'), helpReason: $('[data-mic-help-reason]'),
   };
   const setState = (text, tone) => { ui.stateChip.textContent = text; ui.stateChip.className = `chip chip-${tone}`; };
   const elapsed = () => (state.running ? (performance.now() - state.startedAt - state.pausedFor - (state.paused ? performance.now() - state.pauseStart : 0)) / 1000 : 0);
   const total = () => state.uploaded + elapsed();
 
-  async function getStream() {
-    if (state.stream) return state.stream;
-    state.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: true, autoGainControl: true } });
-    const ctx = new AudioContext();
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = 512;
-    ctx.createMediaStreamSource(state.stream).connect(analyser);
-    const data = new Uint8Array(analyser.fftSize);
-    const draw = () => {
-      analyser.getByteTimeDomainData(data);
-      let peak = 0;
-      for (const v of data) peak = Math.max(peak, Math.abs(v - 128));
-      ui.level.style.width = `${Math.min(100, (peak / 128) * 160)}%`;
-      requestAnimationFrame(draw);
-    };
-    draw();
-    return state.stream;
+  // ---------------------------------------------------------------- microphone: choose, listen, diagnose
+  const MIC_KEY = 'ccid4.mic';
+  const SILENT = 0.01; // peak under 1% of full scale (about -40 dB) = nothing reached the microphone
+  const QUIET_WARN = 30; // seconds of silence while recording before we warn
+  const audio = { ctx: null, source: null, analyser: null, data: null, peak: 0, maxPeak: 0, lastSoundAt: performance.now() };
+  const savedMic = () => { try { return localStorage.getItem(MIC_KEY) || ''; } catch (e) { return ''; } };
+  const micLabel = () => { const t = state.stream && state.stream.getAudioTracks()[0]; return (t && t.label) || 'ไมค์หลักของเครื่อง'; };
+
+  function micHelp(reason) {
+    if (!ui.help) return;
+    ui.help.hidden = !reason;
+    if (reason) ui.helpReason.textContent = reason;
   }
+
+  async function refreshDevices() {
+    if (!ui.micSelect || !navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+    const inputs = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audioinput');
+    const current = ui.micSelect.value || savedMic();
+    const def = inputs.find((d) => d.deviceId === 'default');
+    const first = new Option(def && def.label ? `ไมค์หลักของเครื่อง (${def.label.replace(/^Default - /, '')})` : 'ไมค์หลักของเครื่อง', '');
+    const others = inputs.filter((d) => d.deviceId && !['default', 'communications'].includes(d.deviceId))
+      .map((d, i) => new Option(d.label || `ไมโครโฟน ${i + 1}`, d.deviceId));
+    ui.micSelect.replaceChildren(first, ...others);
+    ui.micSelect.value = others.some((o) => o.value === current) ? current : '';
+  }
+
+  function listen(stream) {
+    if (!audio.ctx) {
+      audio.ctx = new AudioContext();
+      audio.analyser = audio.ctx.createAnalyser();
+      audio.analyser.fftSize = 1024;
+      audio.data = new Float32Array(audio.analyser.fftSize);
+      const draw = () => {
+        audio.analyser.getFloatTimeDomainData(audio.data);
+        let peak = 0;
+        for (const v of audio.data) peak = Math.max(peak, Math.abs(v));
+        audio.peak = peak;
+        audio.maxPeak = Math.max(audio.maxPeak, peak);
+        if (peak >= SILENT) audio.lastSoundAt = performance.now();
+        ui.level.style.width = `${Math.min(100, peak * 160)}%`;
+        requestAnimationFrame(draw);
+      };
+      draw();
+    }
+    if (audio.source) audio.source.disconnect();
+    audio.source = audio.ctx.createMediaStreamSource(stream);
+    audio.source.connect(audio.analyser);
+    if (audio.ctx.state === 'suspended') audio.ctx.resume().catch(() => {});
+  }
+
+  async function getStream() {
+    const want = ui.micSelect ? ui.micSelect.value : '';
+    const live = state.stream && state.stream.getAudioTracks().some((t) => t.readyState === 'live');
+    if (live && state.streamDevice === want) return state.stream;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      const e = new Error('insecure'); e.name = 'InsecureContext'; throw e;
+    }
+    const constraints = { echoCancellation: false, noiseSuppression: true, autoGainControl: true };
+    if (want) constraints.deviceId = { exact: want };
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: constraints });
+    } catch (e) {
+      if (want && (e.name === 'OverconstrainedError' || e.name === 'NotFoundError')) { // the chosen mic was unplugged
+        ui.micSelect.value = '';
+        return getStream();
+      }
+      throw e;
+    }
+    if (state.stream) state.stream.getTracks().forEach((t) => t.stop());
+    state.stream = stream; state.streamDevice = want;
+    const track = stream.getAudioTracks()[0];
+    if (track) {
+      track.addEventListener('mute', () => { setState('ไมค์ถูกปิดเสียง', 'warning'); micHelp('ระบบปิดเสียงไมค์ตัวนี้อยู่ (ปุ่มปิดไมค์บนคีย์บอร์ด/หูฟัง หรือการตั้งค่าของ Windows)'); });
+      track.addEventListener('unmute', () => { micHelp(''); setState(state.running ? 'กำลังบันทึก' : 'พร้อมบันทึก', state.running ? 'danger' : 'muted'); });
+      track.addEventListener('ended', () => { setState('ไมค์หลุด', 'danger'); micHelp('ไมค์หลุดหรือถูกถอดออก เสียบใหม่ เลือกไมค์ แล้วกด "หยุด" และ "บันทึกต่อ"'); });
+    }
+    if (ui.micName) ui.micName.textContent = `ไมค์ที่ใช้: ${micLabel()}`;
+    listen(stream);
+    refreshDevices().catch(() => {}); // device names are only visible after permission is given
+    return stream;
+  }
+
+  function micFailed(e) {
+    const why = {
+      InsecureContext: 'เบราว์เซอร์ใช้ไมค์ได้เฉพาะเมื่อเปิดด้วย http://localhost:8000 หรือ https:// (ไม่ใช่เลข IP)',
+      NotAllowedError: 'เบราว์เซอร์ไม่ได้รับอนุญาตให้ใช้ไมค์: กดไอคอนหน้าช่องที่อยู่ (localhost:8000) → Microphone → Allow แล้วโหลดหน้าใหม่ · ถ้าอนุญาตแล้วให้ดูข้อ 3',
+      SecurityError: 'เบราว์เซอร์ไม่ได้รับอนุญาตให้ใช้ไมค์: กดไอคอนหน้าช่องที่อยู่ → Microphone → Allow แล้วโหลดหน้าใหม่',
+      NotFoundError: 'ไม่พบไมโครโฟนในเครื่องนี้ เสียบไมค์หรือหูฟังที่มีไมค์ แล้วโหลดหน้าใหม่',
+      NotReadableError: 'เปิดไมค์ไม่ได้: มีโปรแกรมอื่นใช้ไมค์อยู่ หรือ Windows ไม่อนุญาตให้ใช้ไมค์ (ดูข้อ 3 และ 5)',
+    }[e && e.name] || `เปิดไมค์ไม่ได้ (${(e && (e.name || e.message)) || 'ไม่ทราบสาเหตุ'})`;
+    setState('ใช้ไมค์ไม่ได้', 'danger');
+    micHelp(why);
+  }
+
+  ui.micSelect && ui.micSelect.addEventListener('change', async () => {
+    try { localStorage.setItem(MIC_KEY, ui.micSelect.value); } catch (e) { /* storage blocked */ }
+    micHelp('');
+    if (state.stream) { try { await getStream(); setState('เปลี่ยนไมค์แล้ว กดทดสอบไมค์อีกครั้ง', 'muted'); } catch (e) { micFailed(e); } }
+  });
+  if (ui.micSelect && savedMic()) { // until permission is given the browser hides device names
+    ui.micSelect.add(new Option('ไมค์ที่เลือกไว้ครั้งก่อน', savedMic()));
+    ui.micSelect.value = savedMic();
+  }
+
+  // while recording: warn (do not stop) when nothing reaches the microphone for a while
+  document.addEventListener('visibilitychange', () => { audio.lastSoundAt = performance.now(); });
+  setInterval(() => {
+    if (!state.running || state.paused || document.visibilityState !== 'visible') return;
+    const quiet = (performance.now() - Math.max(audio.lastSoundAt, state.resumedAt || 0)) / 1000;
+    if (quiet >= QUIET_WARN && !state.quietWarned) {
+      state.quietWarned = true;
+      setState(`ไม่มีเสียงเข้าไมค์ ${QUIET_WARN} วินาที`, 'warning');
+      micHelp(`ระหว่างบันทึกไม่มีเสียงเข้าไมค์ "${micLabel()}" เลย ${QUIET_WARN} วินาที (ยังบันทึกอยู่) · ถ้ามีคนพูดอยู่ให้ตรวจไมค์ตามนี้`);
+    } else if (quiet < QUIET_WARN && state.quietWarned) {
+      state.quietWarned = false;
+      micHelp(''); setState('กำลังบันทึก', 'danger');
+    }
+  }, 1000);
 
   function upload(blob, seconds) {
     state.seq += 1;
@@ -78,7 +180,7 @@
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && state.running) keepAwake(); });
 
   async function start() {
-    try { await getStream(); } catch (e) { setState('ใช้ไมค์ไม่ได้ (ต้องเปิดผ่าน HTTPS และอนุญาตไมค์)', 'danger'); return; }
+    try { await getStream(); } catch (e) { micFailed(e); return; }
     const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : '';
     state.recorder = new MediaRecorder(state.stream, mime ? { mimeType: mime, audioBitsPerSecond: 64000 } : {});
     state.recorder.ondataavailable = (e) => {
@@ -89,13 +191,14 @@
     };
     state.recorder.start(5000);
     keepAwake();
-    state.running = true; state.paused = false; state.startedAt = state.lastChunkAt = performance.now(); state.pausedFor = 0;
+    state.running = true; state.paused = false; state.startedAt = state.lastChunkAt = state.resumedAt = performance.now(); state.pausedFor = 0;
+    if (ui.micSelect) ui.micSelect.disabled = true;
     ui.dot.classList.add('on'); setState('กำลังบันทึก', 'danger');
     ui.start.disabled = true; ui.pause.disabled = false; ui.stop.disabled = false; ui.markerAdd.disabled = false; if (ui.close) ui.close.disabled = true;
   }
   function pause() {
     if (!state.recorder) return;
-    if (state.paused) { state.recorder.resume(); state.paused = false; state.pausedFor += performance.now() - state.pauseStart; ui.pause.textContent = 'พัก'; setState('กำลังบันทึก', 'danger'); ui.dot.classList.add('on'); }
+    if (state.paused) { state.recorder.resume(); state.paused = false; state.resumedAt = performance.now(); state.pausedFor += performance.now() - state.pauseStart; ui.pause.textContent = 'พัก'; setState('กำลังบันทึก', 'danger'); ui.dot.classList.add('on'); }
     else { state.recorder.pause(); state.paused = true; state.pauseStart = performance.now(); ui.pause.textContent = 'บันทึกต่อ'; setState('พักการบันทึก', 'warning'); ui.dot.classList.remove('on'); }
   }
   function stop() {
@@ -107,6 +210,8 @@
       state.uploaded = total(); state.running = false; state.paused = false; state.take += 1; state.seq = 0;
       ui.dot.classList.remove('on'); setState('หยุดแล้ว (บันทึกต่อได้)', 'muted'); letSleep();
       ui.start.disabled = false; ui.start.lastChild.textContent = 'บันทึกต่อ'; ui.pause.disabled = true; ui.stop.disabled = true; ui.markerAdd.disabled = true;
+      if (ui.micSelect) ui.micSelect.disabled = false;
+      state.quietWarned = false; micHelp('');
       if (ui.close) ui.close.disabled = false;
     });
   }
@@ -120,12 +225,31 @@
     if (r.ok) { const m = await r.json(); const li = document.createElement('li'); li.className = 'chip chip-muted'; li.textContent = `${Math.round(m.at)} วิ · ${m.note}`; ui.markers.appendChild(li); ui.markerNote.value = ''; }
   });
   ui.test && ui.test.addEventListener('click', async () => {
-    try { await getStream(); } catch (e) { setState('ใช้ไมค์ไม่ได้', 'danger'); return; }
+    micHelp('');
+    try { await getStream(); } catch (e) { micFailed(e); return; }
+    ui.test.disabled = true;
+    ui.testAudio.hidden = true;
+    audio.maxPeak = 0;
     const parts = [];
     const rec = new MediaRecorder(state.stream);
-    rec.ondataavailable = (e) => parts.push(e.data);
-    rec.onstop = () => { ui.testAudio.src = URL.createObjectURL(new Blob(parts)); ui.testAudio.hidden = false; ui.testAudio.play(); setState('ฟังเสียงทดสอบ', 'muted'); };
-    rec.start(); setState('กำลังทดสอบไมค์ 5 วินาที…', 'warning');
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) parts.push(e.data); };
+    rec.onstop = () => {
+      ui.test.disabled = false;
+      const track = state.stream.getAudioTracks()[0];
+      if (audio.maxPeak < SILENT) {
+        setState('ไม่ได้ยินเสียงจากไมค์', 'danger');
+        micHelp(track && track.muted
+          ? `ระบบปิดเสียงไมค์ "${micLabel()}" อยู่ (ปุ่มปิดไมค์บนคีย์บอร์ด/หูฟัง หรือการตั้งค่าของ Windows)`
+          : `ทดสอบ 5 วินาทีแล้ว ไมค์ "${micLabel()}" ไม่ได้รับเสียงเลย (พูดใส่ไมค์ระหว่างทดสอบ)`);
+        return;
+      }
+      ui.testAudio.src = URL.createObjectURL(new Blob(parts, { type: rec.mimeType || 'audio/webm' }));
+      ui.testAudio.hidden = false;
+      ui.testAudio.play().catch(() => {});
+      setState(`ไมค์ใช้ได้ · ดังสุด ${Math.round(Math.min(1, audio.maxPeak) * 100)}%`, 'success');
+      if (ui.micName) ui.micName.textContent = `ไมค์ที่ใช้: ${micLabel()} · กำลังเล่นเสียงที่อัดให้ฟัง ถ้าไม่ได้ยินให้เปิดลำโพงหรือเพิ่มเสียงของเครื่อง (ไม่มีผลต่อการบันทึก)`;
+    };
+    rec.start(); setState('กำลังทดสอบไมค์ 5 วินาที… พูดใส่ไมค์', 'warning');
     setTimeout(() => rec.stop(), 5000);
   });
   const closeForm = document.querySelector('[data-close-form]');
