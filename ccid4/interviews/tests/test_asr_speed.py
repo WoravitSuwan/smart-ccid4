@@ -1,10 +1,15 @@
 """ถอดเสียงบน CPU ให้เร็วขึ้น และงานที่ค้าง (เครื่องถอดเสียงหยุด) เริ่มใหม่ได้จากหน้า "ประมวลผล"."""
 
+import os
+import shutil
+import subprocess
 import sys
 import types
 from datetime import timedelta
 
 import pytest
+from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.urls import reverse
 from django.utils import timezone
 
@@ -54,6 +59,7 @@ def test_transcribe_passes_threads_and_beam_and_reports_start(settings, monkeypa
 
     monkeypatch.setitem(sys.modules, "faster_whisper", types.SimpleNamespace(WhisperModel=Model))
     monkeypatch.setattr(asr, "physical_cores", lambda: 8)
+    monkeypatch.setattr(asr, "load_audio", lambda path: [0.0] * 16000)
     settings.ASR_BACKEND, settings.ASR_MODEL, settings.ASR_DEVICE = "whisper", str(tmp_path), "cpu"
     settings.ASR_BEAM_SIZE = settings.ASR_CPU_THREADS = 0
     calls = []
@@ -104,3 +110,78 @@ def test_old_run_stops_when_a_new_one_starts(recorded):  # noqa: F811
     legacy = InterviewSession.objects.get(pk=recorded.pk)
     legacy.progress = [{"key": "asr", "label": "ถอดเสียง", "state": "running", "note": ""}]  # older version: no time
     assert services.minutes_without_progress(legacy) is not None
+
+
+# ---------------------------------------------------------------- the speech model gets decoded audio, never a file
+@pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg not installed")
+def test_load_audio_decodes_with_ffmpeg(tmp_path):
+    clip = tmp_path / "a.webm"
+    subprocess.run(["ffmpeg", "-loglevel", "error", "-f", "lavfi", "-i", "sine=frequency=440:duration=2",
+                    "-c:a", "libopus", str(clip)], check=True)  # fmt: skip
+    audio = asr.load_audio(clip)
+    assert audio.dtype.name == "float32" and abs(len(audio) - 32000) < 1600 and 0.05 < abs(audio).max() <= 1.0
+
+
+@pytest.mark.django_db
+def test_unexpected_error_is_shown_and_can_be_retried(recorded, client_inv, monkeypatch, settings):  # noqa: F811
+    settings.CELERY_TASK_ALWAYS_EAGER = True
+    monkeypatch.setattr(asr, "available", lambda: True)
+
+    def broken(path, progress=None):
+        raise TypeError("open() got an unexpected keyword argument 'metadata_errors'")
+
+    monkeypatch.setattr(asr, "transcribe", broken)
+    InterviewSession.objects.filter(pk=recorded.pk).update(status="processing", job="", error="")
+    s = services.process(recorded.pk)
+    asr_step = next(st for st in s.progress if st["key"] == "asr")
+    assert s.status == InterviewSession.Status.TRANSCRIPT and "ไฟล์เสียงต้นฉบับไม่หาย" in s.error
+    assert asr_step["state"] == "error" and "metadata_errors" in asr_step["note"]
+    page = client_inv.get(reverse("interviews:process", args=[s.pk])).content.decode()
+    assert "step-error" in page and "เริ่มถอดเสียงใหม่" in page and services.can_restart(s)
+
+
+@pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg not installed")
+def test_setup_asr_runs_a_real_transcription_check(monkeypatch, tmp_path):
+    runs = []
+
+    class Model:
+        def __init__(self, path, **kw):
+            pass
+
+        def transcribe(self, audio, **kw):
+            runs.append((len(audio), kw["vad_filter"]))
+            return iter([]), types.SimpleNamespace(duration=2.0)
+
+    monkeypatch.setitem(sys.modules, "faster_whisper", types.SimpleNamespace(WhisperModel=Model))
+    (tmp_path / "asr" / "small").mkdir(parents=True)
+    (tmp_path / "asr" / "small" / "model.bin").write_bytes(b"x")
+    call_command("setup_asr", model="small", out=str(tmp_path))
+    assert [vad for _, vad in runs] == [True, False] and runs[0][0] > 30000  # 2 s decoded at 16 kHz
+
+    class Broken(Model):
+        def transcribe(self, audio, **kw):
+            raise TypeError("open() got an unexpected keyword argument 'metadata_errors'")
+
+    monkeypatch.setitem(sys.modules, "faster_whisper", types.SimpleNamespace(WhisperModel=Broken))
+    with pytest.raises(CommandError, match="ทดสอบถอดเสียงไม่สำเร็จ"):
+        call_command("setup_asr", model="small", out=str(tmp_path))
+
+
+# ---------------------------------------------------------------- opt-in: the real speech stack (faster-whisper + model)
+REAL_MODEL = os.environ.get("CCID4_TEST_ASR_MODEL", "")
+
+
+@pytest.mark.skipif(not REAL_MODEL, reason="set CCID4_TEST_ASR_MODEL to a CTranslate2 Whisper folder to run")
+@pytest.mark.django_db
+def test_real_model_runs_the_whole_pipeline(recorded, settings):  # noqa: F811
+    """The real faster-whisper path on the recorded session (a tone: no speech, so the draft is empty but nothing fails)."""
+    settings.ASR_BACKEND, settings.ASR_MODEL, settings.ASR_DEVICE, settings.ASR_COMPUTE_TYPE = (
+        "whisper",
+        REAL_MODEL,
+        "cpu",
+        "int8",
+    )
+    InterviewSession.objects.filter(pk=recorded.pk).update(status="processing", job="", error="")
+    s = services.process(recorded.pk)
+    steps = {st["key"]: st["state"] for st in s.progress}
+    assert s.error == "" and steps["asr"] == "done" and s.status == InterviewSession.Status.REVIEW, (s.error, s.progress)

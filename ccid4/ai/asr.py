@@ -51,6 +51,23 @@ def duration(path: Path) -> float:
         return 0.0
 
 
+SAMPLE_RATE = 16000
+
+
+def load_audio(path: Path):
+    """16 kHz mono float32 samples, decoded with ffmpeg.
+
+    faster-whisper would decode with PyAV, whose API changed under it (PyAV 14+: "unexpected keyword argument
+    'metadata_errors'"), so the speech model always gets a ready-made array instead.
+    """
+    import numpy as np
+
+    out = subprocess.run([settings.FFMPEG_BIN, "-nostdin", "-loglevel", "error", "-i", str(path),
+                          "-f", "s16le", "-ac", "1", "-ar", str(SAMPLE_RATE), "-"],
+                         capture_output=True, check=True, timeout=3600)  # fmt: skip
+    return np.frombuffer(out.stdout, dtype=np.int16).astype(np.float32) / 32768.0
+
+
 def physical_cores(cpuinfo: str = "/proc/cpuinfo") -> int:
     """แกน CPU จริง (ไม่นับ hyper-threading) ที่โปรแกรมนี้ใช้ได้ — CTranslate2 เร็วสุดเมื่อใช้เท่าจำนวนแกนจริง."""
     usable = len(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity") else (os.cpu_count() or 4)
@@ -111,7 +128,7 @@ def transcribe(path: Path, progress=None) -> list[dict]:
     model = WhisperModel(settings.ASR_MODEL, device=settings.ASR_DEVICE, compute_type=settings.ASR_COMPUTE_TYPE,
                          cpu_threads=cpu_threads())  # fmt: skip
     segments, info = model.transcribe(
-        str(path),
+        load_audio(path),
         language="th",
         beam_size=beam_size(),
         vad_filter=True,
