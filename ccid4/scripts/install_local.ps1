@@ -68,7 +68,19 @@ for ($i = 0; $i -lt 90; $i++) {
 $count = (& docker @Compose exec -T web python manage.py shell -c "from accounts.models import User; print(User.objects.count())") -join ""
 if ($count.Trim() -eq "0") {
   Say "สร้างบัญชีพนักงานสอบสวนคนแรก"
-  & docker @Compose exec web python manage.py create_officer
+  # Read Thai text here (Read-Host gets real Unicode) and pass it as arguments: text typed inside
+  # "docker exec" arrives in code page 874, not UTF-8. Only the English-only password is typed there.
+  Write-Host "ชื่อ-นามสกุลพิมพ์ภาษาไทยได้ · ชื่อผู้ใช้และรหัสผ่านให้เปลี่ยนแป้นเป็นภาษาอังกฤษ (EN) ก่อนพิมพ์"
+  do { $u = (Read-Host "ชื่อผู้ใช้ (ภาษาอังกฤษ เช่น inv1)").Trim() } while ($u -notmatch '^[A-Za-z0-9@.+_-]+$')
+  $rank = (Read-Host "ยศ (เช่น ร.ต.อ.)").Trim()
+  do { $first = (Read-Host "ชื่อ").Trim() } while (-not $first)
+  do { $last = (Read-Host "นามสกุล").Trim() } while (-not $last)
+  $position = (Read-Host "ตำแหน่ง (เช่น รอง สว.(สอบสวน))").Trim()
+  $officer = @("--username=$u", "--rank=$rank", "--first-name=$first", "--last-name=$last", "--position=$position")
+  & docker @Compose exec web python manage.py create_officer @officer
+  if ($LASTEXITCODE -ne 0) {
+    Write-Host "ยังสร้างบัญชีไม่สำเร็จ - รันคำสั่งนี้ซ้ำได้ ระบบจะถามใหม่ (ข้อมูลอื่นไม่หาย)" -ForegroundColor Yellow
+  }
 }
 
 Say "เสร็จแล้ว - เปิด http://localhost:8000 ด้วย Chrome หรือ Edge บนเครื่องนี้"
