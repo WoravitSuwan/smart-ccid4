@@ -62,7 +62,9 @@ def recorded(suspect, investigator, tmp_path, django_capture_on_commit_callbacks
     """A session with a closed recording (two takes, as after a closed tab)."""
     if not HAS_FFMPEG:
         pytest.skip("ffmpeg not installed")
-    s = services.start(investigator, suspect, "ห้องสอบสวน 1", [("lawyer", "ทนายสมมติ", ""), ("interpreter", "ล่ามสมมติ", "อังกฤษ")])
+    s = services.start(
+        investigator, suspect, "ห้องสอบสวน 1", [("lawyer", "ทนายสมมติ", ""), ("interpreter", "ล่ามสมมติ", "อังกฤษ")]
+    )
     services.add_chunk(s, investigator, 1, 1, tone(tmp_path / "a.webm", 4), 4)
     services.add_chunk(s, investigator, 2, 1, tone(tmp_path / "b.webm", 3, 660), 3)
     with django_capture_on_commit_callbacks(execute=True):

@@ -1,2 +1,8 @@
 # ถอดเสียงในเครื่อง (CPU หรือ GPU) — ไม่มี torch จึงติดตั้งเล็กพอสำหรับโน้ตบุ๊ก
+# ตรึงรุ่นที่ทดสอบร่วมกันแล้ว: PyAV 14 ขึ้นไปเลิกรองรับ metadata_errors ที่ faster-whisper ใช้ (ถอดเสียงล้มทันที)
+# ระบบอ่านไฟล์เสียงเองด้วย ffmpeg (ai/asr.py load_audio) จึงไม่พึ่ง PyAV แต่ตรึงไว้ให้รุ่นตรงกับที่ทดสอบ
 faster-whisper==1.1.0
+av==13.1.0
+ctranslate2==4.9.0
+onnxruntime==1.32.0
+requests==2.34.2  # faster-whisper imports it without declaring it

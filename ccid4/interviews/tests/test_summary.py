@@ -233,6 +233,7 @@ def test_transcribe_reports_progress_and_uses_the_cpu_settings(monkeypatch, sett
             return iter([Seg(0, 30, "สวัสดีครับ"), Seg(1800, 1830, "ตอนท้าย")]), types.SimpleNamespace(duration=3600.0)
 
     monkeypatch.setitem(sys.modules, "faster_whisper", types.SimpleNamespace(WhisperModel=Model))
+    monkeypatch.setattr(asr, "load_audio", lambda path: [0.0] * 16000)
     settings.ASR_BACKEND, settings.ASR_MODEL, settings.ASR_DEVICE = "whisper", "/models/asr/large-v3-turbo", "cpu"
     settings.ASR_COMPUTE_TYPE, settings.ASR_BEAM_SIZE, settings.ASR_CPU_THREADS = "int8", 1, 4
     ticks = []

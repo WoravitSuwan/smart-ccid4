@@ -12,4 +12,7 @@
     {% endif %}
   {% endif %}
   {% if s.error %}<p class="text-sm text-danger">{{ s.error }}</p>{% endif %}
+  {% if s.status == "transcript" and s.error and can_restart and can_edit %}
+  <form method="post" action="{% url 'interviews:reprocess' s.pk %}">{% csrf_token %}<button class="btn btn-primary btn-sm">เริ่มถอดเสียงใหม่</button></form>
+  {% endif %}
 </div>

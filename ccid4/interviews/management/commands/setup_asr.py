@@ -88,7 +88,26 @@ class Command(BaseCommand):
         )
 
     def verify_model(self, target: Path) -> None:
+        """Load the model and transcribe 2 seconds of sound, the same way the worker does (catches broken installs)."""
+        import subprocess
+        import tempfile
+
+        from django.conf import settings
         from faster_whisper import WhisperModel
 
-        WhisperModel(str(target), device="cpu", compute_type="int8")
-        self.stdout.write(f"โหลดโมเดลทดสอบสำเร็จ: {target}")
+        from ai import asr
+
+        try:
+            model = WhisperModel(str(target), device="cpu", compute_type="int8")
+            with tempfile.TemporaryDirectory(prefix="ccid4-asr-check-") as tmp:
+                clip = Path(tmp) / "check.flac"
+                subprocess.run([settings.FFMPEG_BIN, "-nostdin", "-loglevel", "error", "-f", "lavfi",
+                                "-i", "sine=frequency=440:duration=2", "-ac", "1", "-ar", "16000", str(clip)],
+                               check=True, timeout=60)  # fmt: skip
+                audio = asr.load_audio(clip)
+                for vad in (True, False):  # with silence removal (the normal path), then one real decoding pass
+                    segments, _ = model.transcribe(audio, language="th", beam_size=1, vad_filter=vad, word_timestamps=True)
+                    list(segments)
+        except Exception as e:  # noqa: BLE001 - show the reason, not a traceback
+            raise CommandError(f"ทดสอบถอดเสียงไม่สำเร็จ ({type(e).__name__}: {e}) — แจ้งผู้ดูแลระบบพร้อมข้อความนี้") from e
+        self.stdout.write(f"โหลดโมเดลและทดสอบถอดเสียงสำเร็จ: {target}")

@@ -151,7 +151,7 @@ def process_page(request, pk):
     idle = services.minutes_without_progress(s)
     ctx = {"s": s, "rec": getattr(s, "recording", None), "demo": settings.DEMO_MODE, "active": "interviews",
            "idle": idle, "stalled": idle is not None and idle >= services.STALL_MINUTES,
-           "can_edit": services.can_edit(request.user, s)}  # fmt: skip
+           "can_edit": services.can_edit(request.user, s), "can_restart": services.can_restart(s)}  # fmt: skip
     tpl = "interviews/_progress.html" if request.headers.get("HX-Request") else "interviews/process.html"
     return render(request, tpl, ctx)
 

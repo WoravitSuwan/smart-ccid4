@@ -337,6 +337,7 @@
   .step-running .step-icon { border-color: var(--primary); border-top-color: transparent; animation: spin .8s linear infinite; }
   .step-warning .step-icon { background: var(--warning); border-color: var(--warning); }
   .step-skipped .step-icon { border-style: dashed; }
+  .step-error .step-icon { background: var(--danger); border-color: var(--danger); }
   .waveform { min-height: 72px; }
   .seg { padding: .6rem .75rem; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); }
   .seg-investigator { border-left: 4px solid var(--primary); }

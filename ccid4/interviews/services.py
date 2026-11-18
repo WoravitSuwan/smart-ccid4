@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import re
 import shutil
@@ -37,6 +38,8 @@ from .models import (
     SpeakerMap,
     StatementDraft,
 )
+
+logger = logging.getLogger(__name__)
 
 STEPS = [
     ("merge", "รวมท่อนเสียงและคำนวณ SHA-256"),
@@ -210,11 +213,21 @@ def minutes_without_progress(session) -> int | None:
     return max(0, int((timezone.now() - last_at).total_seconds() // 60))
 
 
+def can_restart(session) -> bool:
+    """Stuck while processing, or failed earlier (status back to transcript with an error, no segments yet)."""
+    if not hasattr(session, "recording"):
+        return False
+    if session.status == InterviewSession.Status.PROCESSING:
+        return True
+    return session.status == InterviewSession.Status.TRANSCRIPT and bool(session.error) and not session.segments.exists()
+
+
 def restart_processing(session, user) -> None:
-    if session.status != InterviewSession.Status.PROCESSING or not hasattr(session, "recording"):
-        raise ValidationError("เริ่มถอดเสียงใหม่ได้เฉพาะเสียงที่ปิดการบันทึกแล้วและยังประมวลผลไม่เสร็จ")
+    if not can_restart(session):
+        raise ValidationError("เริ่มถอดเสียงใหม่ได้เฉพาะเสียงที่ปิดการบันทึกแล้วและประมวลผลค้างหรือไม่สำเร็จ")
     minutes = minutes_without_progress(session)
-    log(user, "edit", "interview", session.pk, f"เริ่มประมวลผลเสียงใหม่ (ไม่มีความคืบหน้า {minutes} นาที)")
+    why = f"ไม่มีความคืบหน้า {minutes} นาที" if minutes is not None else "รอบก่อนไม่สำเร็จ"
+    log(user, "edit", "interview", session.pk, f"เริ่มประมวลผลเสียงใหม่ ({why})")
     start_job(session)
 
 
@@ -287,6 +300,17 @@ def _process(session) -> InterviewSession:
         session.error = str(e)[:400]
         session.status = InterviewSession.Status.TRANSCRIPT
         session.save(update_fields=["error", "status"])
+    except Superseded:
+        raise
+    except Exception as e:  # noqa: BLE001 - tell the officer instead of leaving the page spinning forever
+        logger.exception("interview %s: processing failed", session.pk)
+        for step in session.progress:
+            if step["state"] == "running":
+                step["state"], step["note"] = "error", f"ล้มเหลว: {type(e).__name__}: {e}"[:300]
+        session.error = ("ประมวลผลเสียงไม่สำเร็จ (ไฟล์เสียงต้นฉบับไม่หาย) · กด \"เริ่มถอดเสียงใหม่\" "
+                         "หรือนำเข้าข้อความถอดเสียงแทน · ถ้าเกิดซ้ำ ส่งข้อความในขั้นที่ล้มเหลวให้ผู้ดูแลระบบ")  # fmt: skip
+        session.status = InterviewSession.Status.TRANSCRIPT
+        session.save(update_fields=["progress", "error", "status"])
     return session
 
 
