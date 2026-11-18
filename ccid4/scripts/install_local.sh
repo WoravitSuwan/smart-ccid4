@@ -28,7 +28,7 @@ ASR_BACKEND=whisper
 ASR_MODEL=
 ASR_DEVICE=cpu
 ASR_COMPUTE_TYPE=int8
-ASR_BEAM_SIZE=5
+ASR_BEAM_SIZE=0
 SESSION_IDLE_SECONDS=3600
 TZ=Asia/Bangkok
 EOF
@@ -43,6 +43,10 @@ OUT=$("${DC[@]}" run --rm -T -e HF_HUB_OFFLINE=0 worker python manage.py setup_a
 MODEL_PATH=$(printf '%s\n' "$OUT" | sed -n 's/^ASR_MODEL=//p' | tail -1 | tr -d '\r')
 [ -n "$MODEL_PATH" ] || { echo "โหลดโมเดลไม่สำเร็จ ดูข้อความด้านบน"; exit 1; }
 grep -v '^ASR_MODEL=' .env > .env.tmp && echo "ASR_MODEL=$MODEL_PATH" >> .env.tmp && mv .env.tmp .env
+if grep -qx 'ASR_BEAM_SIZE=5' .env; then  # value written by older installers: slow on a laptop CPU
+  echo "ปรับ ASR_BEAM_SIZE จาก 5 เป็น 0 (อัตโนมัติ) ใน .env — บน CPU ถอดเสียงเร็วขึ้นราว 2 เท่า (ต้องการแม่นสุดแก้กลับเป็น 5 ได้)"
+  sed 's/^ASR_BEAM_SIZE=5$/ASR_BEAM_SIZE=0/' .env > .env.tmp && mv .env.tmp .env
+fi
 
 say "เปิดระบบ"
 "${DC[@]}" up -d

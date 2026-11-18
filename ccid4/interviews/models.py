@@ -27,6 +27,7 @@ class InterviewSession(models.Model):
     )
     progress = models.JSONField("ขั้นการประมวลผล", default=list, blank=True)  # [{"key","label","state","note"}]
     error = models.CharField(max_length=400, blank=True)
+    job = models.CharField("งานประมวลผลรอบล่าสุด", max_length=32, blank=True)  # a newer run supersedes an older one
     rights_override = models.TextField("เหตุผลที่ยืนยันแม้ตรวจไม่พบการแจ้งสิทธิครบ", blank=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)

@@ -174,8 +174,8 @@ ASR_BACKEND = env("ASR_BACKEND", default="fake")  # fake | whisper
 ASR_MODEL = env("ASR_MODEL", default="")  # path to a CTranslate2 Typhoon Whisper model (faster-whisper)
 ASR_DEVICE = env("ASR_DEVICE", default="auto")  # cuda | cpu | auto
 ASR_COMPUTE_TYPE = env("ASR_COMPUTE_TYPE", default="auto")  # auto | int8 (CPU) | float16 (GPU)
-ASR_BEAM_SIZE = env.int("ASR_BEAM_SIZE", default=5)  # 1 = fastest on CPU for long recordings
-ASR_CPU_THREADS = env.int("ASR_CPU_THREADS", default=0)  # 0 = all cores
+ASR_BEAM_SIZE = env.int("ASR_BEAM_SIZE", default=0)  # 0 = auto: 1 on CPU (about 2x faster), 5 on GPU
+ASR_CPU_THREADS = env.int("ASR_CPU_THREADS", default=0)  # 0 = every physical core (faster-whisper alone uses 4)
 DIARIZATION_MODEL = env("DIARIZATION_MODEL", default="")  # local pyannote pipeline folder; empty = officer labels speakers
 FFMPEG_BIN = env("CCID4_FFMPEG", default="ffmpeg")
 OLLAMA_TIMEOUT = env.int("OLLAMA_TIMEOUT", default=90)

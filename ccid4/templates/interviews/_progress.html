@@ -1,4 +1,15 @@
 <div id="progress" class="card glass glow-border p-5 flex flex-col gap-3" {% if s.status == "processing" %}hx-get="{% url 'interviews:process' s.pk %}" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %} aria-live="polite">
   <ol class="steps-list">{% for st in s.progress %}<li class="step-{{ st.state }}"><span class="step-icon" aria-hidden="true"></span><span><b>{{ st.label }}</b>{% if st.note %}<span class="block text-xs text-muted">{{ st.note }}</span>{% endif %}</span></li>{% endfor %}</ol>
+  {% if s.status == "processing" %}
+    {% if stalled %}
+    <div class="card demo-warning p-4 text-sm flex flex-col gap-2" role="alert">
+      <b>ไม่มีความคืบหน้ามา {{ idle }} นาที — เครื่องถอดเสียงอาจหยุดทำงานไปแล้ว</b>
+      <span>มักเกิดเมื่อรีสตาร์ตเครื่องหรือ Docker ระหว่างถอดเสียง หรือหน่วยความจำของเครื่องไม่พอ · ไฟล์เสียงต้นฉบับไม่หาย กดเริ่มใหม่ได้เลย</span>
+      {% if can_edit %}<form method="post" action="{% url 'interviews:reprocess' s.pk %}">{% csrf_token %}<button class="btn btn-primary btn-sm">เริ่มถอดเสียงใหม่</button></form>{% endif %}
+    </div>
+    {% elif idle is not None %}
+    <p class="text-xs text-muted">อัปเดตล่าสุด {% if idle %}{{ idle }} นาทีที่แล้ว{% else %}เมื่อสักครู่{% endif %} · ปิดหน้านี้ได้ ระบบทำงานต่อเบื้องหลัง</p>
+    {% endif %}
+  {% endif %}
   {% if s.error %}<p class="text-sm text-danger">{{ s.error }}</p>{% endif %}
 </div>

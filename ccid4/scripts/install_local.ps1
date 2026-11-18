@@ -41,7 +41,7 @@ if (-not (Test-Path .env)) {
     "ASR_MODEL=",
     "ASR_DEVICE=cpu",
     "ASR_COMPUTE_TYPE=int8",
-    "ASR_BEAM_SIZE=5",
+    "ASR_BEAM_SIZE=0",
     "SESSION_IDLE_SECONDS=3600",
     "TZ=Asia/Bangkok"
   )
@@ -57,6 +57,10 @@ $out | ForEach-Object { Write-Host $_ }
 $modelPath = ($out | Where-Object { $_ -match '^ASR_MODEL=' } | Select-Object -Last 1) -replace '^ASR_MODEL=', ''
 if (-not $modelPath) { Write-Host "โหลดโมเดลไม่สำเร็จ ดูข้อความด้านบน"; exit 1 }
 $lines = Get-Content .env -Encoding UTF8 | Where-Object { $_ -notmatch '^ASR_MODEL=' }
+if ($lines -contains "ASR_BEAM_SIZE=5") {  # value written by older installers: slow on a laptop CPU
+  Write-Host "ปรับ ASR_BEAM_SIZE จาก 5 เป็น 0 (อัตโนมัติ) ใน .env - บน CPU ถอดเสียงเร็วขึ้นราว 2 เท่า (ต้องการแม่นสุดแก้กลับเป็น 5 ได้)"
+  $lines = $lines | ForEach-Object { if ($_ -eq "ASR_BEAM_SIZE=5") { "ASR_BEAM_SIZE=0" } else { $_ } }
+}
 WriteLF ".env" (@($lines) + "ASR_MODEL=$($modelPath.Trim())")
 
 Say "เปิดระบบ"
