@@ -128,7 +128,7 @@ def test_unexpected_error_is_shown_and_can_be_retried(recorded, client_inv, monk
     settings.CELERY_TASK_ALWAYS_EAGER = True
     monkeypatch.setattr(asr, "available", lambda: True)
 
-    def broken(path, progress=None):
+    def broken(path, progress=None, start=0.0):
         raise TypeError("open() got an unexpected keyword argument 'metadata_errors'")
 
     monkeypatch.setattr(asr, "transcribe", broken)

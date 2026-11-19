@@ -193,20 +193,41 @@ def profile() -> str:
     return f"CPU {cpu_threads()} แกน · beam {beam_size()}"
 
 
-def transcribe(path: Path, progress=None) -> list[dict]:
-    """progress(seconds_done, seconds_total) is called once the model is ready (0) and then after every section."""
-    if not available():
-        raise AIError("ยังไม่ได้เปิดใช้การถอดเสียงในเครื่อง (ASR_BACKEND=whisper, ASR_MODEL) · นำเข้าข้อความถอดเสียงแทน")
+_MODELS: dict[tuple, object] = {}
+
+
+def get_model():
+    """The speech model stays loaded in this worker process: the live transcription calls it every few seconds."""
     from faster_whisper import WhisperModel
 
-    model = WhisperModel(settings.ASR_MODEL, device=settings.ASR_DEVICE, compute_type=settings.ASR_COMPUTE_TYPE,
-                         cpu_threads=cpu_threads())  # fmt: skip
+    key = (id(WhisperModel), settings.ASR_MODEL, settings.ASR_DEVICE, settings.ASR_COMPUTE_TYPE, cpu_threads())
+    if key not in _MODELS:
+        _MODELS.clear()  # one model in memory at a time (a laptop gives Docker ~4 GB)
+        _MODELS[key] = WhisperModel(settings.ASR_MODEL, device=settings.ASR_DEVICE, compute_type=settings.ASR_COMPUTE_TYPE,
+                                    cpu_threads=cpu_threads())  # fmt: skip
+    return _MODELS[key]
+
+
+def transcribe(path: Path, progress=None, start: float = 0.0) -> list[dict]:
+    """Transcribe a file (from `start` seconds). progress(seconds_done, seconds_total) is called once the model is
+    ready and then after every section."""
+    if not available():
+        raise AIError("ยังไม่ได้เปิดใช้การถอดเสียงในเครื่อง (ASR_BACKEND=whisper, ASR_MODEL) · นำเข้าข้อความถอดเสียงแทน")
+    audio = load_audio(path)
+    if start > 0:
+        audio = audio[int(start * SAMPLE_RATE) :]
+    return transcribe_audio(audio, offset=start, progress=progress)
+
+
+def transcribe_audio(audio, offset: float = 0.0, progress=None) -> list[dict]:
+    """Transcribe 16 kHz mono samples; times in the result are shifted by `offset` seconds."""
+    model = get_model()
     suppress = [-1]  # Whisper's default: non-speech symbols
     tokenizer = getattr(model, "hf_tokenizer", None)
     if settings.ASR_THAI_ONLY and tokenizer is not None:
         suppress += foreign_token_ids(tokenizer, settings.ASR_MODEL)
     segments, info = model.transcribe(
-        load_audio(path),
+        audio,
         language="th",
         suppress_tokens=suppress,
         beam_size=beam_size(),
@@ -221,22 +242,93 @@ def transcribe(path: Path, progress=None) -> list[dict]:
         word_timestamps=True,
         condition_on_previous_text=False,
     )
-    total = float(getattr(info, "duration", 0) or 0)
+    total = offset + float(getattr(info, "duration", 0) or 0)
     if progress:
-        progress(0.0, total)  # model loaded and silence removed: decoding starts now
+        progress(offset, total)  # model loaded and silence removed: decoding starts now
     out = []
     for s in segments:  # a generator: the model works while we iterate
         if progress:
-            progress(float(s.end), total)
+            progress(offset + float(s.end), total)
         text = s.text.strip()
         if not text:
             continue
         words = [
-            {"w": w.word.strip(), "s": round(w.start, 2), "e": round(w.end, 2), "p": round(w.probability, 3)}
+            {"w": w.word.strip(), "s": round(offset + w.start, 2), "e": round(offset + w.end, 2), "p": round(w.probability, 3)}
             for w in (s.words or [])
         ]
-        out.append({"start": float(s.start), "end": float(s.end), "text": text, "words": words})
+        out.append({"start": offset + float(s.start), "end": offset + float(s.end), "text": text, "words": words})
     return out
+
+
+# ---------------------------------------------------------------- live transcription helpers
+def decode_from(path: Path, start: float = 0.0):
+    """16 kHz mono samples from `start` seconds to the end of a (possibly still growing) recording."""
+    import numpy as np
+
+    cmd = [settings.FFMPEG_BIN, "-nostdin", "-loglevel", "error"]
+    if start > 0:
+        cmd += ["-ss", f"{start:.3f}"]  # seek before reading: earlier audio is not decoded again
+    cmd += ["-i", str(path), "-f", "s16le", "-ac", "1", "-ar", str(SAMPLE_RATE), "-"]
+    out = subprocess.run(cmd, capture_output=True, timeout=600, check=False)  # an unfinished last cluster is normal
+    return np.frombuffer(out.stdout, dtype=np.int16).astype(np.float32) / 32768.0
+
+
+LIVE_MIN, LIVE_TARGET, LIVE_MAX = 8.0, 12.0, 28.0  # seconds per window: enough context, under Whisper's 30 s
+PAUSE = 0.5  # a breath between phrases
+GUARD = 1.0  # do not cut this close to the newest audio: the word may continue in the next upload
+FRAME = 0.03
+
+
+def pause_cuts(audio, final: bool = False) -> list[int]:
+    """Sample positions where the not-yet-transcribed audio is cut into windows: in pauses, 8–28 s apart.
+
+    Not final: only windows that are safely behind the newest audio. Final: everything, the rest in a last window.
+    """
+    import numpy as np
+
+    sr, frame = SAMPLE_RATE, int(FRAME * SAMPLE_RATE)
+    end = len(audio)
+    if end == 0:
+        return []
+    n = end // frame
+    if n:
+        frames = audio[: n * frame].reshape(n, frame)
+        db = 20 * np.log10(np.sqrt((frames**2).mean(axis=1)) + 1e-9)
+        silent = db < max(-50.0, float(np.percentile(db, 90)) - 30.0)
+    else:
+        db, silent = np.zeros(0), np.zeros(0, dtype=bool)
+    pauses, trailing, run = [], None, 0  # cut positions inside pauses
+    for i, quiet in enumerate([*silent, False]):
+        if quiet:
+            run += 1
+            continue
+        if run * FRAME >= PAUSE:
+            first = i - run
+            if i < n:
+                pauses.append(((first + i) // 2) * frame)
+            else:  # the speaker is silent right now: safe to cut just after the silence began
+                trailing = first * frame + int(PAUSE / 2 * sr)
+        run = 0
+    cuts, pos = [], 0
+    limit = end if final else end - int(GUARD * sr)
+    safe = [p for p in pauses if p <= limit] + ([trailing] if trailing is not None else [])
+    while pos < end:
+        if final and end - pos <= LIVE_MAX * sr:
+            cuts.append(end)
+            break
+        lo, hi = pos + int(LIVE_MIN * sr), pos + int(LIVE_MAX * sr)
+        options = [p for p in safe if lo <= p <= hi]
+        if options:
+            later = [p for p in options if p >= pos + int(LIVE_TARGET * sr)]
+            cut = later[0] if later else options[-1]
+        elif hi <= limit:  # 28 s without a pause: cut at the quietest moment
+            a, b = lo // frame, hi // frame
+            cut = (a + int(np.argmin(db[a:b]))) * frame if b > a else hi
+        else:
+            break
+        cuts.append(cut)
+        pos = cut
+    return cuts
 
 
 def diarize(path: Path) -> list[dict] | None:
