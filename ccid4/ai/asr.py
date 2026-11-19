@@ -175,8 +175,9 @@ def on_gpu() -> bool:
 
 
 def beam_size() -> int:
-    """ASR_BEAM_SIZE=0 → 1 บน CPU (เร็วราว 2 เท่า แม่นลดลงเล็กน้อย) และ 5 บน GPU."""
-    return settings.ASR_BEAM_SIZE or (5 if on_gpu() else 1)
+    """ASR_BEAM_SIZE=0 → 5: accuracy first. With turbo models (4 decoder layers) the encoder takes most of the time,
+    so a wider beam costs little; set 1 only for the large models on a slow CPU."""
+    return settings.ASR_BEAM_SIZE or 5
 
 
 def model_label() -> str:
@@ -209,6 +210,13 @@ def transcribe(path: Path, progress=None) -> list[dict]:
         language="th",
         suppress_tokens=suppress,
         beam_size=beam_size(),
+        # Deterministic decoding only. By default Whisper re-decodes a 30-second window with rising randomness
+        # (temperature 0.2…1.0) when its text "compresses too well" (zlib over UTF-8 bytes, threshold 2.4 —
+        # tuned for English, which scores ~1.5). Every Thai letter is 3 bytes starting E0 B8/B9, so normal spoken
+        # Thai scores 2.3–3.1: the correct text was thrown away and a random re-decoding kept instead
+        # ("words right then wrong, the story changes", other languages creeping in).
+        temperature=0.0,
+        compression_ratio_threshold=None,
         vad_filter=True,
         word_timestamps=True,
         condition_on_previous_text=False,
