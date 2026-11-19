@@ -132,7 +132,11 @@ CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_EAGER", default=False)
 CELERY_TIMEZONE = TIME_ZONE
 # With a GPU worker (docker compose --profile gpu) send audio processing to its own queue.
-CELERY_TASK_ROUTES = {"interviews.tasks.process_task": {"queue": "asr"}} if env.bool("CCID4_ASR_QUEUE", default=False) else {}
+CELERY_TASK_ROUTES = (
+    {"interviews.tasks.process_task": {"queue": "asr"}, "interviews.tasks.live_task": {"queue": "asr"}}
+    if env.bool("CCID4_ASR_QUEUE", default=False)
+    else {}
+)
 from celery.schedules import crontab  # noqa: E402
 
 CELERY_BEAT_SCHEDULE = {
@@ -175,6 +179,7 @@ ASR_MODEL = env("ASR_MODEL", default="")  # path to a CTranslate2 Typhoon Whispe
 ASR_DEVICE = env("ASR_DEVICE", default="auto")  # cuda | cpu | auto
 ASR_COMPUTE_TYPE = env("ASR_COMPUTE_TYPE", default="auto")  # auto | int8 (CPU) | float16 (GPU)
 ASR_BEAM_SIZE = env.int("ASR_BEAM_SIZE", default=0)  # 0 = 5 (accuracy first; cheap with turbo models)
+ASR_LIVE = env.bool("ASR_LIVE", default=True)  # transcribe while recording (text appears phrase by phrase)
 ASR_THAI_ONLY = env.bool("ASR_THAI_ONLY", default=True)  # suppress tokens of other scripts (Cyrillic, accented Latin, CJK...)
 ASR_CPU_THREADS = env.int("ASR_CPU_THREADS", default=0)  # 0 = every physical core (faster-whisper alone uses 4)
 DIARIZATION_MODEL = env("DIARIZATION_MODEL", default="")  # local pyannote pipeline folder; empty = officer labels speakers

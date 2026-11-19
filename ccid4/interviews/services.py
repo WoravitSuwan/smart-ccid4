@@ -25,7 +25,7 @@ from ai import asr, llm
 from audit.services import log
 from core import thai
 
-from . import qa, summary
+from . import live, qa, summary
 from .models import (
     InterviewSession,
     Participant,
@@ -113,6 +113,7 @@ def add_chunk(session, user, take: int, seq: int, data: bytes, seconds: float) -
         session.status = InterviewSession.Status.RECORDING
         session.save(update_fields=["status"])
         log(user, "edit", "interview", session.pk, "เริ่มบันทึกเสียงสอบปากคำ")
+    live.queue(session)
     return uploaded(session)
 
 
@@ -124,10 +125,13 @@ def sha256_file(path) -> str:
     return h.hexdigest()
 
 
-def merge_takes(session, workdir: Path) -> Path:
-    """Each take is a complete WebM (its first chunk has the header); takes are joined without re-encoding."""
+def merge_takes(session, workdir: Path) -> tuple[Path, dict[int, float]]:
+    """Each take is a complete WebM (its first chunk has the header); takes are joined without re-encoding.
+
+    Also returns the seconds of each take: the live transcription counts time from the start of its take.
+    """
     takes = sorted(set(session.chunks.values_list("take", flat=True)))
-    files = []
+    files, lengths = [], {}
     for take in takes:
         p = workdir / f"take{take}.webm"
         with open(p, "wb") as out:
@@ -135,8 +139,9 @@ def merge_takes(session, workdir: Path) -> Path:
                 with c.file.open("rb") as f:
                     shutil.copyfileobj(f, out)
         files.append(p)
+        lengths[take] = asr.duration(p)
     if len(files) == 1:
-        return files[0]
+        return files[0], lengths
     lst = workdir / "list.txt"
     lst.write_text("".join(f"file '{p.name}'\n" for p in files))
     merged = workdir / "merged.webm"
@@ -145,7 +150,7 @@ def merge_takes(session, workdir: Path) -> Path:
     if proc.returncode != 0:  # mismatched takes: re-encode once to a single Opus stream
         subprocess.run([settings.FFMPEG_BIN, "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(lst), "-c:a", "libopus", str(merged)],
                        cwd=workdir, check=True, timeout=3600)  # fmt: skip
-    return merged
+    return merged, lengths
 
 
 def close_recording(session, user) -> Recording:
@@ -155,7 +160,7 @@ def close_recording(session, user) -> Recording:
     if not session.chunks.exists():
         raise ValidationError("ยังไม่มีเสียงที่บันทึก")
     with tempfile.TemporaryDirectory(prefix="ccid4-rec-") as tmp:
-        merged = merge_takes(session, Path(tmp))
+        merged, lengths = merge_takes(session, Path(tmp))
         digest = sha256_file(merged)
         # browser WebM often carries no duration header: fall back to the seconds counted while recording
         seconds = asr.duration(merged) or uploaded(session)["seconds"]
@@ -163,6 +168,11 @@ def close_recording(session, user) -> Recording:
         with open(merged, "rb") as f:
             rec.original.save(f"original-{digest[:12]}.webm", File(f), save=False)
         rec.save()  # the 16 kHz copy for the speech model is made by the worker (long recordings take a while)
+    with transaction.atomic():  # after this a live job sees the recording and stops writing
+        locked = InterviewSession.objects.select_for_update().get(pk=session.pk)
+        locked.live = {**(locked.live or {}), "lengths": {str(k): round(v, 3) for k, v in lengths.items()}}
+        locked.save(update_fields=["live"])
+        session.live = locked.live
     os.chmod(rec.original.path, 0o444)  # read-only on disk; the app never writes it again
     from evidence.services import register_stored
 
@@ -282,11 +292,25 @@ def _process(session) -> InterviewSession:
         session.save(update_fields=["status"])
         return session
     try:
-        set_step(
-            session, "asr", "running", f"เสียงยาว {thai.mmss(rec.duration)} · กำลังโหลดโมเดลและตัดช่วงเงียบ ({asr.model_label()})"
-        )
-        segs = asr.transcribe(audio, progress=asr_progress(session, rec.duration))
-        set_step(session, "asr", "done", f"{len(segs)} ช่วงพูด")
+        lengths = {int(k): float(v) for k, v in ((session.live or {}).get("lengths") or {}).items()}
+        live_items, covered = live.collect(session, lengths) if lengths else ([], 0.0)
+        if lengths and covered >= rec.duration - 0.5:
+            segs = live_items
+            set_step(session, "asr", "done", f"ถอดสดระหว่างบันทึกครบทั้งไฟล์แล้ว · {len(segs)} ช่วงพูด")
+        else:
+            already = (
+                f"ถอดสดไว้แล้ว {thai.mmss(covered)} · ถอดส่วนที่เหลือ {thai.mmss(rec.duration - covered)} · " if covered else ""
+            )
+            set_step(session, "asr", "running",
+                     f"เสียงยาว {thai.mmss(rec.duration)} · {already}กำลังโหลดโมเดลและตัดช่วงเงียบ ({asr.model_label()})")  # fmt: skip
+            rest = asr.transcribe(audio, progress=asr_progress(session, rec.duration, start=covered), start=covered)
+            segs = live_items + rest
+            set_step(
+                session,
+                "asr",
+                "done",
+                f"{len(segs)} ช่วงพูด" + (f" (ถอดสดระหว่างบันทึก {len(live_items)})" if live_items else ""),
+            )
         set_step(session, "diarize", "running")
         turns = asr.diarize(audio)
         set_step(
@@ -299,6 +323,7 @@ def _process(session) -> InterviewSession:
         set_step(session, "align", "done")
         save_segments(session, segs)
         analyse(session)
+        live.clear(session)  # a later "transcribe again" starts from the whole file
     except llm.AIError as e:
         session.error = str(e)[:400]
         session.status = InterviewSession.Status.TRANSCRIPT
@@ -317,7 +342,7 @@ def _process(session) -> InterviewSession:
     return session
 
 
-def asr_progress(session, duration: float):
+def asr_progress(session, duration: float, start: float = 0.0):
     """Report ถอดเสียงแล้ว mm:ss จาก mm:ss (xx%) · เหลือประมาณ N นาที, at most every 10 seconds of wall time."""
     last = [0.0]
     started = [None]  # wall time when decoding began (after the model loaded)
@@ -339,8 +364,9 @@ def asr_progress(session, duration: float):
         if total:
             note += f" ({min(99, int(done / total * 100))}%)"
         spent = now - started[0]
-        if done >= 60 and total > done:  # the model works 30 s at a time: earlier guesses swing wildly
-            left = (total - done) * spent / done
+        worked = done - start  # seconds transcribed in this run (the live part was done while recording)
+        if worked >= 60 and total > done:  # the model works 30 s at a time: earlier guesses swing wildly
+            left = (total - done) * spent / worked
             note += f" · เหลือประมาณ {max(1, round(left / 60))} นาที"
         elif total > done:
             note += " · กำลังคำนวณเวลาที่เหลือ"

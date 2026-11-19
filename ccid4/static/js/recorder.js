@@ -205,7 +205,11 @@
       state.pausedFor += pausedMs;
       state.lastChunkAt += pausedMs; // the next chunk's length must not include the pause (no sound was recorded)
       ui.pause.textContent = 'พัก'; setState('กำลังบันทึก', 'danger'); ui.dot.classList.add('on'); }
-    else { state.recorder.pause(); state.paused = true; state.pauseStart = performance.now(); ui.pause.textContent = 'บันทึกต่อ'; setState('พักการบันทึก', 'warning'); ui.dot.classList.remove('on'); }
+    else {
+      state.recorder.requestData(); // send what was said up to now, so the live text can finish the sentence
+      state.recorder.pause(); state.paused = true; state.pauseStart = performance.now(); ui.pause.textContent = 'บันทึกต่อ'; setState('พักการบันทึก', 'warning'); ui.dot.classList.remove('on');
+      setTimeout(() => state.queue.then(liveFlush), 300);
+    }
   }
   function stop() {
     return new Promise((resolve) => {
@@ -218,6 +222,7 @@
       ui.start.disabled = false; ui.start.lastChild.textContent = 'บันทึกต่อ'; ui.pause.disabled = true; ui.stop.disabled = true; ui.markerAdd.disabled = true;
       if (ui.micSelect) ui.micSelect.disabled = false;
       state.quietWarned = false; micHelp('');
+      liveFlush();
       if (ui.close) ui.close.disabled = false;
     });
   }
@@ -258,6 +263,45 @@
     rec.start(); setState('กำลังทดสอบไมค์ 5 วินาที… พูดใส่ไมค์', 'warning');
     setTimeout(() => rec.stop(), 5000);
   });
+  // ---------------------------------------------------------------- text transcribed while recording
+  const liveBox = document.querySelector('[data-live]');
+  const liveUrl = root.dataset.liveUrl;
+  let liveAfter = 0;
+  function liveFlush() {
+    if (liveUrl) fetch(liveUrl, { method: 'POST', headers: { 'X-CSRFToken': csrf() }, redirect: 'manual' }).catch(() => {});
+  }
+  async function livePoll() {
+    try {
+      const r = await fetch(`${liveUrl}?after=${liveAfter}`, { redirect: 'manual' });
+      if (!r.ok || r.type === 'opaqueredirect') return;
+      const d = await r.json();
+      const lines = liveBox.querySelector('[data-live-lines]');
+      const status = liveBox.querySelector('[data-live-status]');
+      if (!d.enabled) { status.textContent = 'เครื่องนี้ยังไม่ได้เปิดถอดเสียงสด · ระบบจะถอดเสียงทั้งไฟล์หลังปิดการบันทึก'; return; }
+      const nearBottom = lines.scrollHeight - lines.scrollTop - lines.clientHeight < 40;
+      for (const seg of d.segments) {
+        liveAfter = Math.max(liveAfter, seg.id);
+        const li = document.createElement('li');
+        const time = document.createElement('span');
+        time.className = 'live-time';
+        time.textContent = (seg.take ? `รอบ ${seg.take} · ` : '') + fmt(seg.start);
+        const text = document.createElement('span');
+        text.textContent = seg.text; // text, never HTML
+        if (seg.p !== null && seg.p < 0.6) text.className = 'live-unsure';
+        li.append(time, text);
+        lines.appendChild(li);
+      }
+      if (d.segments.length && nearBottom) lines.scrollTop = lines.scrollHeight;
+      const behind = Math.max(0, d.received - d.done);
+      if (d.error) status.textContent = `ถอดสดสะดุด (${d.error}) · เสียงยังบันทึกครบ ระบบจะถอดทั้งไฟล์หลังปิดการบันทึก`;
+      else if (d.received) {
+        status.textContent = `ถอดแล้วถึงนาทีที่ ${fmt(d.done)} จากเสียงที่ได้รับ ${fmt(d.received)}`
+          + (behind > 45 ? ` · ตามหลังเสียงจริงประมาณ ${fmt(behind)} ส่วนที่ไม่ทันจะถอดต่อหลังปิดการบันทึก` : ' · ตามทันเสียงพูด');
+      }
+    } catch (e) { /* offline for a moment: the next poll catches up */ }
+  }
+  if (liveBox && liveUrl) { livePoll(); setInterval(livePoll, 3000); }
+
   const closeForm = document.querySelector('[data-close-form]');
   closeForm && closeForm.addEventListener('submit', async (e) => {
     if (state.running) { e.preventDefault(); await stop(); closeForm.submit(); }

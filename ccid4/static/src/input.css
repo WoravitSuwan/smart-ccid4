@@ -339,6 +339,11 @@
   .step-skipped .step-icon { border-style: dashed; }
   .step-error .step-icon { background: var(--danger); border-color: var(--danger); }
   .waveform { min-height: 72px; }
+  .live-lines { display: flex; flex-direction: column; gap: .55rem; max-height: 26rem; overflow-y: auto; padding-right: .25rem; }
+  .live-lines:empty { display: none; }
+  .live-lines li { display: flex; gap: .7rem; align-items: baseline; line-height: 1.7; animation: fade-up .35s cubic-bezier(.2,.8,.2,1) both; }
+  .live-time { flex: none; min-width: 3.2rem; font-size: .75rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .live-unsure { text-decoration: underline dotted var(--warning); text-underline-offset: 4px; }
   .seg { padding: .6rem .75rem; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); }
   .seg-investigator { border-left: 4px solid var(--primary); }
   .seg-subject { border-left: 4px solid var(--accent); }

@@ -28,6 +28,10 @@ class InterviewSession(models.Model):
     progress = models.JSONField("ขั้นการประมวลผล", default=list, blank=True)  # [{"key","label","state","note"}]
     error = models.CharField(max_length=400, blank=True)
     job = models.CharField("งานประมวลผลรอบล่าสุด", max_length=32, blank=True)  # a newer run supersedes an older one
+    # live transcription while recording: {"takes": {"1": {"done": s, "received": s}}, "lengths": {...}, "updated": iso}
+    live = models.JSONField("สถานะการถอดเสียงสด", default=dict, blank=True)
+    live_queued = models.BooleanField(default=False)  # one pending live job at a time
+    live_lease = models.DateTimeField(null=True, blank=True)  # a live job is running until this time
     rights_override = models.TextField("เหตุผลที่ยืนยันแม้ตรวจไม่พบการแจ้งสิทธิครบ", blank=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -118,6 +122,22 @@ class Marker(models.Model):
 
     class Meta:
         ordering = ["at"]
+
+
+class LiveSegment(models.Model):
+    """ข้อความที่ถอดสดระหว่างบันทึก (เวลาเทียบกับต้นรอบการอัด take) — ใช้ต่อเป็น Segment เมื่อปิดการบันทึก."""
+
+    session = models.ForeignKey(InterviewSession, on_delete=models.CASCADE, related_name="live_segments")
+    take = models.PositiveIntegerField()
+    start = models.FloatField()
+    end = models.FloatField()
+    text = models.TextField()
+    words = models.JSONField(default=list, blank=True)
+    confidence = models.FloatField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["take", "start", "pk"]
 
 
 class Segment(models.Model):

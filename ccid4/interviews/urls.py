@@ -11,6 +11,7 @@ urlpatterns = [
     path("<int:pk>/record/", views.record, name="record"),
     path("<int:pk>/chunk/", views.chunk, name="chunk"),
     path("<int:pk>/status/", views.status, name="status"),
+    path("<int:pk>/live/", views.live_text, name="live"),
     path("<int:pk>/marker/", views.marker, name="marker"),
     path("<int:pk>/close/", views.close, name="close"),
     path("<int:pk>/process/", views.process_page, name="process"),

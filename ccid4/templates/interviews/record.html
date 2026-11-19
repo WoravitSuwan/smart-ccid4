@@ -9,7 +9,9 @@
 {% if DEMO_MODE %}<div class="card demo-warning p-4 text-sm reveal" role="alert"><b>ระบบสาธิต</b> — ห้ามบันทึกเสียงหรือข้อมูลของผู้แจ้งจริงในระบบนี้ ใช้ระบบที่ติดตั้งในเครื่องของหน่วยงานเท่านั้น</div>{% endif %}
 <div class="grid gap-4 xl:grid-cols-[1fr_22rem] items-start"
      data-recorder data-chunk-url="{% url 'interviews:chunk' s.pk %}" data-status-url="{% url 'interviews:status' s.pk %}"
-     data-marker-url="{% url 'interviews:marker' s.pk %}" data-uploaded="{{ status.seconds }}" data-take="{{ status.take }}">
+     data-marker-url="{% url 'interviews:marker' s.pk %}" data-live-url="{% url 'interviews:live' s.pk %}"
+     data-uploaded="{{ status.seconds }}" data-take="{{ status.take }}">
+  <div class="flex flex-col gap-4 min-w-0">
   <section class="card glass glow-border p-6 flex flex-col gap-5 reveal">
     <div class="rec-face">
       <span class="rec-dot" data-rec-dot aria-hidden="true"></span>
@@ -57,6 +59,13 @@
     {% endif %}
     <p class="text-xs text-muted">อัดยาวได้เป็นชั่วโมง: ส่งขึ้นเซิร์ฟเวอร์ทุก 5 วินาที หน้าจอไม่ดับระหว่างอัด (ถ้าเบราว์เซอร์รองรับ) · ถ้าปิดแท็บหรือเน็ตหลุด ท่อนที่ส่งขึ้นแล้วไม่หาย เปิดหน้านี้ใหม่แล้วกด "บันทึกต่อ" · ตั้งเครื่องไม่ให้พักหน้าจอ/ปิดฝาระหว่างอัด · ไมค์ใช้ได้เฉพาะ https:// หรือ http://localhost</p>
   </section>
+  <section class="card p-5 flex flex-col gap-3 reveal" data-live aria-label="ข้อความถอดสด">
+    <div class="flex flex-wrap items-center gap-2"><h2 class="flex-1">ข้อความถอดสด</h2><span class="ai-badge">ร่างโดย AI – รอตรวจ</span></div>
+    <p class="text-xs text-muted" data-live-status aria-live="polite">ข้อความจะขึ้นเป็นช่วง ๆ เมื่อผู้พูดหยุดเว้นจังหวะ (ทุกประมาณ 10–30 วินาที)</p>
+    <ol class="live-lines" data-live-lines></ol>
+    <p class="text-xs text-muted">ถอดในเครื่องนี้ด้วยโมเดลเดียวกับการถอดทั้งไฟล์ · ช่วงที่ขีดเส้นใต้คือช่วงที่ระบบไม่มั่นใจ · ตรวจทานกับเสียงได้หลังปิดการบันทึก</p>
+  </section>
+  </div>
   <aside class="flex flex-col gap-4">
     {% if s.is_suspect %}
     <section class="card p-5 flex flex-col gap-2 reveal">

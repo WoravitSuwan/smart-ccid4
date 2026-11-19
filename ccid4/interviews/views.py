@@ -15,7 +15,7 @@ from cases.views import can_edit as case_editable
 from cases.views import get_case
 from parties.models import CaseParty
 
-from . import documents, services
+from . import documents, live, services
 from .models import InterviewSession, InterviewSettings, Marker, Participant, QAPair, Segment
 
 FIXTURE = settings.BASE_DIR / "interviews" / "fixtures" / "mule_account_suspect.json"
@@ -114,6 +114,20 @@ def chunk(request, pk):
 def status(request, pk):
     s = session_for(request, pk)
     return JsonResponse(services.uploaded(s) | {"closed": hasattr(s, "recording"), "state": s.status})
+
+
+@login_required
+def live_text(request, pk):
+    """Text transcribed while recording. GET ?after=<id>: new lines · POST: the officer paused/stopped, do the tail."""
+    s = session_for(request, pk, edit=request.method == "POST")
+    if request.method == "POST":
+        live.queue(s, flush=True)
+        return JsonResponse({"queued": live.enabled()})
+    try:
+        after = int(request.GET.get("after", 0))
+    except ValueError:
+        after = 0
+    return JsonResponse(live.payload(s, after))
 
 
 @login_required

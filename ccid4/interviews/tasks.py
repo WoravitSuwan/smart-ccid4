@@ -6,3 +6,10 @@ def process_task(session_id: int, job: str | None = None) -> str:
     from .services import process
 
     return process(session_id, job).status
+
+
+@shared_task
+def live_task(session_id: int, flush: bool = False) -> str:
+    from .live import run
+
+    return run(session_id, flush)
