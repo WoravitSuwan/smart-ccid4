@@ -39,9 +39,7 @@ def test_physical_cores_ignores_hyper_threads(tmp_path, monkeypatch):
 def test_cpu_defaults_are_fast_and_explicit_settings_win(settings, monkeypatch):
     monkeypatch.setattr(asr, "physical_cores", lambda: 6)
     settings.ASR_DEVICE, settings.ASR_BEAM_SIZE, settings.ASR_CPU_THREADS = "cpu", 0, 0
-    assert (asr.cpu_threads(), asr.beam_size(), asr.profile()) == (6, 1, "CPU 6 แกน · beam 1")
-    settings.ASR_DEVICE = "cuda"
-    assert asr.beam_size() == 5
+    assert (asr.cpu_threads(), asr.beam_size(), asr.profile()) == (6, 5, "CPU 6 แกน · beam 5")
     settings.ASR_DEVICE, settings.ASR_BEAM_SIZE, settings.ASR_CPU_THREADS = "cpu", 5, 3
     assert (asr.cpu_threads(), asr.beam_size()) == (3, 5)
 
@@ -65,7 +63,9 @@ def test_transcribe_passes_threads_and_beam_and_reports_start(settings, monkeypa
     settings.ASR_BEAM_SIZE = settings.ASR_CPU_THREADS = 0
     calls = []
     out = asr.transcribe(tmp_path / "a.flac", progress=lambda done, total: calls.append((done, total)))
-    assert seen["init"]["cpu_threads"] == 8 and seen["run"]["beam_size"] == 1
+    assert seen["init"]["cpu_threads"] == 8 and seen["run"]["beam_size"] == 5
+    # one deterministic pass per window: no random re-decoding when Thai text "compresses too well"
+    assert seen["run"]["temperature"] == 0.0 and seen["run"]["compression_ratio_threshold"] is None
     assert calls == [(0.0, 8.0), (4.0, 8.0)] and out[0]["text"] == "สวัสดีครับ"
 
 
@@ -329,3 +329,15 @@ def test_duration_of_browser_webm_without_header(tmp_path):
         subprocess.run(["ffmpeg", "-loglevel", "error", "-f", "lavfi", "-i", "sine=duration=3", "-c:a", "libopus", "-f", "webm", "pipe:1"],
                        stdout=out, check=True)  # fmt: skip
     assert abs(asr.duration(clip) - 3.0) < 0.2
+
+
+def test_spoken_thai_trips_whispers_english_repetition_rule():
+    """Why compression_ratio_threshold is off: zlib over UTF-8 rates ordinary spoken Thai as "repetitive"."""
+    import zlib
+
+    spoken = ("แล้วผมก็เลยคุยกับเขาไปนะครับ เขาก็บอกว่าไม่เป็นไรเดี๋ยวช่วย ผมก็เลยโอนไปอีกครับ พอโอนไปเสร็จปุ๊บ "
+              "เขาก็บอกว่าต้องโอนเพิ่มอีก ผมก็เลยไปหาเงินมาเพิ่มอีกครับ แล้วก็โอนไปอีกรอบหนึ่ง พอโอนไปแล้ว "
+              "เขาก็บอกว่ายังถอนไม่ได้ ต้องเติมเงินเข้าไปอีก ผมก็เริ่มไม่แน่ใจแล้วครับ แต่ก็ยังโอนไปอีกนะครับ")  # fmt: skip
+    english = "That morning I went to the bank to transfer money to an online shop where I had ordered some goods."
+    ratio = lambda t: len(t.encode()) / len(zlib.compress(t.encode()))  # noqa: E731 - faster-whisper's formula
+    assert ratio(spoken) > 2.4 > ratio(english)

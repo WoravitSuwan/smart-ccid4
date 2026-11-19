@@ -79,7 +79,8 @@
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       const e = new Error('insecure'); e.name = 'InsecureContext'; throw e;
     }
-    const constraints = { echoCancellation: false, noiseSuppression: true, autoGainControl: true };
+    // raw sound for the speech model: the browser's call-style noise suppression can smear consonants
+    const constraints = { echoCancellation: false, noiseSuppression: false, autoGainControl: true };
     if (want) constraints.deviceId = { exact: want };
     let stream;
     try {
