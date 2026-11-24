@@ -42,6 +42,16 @@ def to_flac(src: Path, dst: Path) -> Path:
     return dst
 
 
+def has_audio(path: Path) -> bool:
+    """True when ffmpeg finds a sound track in the file (any format it can read: phone recordings, video clips…)."""
+    try:
+        out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a", "-show_entries", "stream=codec_type",
+                              "-of", "csv=p=0", str(path)], capture_output=True, text=True, timeout=120, check=False)  # fmt: skip
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return "audio" in out.stdout
+
+
 def duration(path: Path) -> float:
     """Seconds of sound in the file. Browser WebM carries no duration header, so it is measured by decoding."""
     try:

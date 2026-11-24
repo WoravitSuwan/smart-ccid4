@@ -59,6 +59,18 @@
     {% endif %}
     <p class="text-xs text-muted">อัดยาวได้เป็นชั่วโมง: ส่งขึ้นเซิร์ฟเวอร์ทุก 5 วินาที หน้าจอไม่ดับระหว่างอัด (ถ้าเบราว์เซอร์รองรับ) · ถ้าปิดแท็บหรือเน็ตหลุด ท่อนที่ส่งขึ้นแล้วไม่หาย เปิดหน้านี้ใหม่แล้วกด "บันทึกต่อ" · ตั้งเครื่องไม่ให้พักหน้าจอ/ปิดฝาระหว่างอัด · ไมค์ใช้ได้เฉพาะ https:// หรือ http://localhost</p>
   </section>
+  {% if can_edit and not status.seconds %}
+  <section class="card p-5 flex flex-col gap-3 reveal" data-import aria-label="นำเข้าไฟล์เสียง">
+    <h2>หรือ นำเข้าไฟล์เสียงที่อัดไว้แล้ว</h2>
+    <p class="text-sm text-muted">เช่น เสียงจากแอปบันทึกเสียงในมือถือ หรือเครื่องอัดเสียง · รองรับ m4a mp3 wav ogg opus amr 3gp aac flac wma webm และคลิปวิดีโอ mp4 mov</p>
+    <form method="post" action="{% url 'interviews:import_audio' s.pk %}" enctype="multipart/form-data" class="flex flex-wrap items-end gap-3" data-import-form>{% csrf_token %}
+      <label class="flex-1 min-w-[240px]"><span class="label">ไฟล์เสียง (ไม่เกิน {{ import_max_mb }} MB)</span>
+        <input class="input py-2" type="file" name="audio" required accept="audio/*,video/mp4,video/quicktime,.m4a,.amr,.3gp,.opus,.wma"></label>
+      <button class="btn btn-primary" data-import-submit>นำเข้าและถอดเสียง</button>
+    </form>
+    <p class="text-xs text-muted">ไฟล์ที่นำเข้าเป็นพยานหลักฐานต้นฉบับ: ระบบเก็บตามที่ได้รับทุกไบต์ คำนวณ SHA-256 ล็อกไฟล์ และเข้าทะเบียนพยานหลักฐานของคดี แล้วถอดเสียงทั้งไฟล์ · แจ้งผู้ให้ถ้อยคำว่าเสียงนี้จะใช้ทำคำให้การ</p>
+  </section>
+  {% endif %}
   <section class="card p-5 flex flex-col gap-3 reveal" data-live aria-label="ข้อความถอดสด">
     <div class="flex flex-wrap items-center gap-2"><h2 class="flex-1">ข้อความถอดสด</h2><span class="ai-badge">ร่างโดย AI – รอตรวจ</span></div>
     <p class="text-xs text-muted" data-live-status aria-live="polite">ข้อความจะขึ้นเป็นช่วง ๆ เมื่อผู้พูดหยุดเว้นจังหวะ (ทุกประมาณ 10–30 วินาที)</p>

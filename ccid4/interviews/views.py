@@ -91,7 +91,8 @@ def record(request, pk):
     if hasattr(s, "recording"):
         return redirect("interviews:review" if s.status in ("review", "confirmed") else "interviews:process", pk=s.pk)
     ctx = {"s": s, "status": services.uploaded(s), "script": InterviewSettings.get().rights_script, "can_edit": services.can_edit(request.user, s),
-           "markers": s.markers.all(), "participants": s.participants.all(), "active": "interviews"}  # fmt: skip
+           "markers": s.markers.all(), "participants": s.participants.all(), "active": "interviews",
+           "import_max_mb": settings.INTERVIEW_IMPORT_MAX_MB}  # fmt: skip
     return render(request, "interviews/record.html", ctx)
 
 
@@ -140,6 +141,23 @@ def marker(request, pk):
         at = 0
     m = Marker.objects.create(session=s, at=max(0, at), note=request.POST.get("note", "")[:200], created_by=request.user)
     return JsonResponse({"id": m.pk, "at": m.at, "note": m.note})
+
+
+@login_required
+@require_POST
+def import_audio(request, pk):
+    s = session_for(request, pk, edit=True)
+    upload = request.FILES.get("audio")
+    if not upload:
+        messages.error(request, "เลือกไฟล์เสียงก่อน")
+        return redirect("interviews:record", pk=s.pk)
+    try:
+        services.import_audio(s, request.user, upload)
+    except ValidationError as e:
+        messages.error(request, " ".join(e.messages))
+        return redirect("interviews:record", pk=s.pk)
+    messages.success(request, "นำเข้าไฟล์เสียงแล้ว ไฟล์ต้นฉบับถูกล็อกพร้อม SHA-256 · กำลังถอดเสียง")
+    return redirect("interviews:process", pk=s.pk)
 
 
 @login_required
@@ -211,12 +229,13 @@ def audio(request, pk):
     rec = getattr(s, "recording", None)
     if rec is None:
         raise Http404
-    path, size = rec.original.path, os.path.getsize(rec.original.path)
+    path, content_type = services.playable(rec)
+    size = os.path.getsize(path)
     m = RANGE.match(request.headers.get("Range", ""))
     if not m or m.group(1) == "0":
         log(request.user, "listen", "interview", s.pk, f"ฟังเสียงสอบปากคำ {s}")
     if not m:
-        resp = FileResponse(open(path, "rb"), content_type=rec.content_type)  # noqa: SIM115 - closed by Django
+        resp = FileResponse(open(path, "rb"), content_type=content_type)  # noqa: SIM115 - closed by Django
         resp["Accept-Ranges"] = "bytes"
         return resp
     start, end = int(m.group(1)), int(m.group(2) or size - 1)
@@ -235,7 +254,7 @@ def audio(request, pk):
                 left -= len(block)
                 yield block
 
-    resp = StreamingHttpResponse(stream(), status=206, content_type=rec.content_type)
+    resp = StreamingHttpResponse(stream(), status=206, content_type=content_type)
     resp["Content-Range"], resp["Content-Length"], resp["Accept-Ranges"] = (
         f"bytes {start}-{end}/{size}",
         str(end - start + 1),
