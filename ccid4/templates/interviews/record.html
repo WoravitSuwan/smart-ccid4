@@ -63,10 +63,10 @@
   <section class="card p-5 flex flex-col gap-3 reveal" data-import aria-label="นำเข้าไฟล์เสียง">
     <h2>หรือ นำเข้าไฟล์เสียงที่อัดไว้แล้ว</h2>
     <p class="text-sm text-muted">เช่น เสียงจากแอปบันทึกเสียงในมือถือ หรือเครื่องอัดเสียง · รองรับ m4a mp3 wav ogg opus amr 3gp aac flac wma webm และคลิปวิดีโอ mp4 mov</p>
-    <form method="post" action="{% url 'interviews:import_audio' s.pk %}" enctype="multipart/form-data" class="flex flex-wrap items-end gap-3" data-import-form>{% csrf_token %}
+    <form method="post" action="{% url 'interviews:import_audio' s.pk %}" enctype="multipart/form-data" class="flex flex-wrap items-end gap-3">{% csrf_token %}
       <label class="flex-1 min-w-[240px]"><span class="label">ไฟล์เสียง (ไม่เกิน {{ import_max_mb }} MB)</span>
         <input class="input py-2" type="file" name="audio" required accept="audio/*,video/mp4,video/quicktime,.m4a,.amr,.3gp,.opus,.wma"></label>
-      <button class="btn btn-primary" data-import-submit>นำเข้าและถอดเสียง</button>
+      <button class="btn btn-primary" data-busy="กำลังนำเข้า… ไฟล์ใหญ่อาจใช้เวลาสักครู่ ห้ามปิดหน้านี้">นำเข้าและถอดเสียง</button>
     </form>
     <p class="text-xs text-muted">ไฟล์ที่นำเข้าเป็นพยานหลักฐานต้นฉบับ: ระบบเก็บตามที่ได้รับทุกไบต์ คำนวณ SHA-256 ล็อกไฟล์ และเข้าทะเบียนพยานหลักฐานของคดี แล้วถอดเสียงทั้งไฟล์ · แจ้งผู้ให้ถ้อยคำว่าเสียงนี้จะใช้ทำคำให้การ</p>
   </section>

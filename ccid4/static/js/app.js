@@ -323,9 +323,11 @@ document.addEventListener('click', (e) => {
     root.scrollIntoView({ block: 'start', behavior: 'smooth' });
   }
 });
+// show that a long request is on its way. Changed only after the browser has collected the form: a button disabled
+// during the submit event is left out, so the clicked button's own value (e.g. action=import) would be lost.
 document.addEventListener('submit', (e) => {
-  const busy = e.target.querySelector('[data-busy]');
-  if (busy) { busy.disabled = true; busy.textContent = busy.dataset.busy; }
+  const busy = e.submitter && e.submitter.dataset.busy ? e.submitter : e.target.querySelector('[data-busy]');
+  if (busy) setTimeout(() => { busy.disabled = true; busy.textContent = busy.dataset.busy; }, 0);
 });
 
 // ---------- Summons register: select rows ----------
