@@ -155,16 +155,38 @@ def values(session: InterviewSession, draft, code: str) -> dict:
 
 
 def transcript_docx(session) -> bytes:
+    """คำพูดคำต่อคำ: continuous speech by speaker, then every segment with its time (to find it in the audio)."""
     from docx import Document
 
     from documents.management.commands.build_doc_templates import thai_font
+
+    from .services import verbatim_turns
 
     doc = Document()
     doc.styles["Normal"].font.name = settings.DOC_FONT
     roles = dict(session.speaker_maps.values_list("label", "role"))
     names = dict(Participant.Role.choices)
-    p = doc.add_paragraph()
-    thai_font(p.add_run(f"ข้อความถอดเสียงพร้อมเวลา · {session} · SHA-256 {session.recording.sha256}"), 12, True)
+    confirmed = session.status == InterviewSession.Status.CONFIRMED
+    thai_font(doc.add_paragraph().add_run("ข้อความถอดเสียงคำต่อคำ"), 18, True)
+    thai_font(
+        doc.add_paragraph().add_run(
+            f"{session} · เสียงยาว {thai.mmss(session.recording.duration)} · SHA-256 {session.recording.sha256}"
+        ),
+        12,
+    )
+    thai_font(
+        doc.add_paragraph().add_run(
+            "ตรวจทานและยืนยันแล้ว" if confirmed else "ร่างโดย AI – รอตรวจ: ตรวจกับเสียงก่อนนำไปใช้ในสำนวน"
+        ),
+        12,
+        True,
+    )
+    thai_font(doc.add_paragraph().add_run("ข้อความต่อเนื่อง"), 14, True)
+    for turn in verbatim_turns(session):
+        p = doc.add_paragraph()
+        thai_font(p.add_run(f"{turn['who']} ({thai.mmss(turn['start'])}): "), 14, True)
+        thai_font(p.add_run(turn["text"]), 14)
+    thai_font(doc.add_paragraph().add_run("ข้อความพร้อมเวลา"), 14, True)
     t = doc.add_table(rows=1, cols=3)
     t.style = "Table Grid"
     for cell, text in zip(t.rows[0].cells, ("เวลา", "ผู้พูด", "ข้อความ"), strict=True):

@@ -253,18 +253,14 @@ def review_ctx(request, s):
     for seg in segments:
         seg.role = roles.get(seg.speaker, "")
         seg.role_name = role_names.get(seg.role, seg.speaker)
-        seg.word_list = (
-            seg.words
-            if seg.text == seg.text_ai and seg.words
-            else [{"w": w, "s": None, "e": None, "p": 1} for w in seg.text.split()]
-        )
+        seg.word_list = services.display_words(seg.text, seg.words if seg.text == seg.text_ai else None)
     pairs = list(draft.pairs.all()) if draft else []
     rights_ok = s.rights.exists() and not s.rights.filter(found_at__isnull=True).exists()
     return {
         "s": s, "rec": s.recording, "segments": segments, "draft": draft, "pairs": pairs, "maps": s.speaker_maps.all(),
         "role_choices": Participant.Role.choices, "rights": s.rights.all(), "rights_ok": rights_ok,
         "uncovered": set(draft.uncovered) if draft else set(), "blockers": services.blockers(s), "can_edit": services.can_edit(request.user, s),
-        "asr_profile": services.asr.model_label(),
+        "asr_profile": services.asr.model_label(), "turns": services.verbatim_turns(s),
         "reviewed": sum(1 for p in pairs if p.reviewed), "markers": s.markers.all(), "documents": s.documents.all(), "active": "interviews",
         "speaker_options": speaker_options(s),
     }  # fmt: skip
@@ -312,9 +308,7 @@ def segment_partial(request, s, seg_id, note=""):
     roles = dict(s.speaker_maps.values_list("label", "role"))
     seg.role = roles.get(seg.speaker, "")
     seg.role_name = dict(Participant.Role.choices).get(seg.role, seg.speaker)
-    seg.word_list = (
-        seg.words if seg.text == seg.text_ai and seg.words else [{"w": w, "s": None, "e": None, "p": 1} for w in seg.text.split()]
-    )
+    seg.word_list = services.display_words(seg.text, seg.words if seg.text == seg.text_ai else None)
     ctx = {"seg": seg, "s": s, "can_edit": True, "speaker_options": speaker_options(s), "note": note}
     return render(request, "interviews/_segment.html", ctx)
 
@@ -346,6 +340,21 @@ def statement_format(request, pk):
         log(request.user, "edit", "interview", s.pk, f"เลือกรูปแบบคำให้การ: {s.get_statement_format_display()}")
         messages.success(request, f"ใช้คำให้การรูปแบบ{s.get_statement_format_display()}")
     return redirect("interviews:review", pk=s.pk)
+
+
+@login_required
+def transcript_download(request, pk):
+    """คำพูดคำต่อคำ (Word): available as soon as the audio is transcribed, before the statement is confirmed."""
+    s = session_for(request, pk)
+    if not hasattr(s, "recording") or not s.segments.exists():
+        raise Http404
+    data = documents.transcript_docx(s)
+    log(request.user, "export", "interview", s.pk, "ดาวน์โหลดข้อความถอดเสียงคำต่อคำ")
+    resp = HttpResponse(data, content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    from urllib.parse import quote
+
+    resp["Content-Disposition"] = f"attachment; filename*=UTF-8''{quote(f'ข้อความถอดเสียง-{s.pk}.docx')}"
+    return resp
 
 
 @login_required

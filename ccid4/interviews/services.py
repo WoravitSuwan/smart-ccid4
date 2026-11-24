@@ -375,6 +375,44 @@ def asr_progress(session, duration: float, start: float = 0.0):
     return report
 
 
+def display_words(text: str, words: list[dict] | None) -> list[dict]:
+    """Words to show for a segment, as the sentence reads.
+
+    For Thai, faster-whisper's "words" are token pieces (often part of a word), so a space after each one turns
+    "โอนเงิน" into "โอ น เง ิน". Each piece gets sp=True only where the text itself has a space before it.
+    Edited text (or pieces that do not match the text) is shown by the text's own phrases, without timings.
+    """
+    out, pos = [], 0
+    for w in words or []:
+        piece = w.get("w") or ""
+        if not piece:
+            continue
+        i = text.find(piece, pos)
+        if i < 0 or text[pos:i].strip():  # the pieces do not spell the text: show the text itself
+            out = None
+            break
+        out.append({**w, "sp": i > pos})
+        pos = i + len(piece)
+    if out and not text[pos:].strip():
+        return out
+    return [{"w": phrase, "s": None, "e": None, "p": 1, "sp": n > 0} for n, phrase in enumerate(text.split())]
+
+
+def verbatim_turns(session) -> list[dict]:
+    """The transcript as continuous speech: consecutive segments of the same speaker joined into one turn."""
+    roles = dict(session.speaker_maps.values_list("label", "role"))
+    names = dict(Participant.Role.choices)
+    turns: list[dict] = []
+    for seg in session.segments.all():
+        who = names.get(roles.get(seg.speaker), seg.speaker)
+        if turns and turns[-1]["who"] == who:
+            turns[-1]["text"] += " " + seg.text.strip()
+            turns[-1]["end"] = seg.end
+        else:
+            turns.append({"who": who, "text": seg.text.strip(), "start": seg.start, "end": seg.end})
+    return turns
+
+
 def save_segments(session, items: list[dict]) -> None:
     if len(items) > 3 and len({d.get("speaker") or "S1" for d in items}) == 1:  # transcript without speaker labels
         for d in items:

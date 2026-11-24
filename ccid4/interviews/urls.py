@@ -25,6 +25,7 @@ urlpatterns = [
     path("<int:pk>/narrative/", views.narrative, name="narrative"),
     path("<int:pk>/format/", views.statement_format, name="statement_format"),
     path("<int:pk>/summary.docx", views.summary_download, name="summary"),
+    path("<int:pk>/transcript.docx", views.transcript_download, name="transcript_docx"),
     path("<int:pk>/redraft/", views.redraft, name="redraft"),
     path("<int:pk>/pairs/<int:pair_id>/", views.save_pair, name="save_pair"),
     path("<int:pk>/confirm/", views.confirm, name="confirm"),
