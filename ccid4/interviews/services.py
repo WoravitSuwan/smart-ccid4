@@ -244,6 +244,67 @@ def restart_processing(session, user) -> None:
     start_job(session)
 
 
+# audio files the officer can import (phone voice memos, recorders, video clips); ffprobe must still find sound in them
+IMPORT_TYPES = {
+    ".m4a": "audio/mp4", ".mp3": "audio/mpeg", ".wav": "audio/wav", ".ogg": "audio/ogg", ".oga": "audio/ogg",
+    ".opus": "audio/ogg", ".webm": "audio/webm", ".aac": "audio/aac", ".flac": "audio/flac", ".amr": "audio/amr",
+    ".3gp": "audio/3gpp", ".wma": "audio/x-ms-wma", ".mp4": "video/mp4", ".mov": "video/quicktime",
+}  # fmt: skip
+PLAYABLE = {"audio/mp4", "audio/mpeg", "audio/wav", "audio/ogg", "audio/webm", "audio/aac", "audio/flac", "video/mp4"}
+
+
+def import_audio(session, user, upload) -> Recording:
+    """นำเข้าไฟล์เสียงที่อัดไว้แล้ว (มือถือ เครื่องอัดเสียง คลิปวิดีโอ): เก็บต้นฉบับตามที่ได้รับทุกไบต์ → SHA-256 → ล็อก
+    → ทะเบียนพยานหลักฐาน → ถอดเสียงเหมือนเสียงที่อัดในห้องนี้."""
+    if hasattr(session, "recording"):
+        raise ValidationError("ห้องนี้ปิดการบันทึกแล้ว · เริ่มห้องสอบปากคำใหม่เพื่อนำเข้าไฟล์อื่น")
+    if session.chunks.exists():
+        raise ValidationError(
+            "ห้องนี้มีเสียงที่อัดในเบราว์เซอร์แล้ว · นำเข้าไฟล์ได้เฉพาะห้องที่ยังไม่ได้อัด (เริ่มห้องสอบปากคำใหม่)"
+        )
+    ext = Path(upload.name or "").suffix.lower()
+    if ext not in IMPORT_TYPES:
+        raise ValidationError(f"รองรับไฟล์ {' '.join(sorted(e[1:] for e in IMPORT_TYPES))} · ไฟล์นี้เป็น {ext or 'ไม่ทราบชนิด'}")
+    if not upload.size:
+        raise ValidationError("ไฟล์ว่าง")
+    if upload.size > settings.INTERVIEW_IMPORT_MAX_MB * 1024 * 1024:
+        raise ValidationError(f"ไฟล์ใหญ่เกิน {settings.INTERVIEW_IMPORT_MAX_MB} MB")
+    content_type = IMPORT_TYPES[ext]
+    with tempfile.TemporaryDirectory(prefix="ccid4-import-") as tmp:
+        src, h = Path(tmp) / f"original{ext}", hashlib.sha256()
+        with open(src, "wb") as out:
+            for block in upload.chunks():
+                h.update(block)
+                out.write(block)
+        if not asr.has_audio(src):
+            raise ValidationError("เปิดไฟล์นี้ไม่ได้หรือไม่มีเสียงอยู่ในไฟล์")
+        digest, seconds = h.hexdigest(), asr.duration(src)
+        rec = Recording(session=session, sha256=digest, size=upload.size, duration=seconds, content_type=content_type,
+                        closed_by=user, source="import", source_name=(upload.name or "")[:255])  # fmt: skip
+        with open(src, "rb") as f:
+            rec.original.save(f"original-{digest[:12]}{ext}", File(f), save=False)
+        rec.save()
+    os.chmod(rec.original.path, 0o444)  # read-only on disk; the app never writes it again
+    from evidence.services import register_stored
+
+    register_stored(session.case, user, rec.original.name, digest, rec.size,
+                    f"เสียงสอบปากคำ{session.party.get_role_display()} {session.party.person.full_name} (นำเข้าไฟล์)", content_type,
+                    f"นำเข้าไฟล์เสียง: {rec.source_name}", "interview")  # fmt: skip
+    InterviewSession.objects.filter(pk=session.pk).update(live={})  # nothing was transcribed live: do the whole file
+    session.live = {}
+    log(user, "import", "interview", session.pk,
+        f"นำเข้าไฟล์เสียง {rec.source_name} ยาว {seconds:.0f} วินาที ขนาด {rec.size} ไบต์ SHA-256 {digest}")  # fmt: skip
+    start_job(session)
+    return rec
+
+
+def playable(rec: Recording) -> tuple[str, str]:
+    """File and type for the browser player: the original, or its FLAC copy when browsers cannot play it (AMR, 3GP…)."""
+    if rec.content_type in PLAYABLE or not rec.for_asr:
+        return rec.original.path, rec.content_type
+    return rec.for_asr.path, "audio/flac"
+
+
 def integrity_ok(rec: Recording) -> bool:
     return sha256_file(rec.original.path) == rec.sha256
 

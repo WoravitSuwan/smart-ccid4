@@ -191,6 +191,8 @@
       state.lastChunkAt = now;
     };
     state.recorder.start(5000);
+    const importBox = document.querySelector('[data-import]');
+    if (importBox) importBox.hidden = true; // a room holds either a recording made here or one imported file
     keepAwake();
     state.running = true; state.paused = false; state.startedAt = state.lastChunkAt = state.resumedAt = performance.now(); state.pausedFor = 0;
     if (ui.micSelect) ui.micSelect.disabled = true;
@@ -301,6 +303,14 @@
     } catch (e) { /* offline for a moment: the next poll catches up */ }
   }
   if (liveBox && liveUrl) { livePoll(); setInterval(livePoll, 3000); }
+
+  // importing a recorded file: show that a large upload is on its way, and hide the option once recording starts
+  const importForm = document.querySelector('[data-import-form]');
+  importForm && importForm.addEventListener('submit', () => {
+    const button = importForm.querySelector('[data-import-submit]');
+    button.disabled = true;
+    button.textContent = 'กำลังนำเข้า… ไฟล์ใหญ่อาจใช้เวลาสักครู่ ห้ามปิดหน้านี้';
+  });
 
   const closeForm = document.querySelector('[data-close-form]');
   closeForm && closeForm.addEventListener('submit', async (e) => {

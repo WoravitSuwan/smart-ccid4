@@ -110,6 +110,8 @@ class Recording(models.Model):
     sha256 = models.CharField(max_length=64)
     size = models.PositiveBigIntegerField(default=0)
     content_type = models.CharField(max_length=60, default="audio/webm")
+    source = models.CharField("ที่มา", max_length=10, default="browser")  # browser = recorded here · import = uploaded file
+    source_name = models.CharField("ชื่อไฟล์เดิม", max_length=255, blank=True)
     closed_at = models.DateTimeField(auto_now_add=True)
     closed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+")
 

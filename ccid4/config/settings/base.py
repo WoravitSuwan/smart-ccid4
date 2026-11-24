@@ -179,6 +179,7 @@ ASR_MODEL = env("ASR_MODEL", default="")  # path to a CTranslate2 Typhoon Whispe
 ASR_DEVICE = env("ASR_DEVICE", default="auto")  # cuda | cpu | auto
 ASR_COMPUTE_TYPE = env("ASR_COMPUTE_TYPE", default="auto")  # auto | int8 (CPU) | float16 (GPU)
 ASR_BEAM_SIZE = env.int("ASR_BEAM_SIZE", default=0)  # 0 = 5 (accuracy first; cheap with turbo models)
+INTERVIEW_IMPORT_MAX_MB = env.int("INTERVIEW_IMPORT_MAX_MB", default=1024)  # imported audio file (phone, recorder)
 ASR_LIVE = env.bool("ASR_LIVE", default=True)  # transcribe while recording (text appears phrase by phrase)
 ASR_THAI_ONLY = env.bool("ASR_THAI_ONLY", default=True)  # suppress tokens of other scripts (Cyrillic, accented Latin, CJK...)
 ASR_CPU_THREADS = env.int("ASR_CPU_THREADS", default=0)  # 0 = every physical core (faster-whisper alone uses 4)
