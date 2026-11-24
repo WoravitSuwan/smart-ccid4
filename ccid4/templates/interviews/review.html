@@ -54,7 +54,15 @@
 
 <div class="grid gap-4 xl:grid-cols-2 items-start">
   <section class="card p-5 flex flex-col gap-3 reveal">
-    <h2>ข้อความถอดเสียง</h2>
+    <div class="flex flex-wrap items-center gap-2"><h2 class="flex-1">ข้อความถอดเสียง</h2>
+      <a class="btn btn-secondary btn-sm" href="{% url 'interviews:transcript_docx' s.pk %}"><svg class="w-4 h-4"><use href="#i-file"/></svg>คำพูดคำต่อคำ (Word)</a></div>
+    <details class="text-sm">
+      <summary class="cursor-pointer text-primary">ข้อความต่อเนื่องสำหรับคัดลอกไปสรุปเป็นสำนวน</summary>
+      <textarea class="input py-2 mt-2 w-full" rows="10" readonly aria-label="ข้อความถอดเสียงต่อเนื่อง">{% for t in turns %}{{ t.who }}: {{ t.text }}{% if not forloop.last %}
+
+{% endif %}{% endfor %}</textarea>
+      <p class="text-xs text-muted mt-1">ร่างโดย AI – รอตรวจ · ตรวจกับเสียงก่อนใช้ · คลิกในกล่องแล้วกด Ctrl+A, Ctrl+C เพื่อคัดลอก</p>
+    </details>
     <p class="text-xs text-muted">ไม่มีโมเดลแยกผู้พูด: ระบบเดาจากประโยค (คำถาม/การแจ้งสิทธิ = พนักงานสอบสวน) · ผิดตรงไหนเปลี่ยนผู้พูดรายช่วงได้ แล้วกด “ร่างใหม่”</p>
     {% if can_edit %}<form method="post" action="{% url 'interviews:speakers' s.pk %}" class="flex flex-wrap items-end gap-2 p-3 rounded-btn bg-surface-2 border border-border">{% csrf_token %}
       {% for m in maps %}<label class="text-sm"><span class="label">{{ m.label }} คือ</span><select class="input min-h-[36px]" name="role-{{ m.label }}"><option value="">ไม่ระบุ</option>{% for k, v in role_choices %}<option value="{{ k }}" {% if m.role == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>{% endfor %}
