@@ -304,14 +304,6 @@
   }
   if (liveBox && liveUrl) { livePoll(); setInterval(livePoll, 3000); }
 
-  // importing a recorded file: show that a large upload is on its way, and hide the option once recording starts
-  const importForm = document.querySelector('[data-import-form]');
-  importForm && importForm.addEventListener('submit', () => {
-    const button = importForm.querySelector('[data-import-submit]');
-    button.disabled = true;
-    button.textContent = 'กำลังนำเข้า… ไฟล์ใหญ่อาจใช้เวลาสักครู่ ห้ามปิดหน้านี้';
-  });
-
   const closeForm = document.querySelector('[data-close-form]');
   closeForm && closeForm.addEventListener('submit', async (e) => {
     if (state.running) { e.preventDefault(); await stop(); closeForm.submit(); }

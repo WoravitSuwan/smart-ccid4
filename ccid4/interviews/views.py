@@ -64,7 +64,8 @@ def index(request):
         qs = qs.filter(created_by=request.user) | qs.filter(case__owner=request.user)
     kinds = [("online", "คดีออนไลน์ (หลอกลวง/ฉ้อโกงทางออนไลน์)"), ("criminal", "คดีอาญาทั่วไป")]
     return render(request, "interviews/index.html", {"sessions": qs.distinct()[:100], "kinds": kinds, "active": "interviews",
-                                                     "can_quick": request.user.role in ("investigator", "supervisor", "admin")})  # fmt: skip
+                                                     "can_quick": request.user.role in ("investigator", "supervisor", "admin"),
+                                                     "import_max_mb": settings.INTERVIEW_IMPORT_MAX_MB})  # fmt: skip
 
 
 @login_required
@@ -78,8 +79,22 @@ def quick_start(request):
     if len(name) < 2 or len(title) < 3:
         messages.error(request, "กรอกชื่อผู้แจ้งและเรื่องที่แจ้งโดยย่อก่อน")
         return redirect("interviews:index")
+    upload = request.FILES.get("audio") if request.POST.get("action") == "import" else None
+    if request.POST.get("action") == "import" and not upload:
+        messages.error(request, 'เลือกไฟล์เสียงก่อนกด "สร้างและนำเข้าไฟล์เสียง"')
+        return redirect("interviews:index")
     s = services.quick_start(request.user, name, request.POST.get("phone", "").strip(), request.POST.get("kind", "online"), title,
                              request.POST.get("place", "").strip() or "ห้องสอบสวน")  # fmt: skip
+    if upload:  # a recording made earlier (phone, recorder): lock it and transcribe it straight away
+        try:
+            services.import_audio(s, request.user, upload)
+        except ValidationError as e:
+            messages.error(
+                request, f"สร้างคดีและห้องสอบปากคำแล้ว แต่นำเข้าไฟล์ไม่ได้: {' '.join(e.messages)} · เลือกไฟล์ใหม่ได้ในหน้านี้"
+            )
+            return redirect("interviews:record", pk=s.pk)
+        messages.success(request, f"สร้างคดีรับแจ้งของ {s.party.person.full_name} และนำเข้าไฟล์เสียงแล้ว · กำลังถอดเป็นคำพูด")
+        return redirect("interviews:process", pk=s.pk)
     messages.success(request, f"สร้างคดีรับแจ้งและห้องสอบปากคำของ {s.party.person.full_name} แล้ว เริ่มบันทึกเสียงได้เลย")
     return redirect("interviews:record", pk=s.pk)
 

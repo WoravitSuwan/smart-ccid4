@@ -5,10 +5,10 @@
   <p class="text-muted">เริ่มจากหน้าคดี → แท็บผู้กล่าวหา/ผู้ต้องหา/พยาน → ปุ่ม "สอบด้วยเสียง"</p></div>
   {% if user.role in "supervisor admin" %}<a class="btn btn-secondary" href="{% url 'interviews:settings' %}">ตั้งค่า</a>{% endif %}</div>
 {% if can_quick %}
-<form method="post" action="{% url 'interviews:quick_start' %}" class="card glass glow-border quick-card p-5 flex flex-col gap-4 reveal">{% csrf_token %}
+<form method="post" action="{% url 'interviews:quick_start' %}" enctype="multipart/form-data" class="card glass glow-border quick-card p-5 flex flex-col gap-4 reveal">{% csrf_token %}
   <div class="flex flex-wrap items-center gap-3"><svg class="w-7 h-7 text-primary"><use href="#i-mic"/></svg>
     <div class="flex-1"><h2>อัดเสียงผู้แจ้งความรายใหม่</h2>
-      <p class="text-sm text-muted">ระบบสร้างคดีรับแจ้ง (สถานะ “รับแจ้งใหม่”) + ผู้กล่าวหา + ห้องสอบ แล้วพาไปหน้าบันทึกเสียงทันที · ข้อมูลอื่นเติมทีหลังในหน้าคดี</p></div></div>
+      <p class="text-sm text-muted">ระบบสร้างคดีรับแจ้ง (สถานะ “รับแจ้งใหม่”) + ผู้กล่าวหา + ห้องสอบ แล้วอัดเสียงทันที หรือนำเข้าไฟล์เสียงที่อัดไว้แล้วเพื่อถอดเป็นคำพูด · ข้อมูลอื่นเติมทีหลังในหน้าคดี</p></div></div>
   <div class="grid gap-3 md:grid-cols-2">
     <label><span class="label">ชื่อ-นามสกุลผู้แจ้ง *</span><input class="input" name="name" required maxlength="200" placeholder="เช่น นางสาวสมใจ ใจดี" autocomplete="off"></label>
     <label><span class="label">เบอร์โทรศัพท์</span><input class="input" name="phone" maxlength="40" inputmode="tel" autocomplete="off"></label>
@@ -16,8 +16,13 @@
     <label><span class="label">ประเภทคดี</span><select class="input" name="kind">{% for k, v in kinds %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
     <label><span class="label">สถานที่สอบปากคำ</span><input class="input" name="place" maxlength="200" value="ห้องสอบสวน {{ UNIT_SHORT }}"></label>
   </div>
-  <div class="flex flex-wrap items-center gap-3"><button class="btn btn-primary"><svg class="w-5 h-5"><use href="#i-mic"/></svg>สร้างและเริ่มอัดเสียง</button>
-    <span class="text-xs text-muted">แจ้งผู้ให้ถ้อยคำก่อนเสมอว่ากำลังบันทึกเสียง · มีไฟล์เสียงอัดไว้แล้ว (เช่น จากมือถือ) กดปุ่มนี้แล้วเลือก "นำเข้าไฟล์เสียง" ในหน้าถัดไป · คำให้การรูปแบบบรรยาย (เล่าเรื่อง) เปลี่ยนเป็นถาม–ตอบได้ในหน้าตรวจ</span></div>
+  <div class="flex flex-wrap items-center gap-3"><button class="btn btn-primary" name="action" value="record"><svg class="w-5 h-5"><use href="#i-mic"/></svg>สร้างและเริ่มอัดเสียง</button>
+    <span class="text-xs text-muted">แจ้งผู้ให้ถ้อยคำก่อนเสมอว่ากำลังบันทึกเสียง · คำให้การรูปแบบบรรยาย (เล่าเรื่อง) เปลี่ยนเป็นถาม–ตอบได้ในหน้าตรวจ</span></div>
+  <div class="flex flex-wrap items-end gap-3 border-t border-border pt-4">
+    <label class="flex-1 min-w-[240px]"><span class="label">หรือ มีไฟล์เสียงอัดไว้แล้ว (มือถือ เครื่องอัดเสียง คลิปวิดีโอ · ไม่เกิน {{ import_max_mb }} MB)</span>
+      <input class="input py-2" type="file" name="audio" accept="audio/*,video/mp4,video/quicktime,.m4a,.amr,.3gp,.opus,.wma"></label>
+    <button class="btn btn-secondary" name="action" value="import" data-busy="กำลังนำเข้า… ไฟล์ใหญ่อาจใช้เวลาสักครู่ ห้ามปิดหน้านี้"><svg class="w-5 h-5"><use href="#i-file"/></svg>สร้างและนำเข้าไฟล์เสียง</button>
+    <span class="text-xs text-muted w-full">รองรับ m4a mp3 wav ogg opus amr 3gp aac flac wma webm mp4 mov · ไฟล์เก็บตามที่ได้รับ ล็อกด้วย SHA-256 เข้าทะเบียนพยานหลักฐาน แล้วถอดเป็นคำพูดคำต่อคำ</span></div>
 </form>
 {% endif %}
 <section class="card p-5 reveal">

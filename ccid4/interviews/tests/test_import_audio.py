@@ -109,3 +109,55 @@ def test_formats_browsers_cannot_play_are_heard_through_the_flac_copy(
     post(client_inv, room, "android.3gp", data, django_capture_on_commit_callbacks)
     r = client_inv.get(reverse("interviews:audio", args=[room.pk]))
     assert r.status_code == 200 and r["Content-Type"] == "audio/flac"
+
+
+# ---------------------------------------------------------------- straight from "new complainant" on the interview list
+def quick(client, capture, action, upload=None):
+    data = {
+        "name": "นางสาวสมมติ ทดสอบ",
+        "title": "ถูกหลอกให้โอนเงินซื้อสินค้า",
+        "kind": "online",
+        "place": "ห้องสอบสวน",
+        "action": action,
+    }
+    if upload:
+        data["audio"] = upload
+    with capture(execute=True):
+        return client.post(reverse("interviews:quick_start"), data)
+
+
+@pytest.mark.django_db
+def test_new_complainant_with_a_recorded_file_in_one_step(client_inv, tmp_path, django_capture_on_commit_callbacks):
+    from cases.models import Case
+
+    page = client_inv.get(reverse("interviews:index")).content.decode()
+    assert "สร้างและนำเข้าไฟล์เสียง" in page and 'enctype="multipart/form-data"' in page and "data-busy=" in page
+    before = Case.objects.count()
+    r = quick(
+        client_inv,
+        django_capture_on_commit_callbacks,
+        "import",
+        SimpleUploadedFile("memo.m4a", clip(tmp_path, "q.m4a", "-c:a", "aac")),
+    )
+    rec = Recording.objects.get(source_name="memo.m4a")
+    assert Case.objects.count() == before + 1 and rec.source == "import"
+    assert r.url == reverse("interviews:process", args=[rec.session_id])
+
+
+@pytest.mark.django_db
+def test_import_button_needs_a_file_and_record_button_ignores_one(client_inv, tmp_path, django_capture_on_commit_callbacks):
+    from cases.models import Case
+
+    before = Case.objects.count()
+    r = quick(client_inv, django_capture_on_commit_callbacks, "import")
+    assert r.url == reverse("interviews:index") and Case.objects.count() == before  # nothing created
+    r = quick(client_inv, django_capture_on_commit_callbacks, "record", SimpleUploadedFile("memo.wav", clip(tmp_path, "w.wav")))
+    assert "/record/" in r.url and not Recording.objects.exists()  # pressed "record": the file is not imported
+
+
+@pytest.mark.django_db
+def test_bad_file_keeps_the_new_case_and_offers_to_choose_again(client_inv, django_capture_on_commit_callbacks):
+    r = quick(client_inv, django_capture_on_commit_callbacks, "import", SimpleUploadedFile("broken.mp3", b"not audio"))
+    assert "/record/" in r.url and not Recording.objects.exists()
+    page = client_inv.get(r.url).content.decode()
+    assert "นำเข้าไฟล์ไม่ได้" in page and "นำเข้าไฟล์เสียงที่อัดไว้แล้ว" in page
