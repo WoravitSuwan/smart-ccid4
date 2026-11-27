@@ -255,19 +255,43 @@ def transcribe_audio(audio, offset: float = 0.0, progress=None) -> list[dict]:
     total = offset + float(getattr(info, "duration", 0) or 0)
     if progress:
         progress(offset, total)  # model loaded and silence removed: decoding starts now
-    out = []
+    out, pending = [], None
     for s in segments:  # a generator: the model works while we iterate
         if progress:
             progress(offset + float(s.end), total)
-        text = s.text.strip()
-        if not text:
+        item = {
+            "start": offset + float(s.start), "end": offset + float(s.end), "text": s.text, "tokens": list(getattr(s, "tokens", None) or []),
+            "words": [{"w": w.word.strip(), "s": round(offset + w.start, 2), "e": round(offset + w.end, 2), "p": round(w.probability, 3)}
+                      for w in (s.words or [])],
+        }  # fmt: skip
+        if pending:  # the previous segment ended in the middle of a Thai letter: join them and decode again
+            item = _join(pending, item, tokenizer)
+            pending = None
+        if item["text"].rstrip().endswith(BROKEN) and tokenizer is not None:
+            pending = item
             continue
-        words = [
-            {"w": w.word.strip(), "s": round(offset + w.start, 2), "e": round(offset + w.end, 2), "p": round(w.probability, 3)}
-            for w in (s.words or [])
-        ]
-        out.append({"start": offset + float(s.start), "end": offset + float(s.end), "text": text, "words": words})
+        _emit(out, item)
+    if pending:
+        _emit(out, pending)
     return out
+
+
+BROKEN = "\ufffd"  # a letter whose bytes were split between two segments decodes as this
+
+
+def _join(a: dict, b: dict, tokenizer) -> dict:
+    tokens = a["tokens"] + b["tokens"]
+    eot = tokenizer.token_to_id("<|endoftext|>") if tokenizer is not None else None
+    text = tokenizer.decode([t for t in tokens if eot is None or t < eot]) if tokenizer is not None and tokens else ""
+    if not text or BROKEN in text:
+        text = a["text"].rstrip().rstrip(BROKEN) + b["text"].lstrip().lstrip(BROKEN)
+    return {"start": a["start"], "end": b["end"], "text": text, "tokens": tokens, "words": a["words"] + b["words"]}
+
+
+def _emit(out: list, item: dict) -> None:
+    text = item["text"].replace(BROKEN, "").strip()
+    if text:
+        out.append({"start": item["start"], "end": item["end"], "text": text, "words": item["words"]})
 
 
 # ---------------------------------------------------------------- live transcription helpers

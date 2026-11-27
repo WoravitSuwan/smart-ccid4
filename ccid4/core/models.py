@@ -5,7 +5,9 @@ from django.db import models
 class Notification(models.Model):
     """กระดิ่งในระบบ (B8): ตัวระบุซ้ำข้ามคดี (B4), คำขอรวมสำนวน และงานอื่นที่ต้องรู้."""
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications", verbose_name="ผู้รับ")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications", verbose_name="ผู้รับ"
+    )
     kind = models.CharField("ประเภท", max_length=30)
     title = models.CharField("หัวข้อ", max_length=200)
     body = models.CharField("รายละเอียด", max_length=500, blank=True)

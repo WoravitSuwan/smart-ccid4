@@ -112,28 +112,48 @@ def mask_account(acc: str | None) -> str:
 
 
 # ---------- Thai number words (for checking figures against speech) ----------
-_UNITS = {"ศูนย์": 0, "หนึ่ง": 1, "เอ็ด": 1, "สอง": 2, "ยี่": 2, "สาม": 3, "สี่": 4, "ห้า": 5, "หก": 6, "เจ็ด": 7, "แปด": 8, "เก้า": 9}
+_UNITS = {
+    "ศูนย์": 0,
+    "หนึ่ง": 1,
+    "เอ็ด": 1,
+    "สอง": 2,
+    "ยี่": 2,
+    "สาม": 3,
+    "สี่": 4,
+    "ห้า": 5,
+    "หก": 6,
+    "เจ็ด": 7,
+    "แปด": 8,
+    "เก้า": 9,
+}
 _MULT = {"สิบ": 10, "ร้อย": 100, "พัน": 1000, "หมื่น": 10_000, "แสน": 100_000}
 _WORD_RE = re.compile("(?:" + "|".join(sorted(list(_UNITS) + list(_MULT) + ["ล้าน"], key=len, reverse=True)) + ")+")
 _TOKEN_RE = re.compile("|".join(sorted(list(_UNITS) + list(_MULT) + ["ล้าน"], key=len, reverse=True)))
 
 
-def thai_words_to_int(text: str) -> int | None:
+def thai_words_to_int(text: str, colloquial: bool = False) -> int | None:
+    """Thai number words → int. colloquial: a digit right after พัน/หมื่น/แสน/ล้าน counts in the next unit down,
+    as people say amounts ("หนึ่งแสนแปด" = 180,000, "สามพันห้า" = 3,500); formal reading gives 100,008 and 3,005."""
     tokens = _TOKEN_RE.findall(text)
     if not tokens or "".join(tokens) != text:
         return None
-    total, chunk, digit = 0, 0, None
+    total, chunk, digit, last = 0, 0, None, None
     for tok in tokens:
         if tok in _UNITS:
             digit = _UNITS[tok]
         elif tok in _MULT:
             mult = _MULT[tok]
             chunk += (1 if digit is None else digit) * mult
-            digit = None
+            digit, last = None, mult
         else:  # ล้าน
             chunk += digit or 0
+            if total == 0 and chunk == 0:  # "ล้าน" said on its own means one million
+                chunk = 1
             total = (total + chunk) * 1_000_000
-            chunk, digit = 0, None
+            chunk, digit, last = 0, None, 1_000_000
+    if colloquial and digit is not None and tokens[-1] in _UNITS and len(tokens) > 1 and last and last >= 1000:
+        if tokens[-2] in _MULT or tokens[-2] == "ล้าน":
+            return total + chunk + digit * last // 10
     return total + chunk + (digit or 0)
 
 
@@ -148,9 +168,10 @@ def numbers_in_speech(text: str) -> set[int]:
         except ValueError:
             pass
     for m in _WORD_RE.finditer(t):
-        n = thai_words_to_int(m.group())
-        if n is not None:
-            found.add(n)
+        for colloquial in (False, True):  # either reading may be what the draft wrote
+            n = thai_words_to_int(m.group(), colloquial)
+            if n is not None:
+                found.add(n)
     return found
 
 
