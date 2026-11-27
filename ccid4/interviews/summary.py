@@ -11,7 +11,7 @@ from collections import Counter
 
 from rapidfuzz import fuzz
 
-from core.thai import MONTHS, numbers_in_draft, numbers_in_speech, to_arabic_digits
+from core.thai import MONTHS, mmss, numbers_in_draft, numbers_in_speech, thai_words_to_int, to_arabic_digits
 
 from . import qa
 
@@ -88,6 +88,26 @@ def unique(items):
     return list(dict.fromkeys(i.strip() for i in items if i and i.strip()))
 
 
+NUMBER_WORDS = re.compile(r"(?:ศูนย์|หนึ่ง|เอ็ด|สอง|ยี่|สาม|สี่|ห้า|หก|เจ็ด|แปด|เก้า|สิบ|ร้อย|พัน|หมื่น|แสน|ล้าน)+")
+MONEY_CONTEXT = re.compile(r"เงิน|โอน|ยอด|ออเดอร์|ถอน|เติม|จ่าย|ค่า|ราคา|กำไร|คืน|ซื้อ|บาท")
+
+
+def spoken_amounts(text: str) -> list[str]:
+    """Amounts said as words ("สองแสนกว่าบาท", "หนึ่งแสนแปด") next to money talk, with what was said for checking."""
+    t = to_arabic_digits(text or "")
+    out = []
+    for m in NUMBER_WORDS.finditer(t):
+        value = thai_words_to_int(m.group(), colloquial=True)
+        if value is None or value < 100:
+            continue
+        after, before = t[m.end() : m.end() + 12], t[max(0, m.start() - 30) : m.start()]
+        if not (re.match(r"\s*(?:กว่า)?\s*บาท", after) or MONEY_CONTEXT.search(before)):
+            continue
+        more = "กว่า" if re.match(r"\s*กว่า", after) else ""
+        out.append(f"{value:,}{' ' + more if more else ''} บาท (พูดว่า “{m.group()}{more}”)")
+    return unique(out)
+
+
 def key_facts(text: str, subject_text: str | None = None) -> dict[str, list[str]]:
     t = to_arabic_digits(text or "")
     said = to_arabic_digits(subject_text if subject_text is not None else text or "")
@@ -95,7 +115,7 @@ def key_facts(text: str, subject_text: str | None = None) -> dict[str, list[str]
     digits_of = {re.sub(r"\D", "", p) for p in phones}
     return {
         "วันเวลาที่กล่าวถึง": unique(DATE.findall(t) + RELATIVE.findall(said)),
-        "จำนวนเงิน": unique(f"{m} บาท" for m in MONEY.findall(t)),
+        "จำนวนเงิน": unique([f"{m} บาท" for m in MONEY.findall(t)] + spoken_amounts(said)),
         "เลขบัญชี": unique(a for a in ACCOUNT.findall(t) if re.sub(r"\D", "", a) not in digits_of),
         "ธนาคาร/ช่องทางการเงิน": unique(b for b in BANKS if b in t),
         "เบอร์โทรศัพท์": phones,
@@ -112,13 +132,47 @@ def subject_answers(pairs: list[qa.Pair], segs: list[qa.Seg]) -> list[str]:
     return [a for a in answers if not SHORT_REPLY.match(a.strip())]
 
 
+KEY_VERBS = re.compile(r"โอน|ถอน|เติม|จ่าย|ฝาก|สั่งซื้อ|ออเดอร์|สมัคร|ลงทุน|หลอก|ติดต่อไม่ได้|บล็อก|ปิด(?:บัญชี|ร้าน)|ทัก|ชวน")
+
+
+def key_sentences(segs, limit: int = 8) -> list[str]:
+    """The sentences that carry the story (money, transfers, apps, dates), in the order they were said, with their time.
+
+    An extract, not a rewrite: every word is the speaker's own, so it can be checked against the audio at that time.
+    """
+    scored = []
+    for s in segs:
+        if s.role != "subject":
+            continue
+        text = tidy(spoken_sentence(s.text))
+        if len(text) < 12:
+            continue
+        t = to_arabic_digits(text)
+        score = 3 * bool(MONEY.search(t) or spoken_amounts(t)) + 2 * bool(KEY_VERBS.search(t))
+        score += 2 * any(c in t for c in CHANNELS + BANKS) + 2 * bool(DATE.search(t) or RELATIVE.search(t))
+        if score >= 3:
+            scored.append((score, s.start, text))
+    best = sorted(sorted(scored, key=lambda x: -x[0])[:limit], key=lambda x: x[1])
+    return [f"นาที {mmss(start)}: {shorten(text)}" for _, start, text in best]
+
+
+def shorten(text: str, limit: int = 220) -> str:
+    if len(text) <= limit:
+        return text
+    cut = text.rfind(" ", 0, limit)
+    return text[: cut if cut > limit // 2 else limit].rstrip() + " …"
+
+
 def code_points(pairs, segs) -> list[str]:
     answers = subject_answers(pairs, segs)
     subject_text = " ".join(s.text for s in segs if s.role == "subject")
     points = []
-    story = next((a for a in answers if len(a) > 40), answers[0] if answers else "")
-    if story:
-        points.append(f"เหตุการณ์โดยย่อ: {story.removeprefix('ข้าฯ ').strip()}")
+    for line in key_sentences(segs):
+        points.append(f"ประเด็นจากคำบอกเล่า {line}")
+    if not points:
+        story = next((a for a in answers if len(a) > 40), answers[0] if answers else "")
+        if story:
+            points.append(f"เหตุการณ์โดยย่อ: {shorten(tidy(story.removeprefix('ข้าฯ ').strip()))}")
     for label, values in key_facts(" ".join(s.text for s in segs), subject_text).items():
         if values:
             points.append(f"{label}: {', '.join(values[:6])}")
@@ -130,30 +184,72 @@ def code_points(pairs, segs) -> list[str]:
     return points
 
 
+def spoken_sentence(text: str) -> str:
+    """One stretch of the subject's speech: pronouns → ข้าฯ, fillers and particles removed, nothing added."""
+    t = qa.to_official_answer(text.replace("\ufffd", ""))
+    if SHORT_REPLY.match(t.strip()):
+        return ""
+    t = LEADING_REPLY.sub("ข้าฯ ", t)  # "ใช่ ข้าฯ เปิดบัญชี" → "ข้าฯ เปิดบัญชี": a bare yes/no has no meaning in a story
+    # to_official_answer always starts with ข้าฯ; keep it only where the speaker used a pronoun
+    if not qa.clean(text).startswith(("ผม", "ดิฉัน", "กระผม", "หนู", "ฉัน", "ข้าพเจ้า", "เรา")):
+        t = t.removeprefix("ข้าฯ").strip()
+    return t
+
+
 def spoken_sentences(segs) -> list[str]:
-    """The subject's own sentences in order: pronouns → ข้าฯ, fillers and particles removed, nothing added."""
-    out = []
-    for s in segs:
-        if s.role != "subject":
-            continue
-        t = qa.to_official_answer(s.text)
-        if SHORT_REPLY.match(t.strip()):
-            continue
-        t = LEADING_REPLY.sub("ข้าฯ ", t)  # "ใช่ ข้าฯ เปิดบัญชี" → "ข้าฯ เปิดบัญชี": a bare yes/no has no meaning in a story
-        # to_official_answer always starts with ข้าฯ; keep it only where the speaker used a pronoun
-        if not qa.clean(s.text).startswith(("ผม", "ดิฉัน", "กระผม", "หนู", "ฉัน", "ข้าพเจ้า", "เรา")):
-            t = t.removeprefix("ข้าฯ").strip()
-        out.append(t)
-    return out
+    """The subject's own sentences in order (see spoken_sentence)."""
+    return [t for t in (spoken_sentence(s.text) for s in segs if s.role == "subject") if t]
+
+
+NUMBERISH = re.compile(r"[\d,.]+|" + NUMBER_WORDS.pattern)
+
+
+def tidy(text: str) -> str:
+    """Drop the stumbles of speech: a phrase said twice, or started again ("สำนอง สำนองจ่ายก่อน" → "สำนองจ่ายก่อน").
+
+    Numbers are never touched: digits read one by one ("สอง สอง ศูนย์") are an account or phone number.
+    """
+    out: list[str] = []
+    for chunk in (text or "").split():
+        prev = out[-1] if out else ""
+        if len(prev) >= 3 and not NUMBERISH.fullmatch(prev) and not NUMBERISH.fullmatch(chunk):
+            if chunk == prev:
+                continue
+            if chunk.startswith(prev) or chunk.endswith(prev):
+                out[-1] = chunk
+                continue
+        out.append(chunk)
+    return " ".join(out)
+
+
+PARA_PAUSE, PARA_MIN, PARA_MAX = 1.2, 150, 700  # seconds of silence · characters per paragraph
 
 
 def code_narrative(pairs, segs) -> str:
-    """คำให้การแบบบรรยาย: ข้าฯ ขอให้การว่า … then the subject's sentences, three to a paragraph."""
-    sentences = spoken_sentences(segs) or [a for a in subject_answers(pairs, segs)]
-    if not sentences:
+    """คำให้การแบบบรรยาย: ข้าฯ ขอให้การว่า … then the subject's own words, with a new paragraph where they paused."""
+    paras, cur, size, prev_end = [], [], 0, None
+    for s in segs:
+        if s.role != "subject":
+            continue
+        text = tidy(spoken_sentence(s.text))
+        if not text:
+            continue
+        gap = s.start - prev_end if prev_end is not None else 0.0
+        if cur and ((gap >= PARA_PAUSE and size >= PARA_MIN) or size >= PARA_MAX):
+            paras.append(" ".join(cur))
+            cur, size = [], 0
+        cur.append(text)
+        size += len(text)
+        prev_end = s.end
+    if cur:
+        paras.append(" ".join(cur))
+    if not paras:  # no subject segments (an imported transcript without speakers): use the answers
+        answers = [tidy(a) for a in subject_answers(pairs, segs)]
+        paras = [" ".join(answers[i : i + 3]) for i in range(0, len(answers), 3)] if answers else []
+    if not paras:
         return ""
-    sentences[0] = "ข้าฯ ขอให้การว่า " + sentences[0].removeprefix("ข้าฯ").strip()
-    return "\n".join(" ".join(sentences[i : i + 3]) for i in range(0, len(sentences), 3))
+    paras[0] = "ข้าฯ ขอให้การว่า " + paras[0].removeprefix("ข้าฯ").strip()
+    return "\n".join(paras)
 
 
 # ---------------------------------------------------------------- source check for free text
@@ -188,7 +284,14 @@ OFFICER_PHRASES = re.compile(
 )
 
 
+QUESTION_MAX = 80  # characters: a longer stretch ending in "ไหม" is usually the complainant quoting someone
+
+
 def guess_speaker(text: str) -> str:
-    """S1 = investigator (questions, rights, procedure) · S2 = the person giving the statement."""
+    """S1 = investigator (questions, rights, procedure) · S2 = the person giving the statement.
+
+    A complainant telling the story often quotes questions ("เขาบอกว่าสมัครเลยไหม"); taking those for the officer's
+    dropped them from the story, so only short questions count as the officer's.
+    """
     t = (text or "").strip()
-    return "S1" if QUESTION.search(t) or OFFICER_PHRASES.search(t) else "S2"
+    return "S1" if OFFICER_PHRASES.search(t) or (QUESTION.search(t) and len(t) <= QUESTION_MAX) else "S2"
